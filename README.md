@@ -103,21 +103,24 @@ Never change the schema from the Supabase dashboard. Use migrations.
 
 ```text
 src/
-  app/            providers, router, layout, guards
+  app/            router, providers, layouts, guards
   components/ui/  shadcn primitives
-  features/       auth, bay, inventory, owner, receipts, settings
+  features/       auth, bay, inventory, owner, pwa, receipts, settings
   hooks/          cross-feature hooks
   lib/            supabase, money, dates, csv, errors, print, pin
   routes/         thin page components
   styles/
   types/          generated database types + domain types
 supabase/
-  migrations/
-  seed.sql
+  migrations/  seed.sql
 tests/
-  unit/ db/ e2e/
+  setup/ unit/ db/ e2e/
 docs/
-  spec.md  runbook.md  decisions/
+  spec.md  design.md  runbook.md  setup.md  decisions/  superpowers/plans/
+scripts/
+  check-file-size.mjs
+.agents/skills/    Supabase-provided skills
+.opencode/skills/  Project-local skills
 ```
 
 ---
@@ -130,6 +133,8 @@ docs/
 - Completed tickets and receipts are immutable. Void the sale and create a new ticket.
 - Roles are enforced by RLS and functions, not by hiding buttons.
 - The service-role key never reaches the browser.
+- No source file may exceed 1,000 lines; split by responsibility.
+- The repository root contains only `README.md` and `AGENTS.md`; other docs go under `docs/`.
 - `npm run check` must pass before a change is complete.
 
 The full rules are in [`AGENTS.md`](AGENTS.md).

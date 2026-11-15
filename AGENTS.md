@@ -4,6 +4,13 @@ This file is the engineering contract for anyone — human or AI — working in 
 
 ---
 
+## 0. Highest priority
+
+1. **No file may exceed 1,000 lines of code.** This is a hard limit, not a target. Split by responsibility into components, hooks, feature modules, or SQL function files before a file gets close. If a file would cross 1,000 lines, stop and split it first.
+2. **The repository root contains only `README.md` and `AGENTS.md`.** Every other Markdown document belongs under `docs/` — `docs/spec.md`, `docs/design.md`, `docs/runbook.md`, `docs/setup.md`, `docs/decisions/`, and `docs/superpowers/plans/`. Never create `NOTES.md`, `TODO.md`, `CHANGELOG.md`, or any other Markdown file at the root.
+
+---
+
 ## 1. What this project is
 
 A web app for **one** motorcycle parts and repair shop in the Philippines.
@@ -50,6 +57,7 @@ If a change alters behavior, update the spec in the same pull request. A change 
 13. **One dependency at a time.** Do not add a package because it is convenient. The spec lists the stack; justify anything new in the PR.
 14. **Every bug gets a regression test.** Every database function change gets a database test.
 15. **`npm run check` must pass before you claim anything is done.**
+16. **Respect the highest-priority limits.** No file over 1,000 lines; no new Markdown files in the repository root.
 
 ---
 
@@ -84,14 +92,23 @@ Do not introduce Next.js, Serwist, `jose`, Prisma, Fastify, Redux, Zustand, or a
 
 ```text
 src/
-  app/                 providers, router, layout, guards
-  components/ui/       shadcn primitives only
+  app/
+    guards/            RequireStaff, RequireOwner
+    layouts/           StaffLayout, PublicLayout
+    providers.tsx
+    router.tsx
+    App.tsx
+  components/
+    ui/                shadcn primitives only
+    ...                shared components (BrandMark, StatusBadge, etc.)
   features/
-    auth/              login, lock screen, session hooks
+    auth/              login, PIN lock, session hooks
     bay/               queue, ticket detail, part picker, labor, payment
     inventory/         parts table, part form, stock actions
     owner/             dashboard, sales, day close, audit, settings
+    pwa/               install, update, offline UI
     receipts/          receipt page, verify page, QR, print
+    settings/          shop settings
   hooks/               cross-feature hooks only
   lib/                 supabase, money, dates, csv, errors, print, pin
   routes/              thin page components; no business logic
@@ -102,18 +119,28 @@ supabase/
   seed.sql
   config.toml
 tests/
+  setup/
   unit/
   db/
   e2e/
 docs/
+  design.md
+  setup.md
   spec.md
   runbook.md
   decisions/
+  superpowers/plans/
+scripts/
+  check-file-size.mjs
+.agents/skills/        Supabase-provided skills
+.opencode/skills/      project-local skills
 public/
 .github/
   workflows/
   pull_request_template.md
 ```
+
+Every new file has a home in this tree. Do not create a new top-level folder without updating this section and the plan.
 
 Rules:
 
@@ -135,16 +162,17 @@ These are the contract. If a script is missing during scaffolding, add it with t
 npm run dev             # Vite dev server
 npm run build           # typecheck + production build
 npm run preview         # serve the production build locally
-npm run typecheck       # tsc --noEmit
-npm run lint            # ESLint
-npm run lint:fix         # ESLint with fixes
+npm run typecheck       # tsc -b
+npm run lint            # Oxlint
+npm run lint:fix         # Oxlint with fixes
 npm run format          # Prettier write
 npm run format:check    # Prettier check
+npm run check:size      # fail if any source file exceeds 1,000 lines
 npm run test            # Vitest unit tests
 npm run test:watch      # Vitest watch
 npm run test:db         # database integration tests (local Supabase or CI)
 npm run test:e2e        # Playwright
-npm run check           # typecheck + lint + format check + unit + build
+npm run check           # typecheck + lint + format check + file size + unit + build
 npm run db:start        # local Supabase (requires Docker; not on the laptop)
 npm run db:stop         # stop local Supabase
 npm run db:reset        # reset the LOCAL database only
@@ -341,10 +369,14 @@ These are the highest-risk paths. Change them only with tests.
 ## 15. Documentation
 
 - `docs/spec.md` is the source of truth. Update it when behavior changes.
+- `docs/design.md` is the visual system. Update it when a token, layout, or component rule changes.
 - `docs/runbook.md` is the operations manual. Update it when deploy, backup, restore, or staff procedures change.
+- `docs/setup.md` is the first-run guide. Keep the commands accurate.
 - `docs/decisions/NNNN-short-title.md` records non-obvious decisions. Use the existing format:
   - Context, decision, consequences.
+- `docs/superpowers/plans/` holds implementation plans. Do not create plan files at the root.
 - `README.md` is the quickstart. Keep it accurate.
+- **Only `README.md` and `AGENTS.md` may live at the repository root.** Every other Markdown file goes under `docs/`.
 - This file is the agent contract. If a rule changes, update it in the same PR.
 - Do not leave stale docs. A wrong doc is worse than no doc.
 
@@ -366,6 +398,8 @@ These are the highest-risk paths. Change them only with tests.
 8. Do not modify generated files by hand.
 9. Do not claim success without running the verification. Report the exact commands and results.
 10. If something is blocked, say what is blocked and what you tried. Do not guess.
+11. Place every new file in the repository layout. Never create a new top-level folder or a root-level Markdown file without updating `AGENTS.md` and the plan.
+12. Before a file approaches 1,000 lines, stop and split it. The size check is part of `npm run check`.
 
 ---
 
@@ -382,6 +416,8 @@ A task is done only when:
 - [ ] Database tests and E2E pass in CI.
 - [ ] `database.types.ts` is regenerated and current.
 - [ ] Docs and ADRs are updated.
+- [ ] No file exceeds 1,000 lines.
+- [ ] No new Markdown file at the repository root.
 - [ ] No secrets, no `console.log`, no raw SQL errors in the UI.
 - [ ] The PR description lists what changed and how it was tested.
 
