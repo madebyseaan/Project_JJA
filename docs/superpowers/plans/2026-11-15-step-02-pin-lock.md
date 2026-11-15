@@ -145,8 +145,19 @@ type PinLockContextValue = {
 
 ## Verification
 
-- `npm run check`: typecheck, lint, format, size check, 52 unit tests (15 files), and the production build pass.
+- `npm run check`: typecheck, lint, format, size check, 56 unit tests (15 files), and the production build pass.
 - Database tests and E2E were not run because Docker is unavailable on this machine. No database touched this step.
-- The browser demo used a temporary PIN record, which was removed afterward. Sean's PIN is still unset.
+- Browser checks used temporary PIN records. Sean's record was backed up and restored untouched.
+
+## Review fix — cross-tab PIN state
+
+A tab opened before the PIN was set kept showing **Set your PIN** from its own stale state. Entering any PIN twice there saved it and unlocked, which looks like a wrong PIN being accepted. The provider now re-reads the PIN record on `storage`, `focus`, and `visibilitychange`, and the lock page resets its setup stage when the PIN appears or disappears. A missing PIN at unlock time signs the tab out with a clear message instead of falling into setup. The setup write also refuses to overwrite a PIN that appeared in another tab.
+
+Regression tests:
+
+- a PIN set in another tab flips `hasPin` without a reload,
+- a PIN removed before unlock signs out,
+- a stale setup tab cannot overwrite an existing PIN,
+- the real provider + lock page reject a wrong PIN and stay on `/lock`.
 
 **Gate:** Sean must say **approved** before Step 03.

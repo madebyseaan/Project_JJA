@@ -170,6 +170,7 @@ Status: **In review.** Built and verified — `npm run check` is green with 52 u
 - [x] Session-expiry handling: explain and return to `/login`.
 - [x] Unit tests with fake timers and a mocked auth session.
 - [x] Shared brand panel and mobile header so login and lock match.
+- [x] PIN state syncs across tabs; a missing PIN signs the tab out instead of falling into setup.
 
 ### Human checkpoints
 

@@ -9,6 +9,7 @@ import { useManilaClock } from '@/hooks/use-manila-clock';
 import { BrandPanel } from './BrandPanel';
 import { MobileBrandHeader } from './MobileBrandHeader';
 import { PinPad } from './PinPad';
+import { PinExistsError } from './pin';
 import { useAuth } from './use-auth';
 import { usePinLock } from './use-pin-lock';
 
@@ -24,6 +25,16 @@ export function LockPage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const stage: Stage = hasPin ? 'unlock' : setupStage;
+  const [seenHasPin, setSeenHasPin] = useState(hasPin);
+
+  // A PIN can appear or disappear in another tab; reset the setup flow so a
+  // stale "confirm" stage can never save a new PIN by accident.
+  if (seenHasPin !== hasPin) {
+    setSeenHasPin(hasPin);
+    setSetupStage('setup');
+    setFirstPin(null);
+    setError(null);
+  }
 
   if (status === 'loading') {
     return <FullPageLoading />;
@@ -56,8 +67,12 @@ export function LockPage() {
     try {
       await setPin(pin);
       navigate('/', { replace: true });
-    } catch {
-      setError('Could not save the PIN. Try again.');
+    } catch (error) {
+      setError(
+        error instanceof PinExistsError
+          ? 'A PIN is already set on this device. Enter it to continue.'
+          : 'Could not save the PIN. Try again.',
+      );
     } finally {
       setBusy(false);
     }

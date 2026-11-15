@@ -7,6 +7,8 @@ import { useIdleLock } from '@/hooks/use-idle-lock';
 import {
   clearPin,
   getPinRecord,
+  PinExistsError,
+  pinStorageKey,
   recordFailedAttempt,
   resetAttempts,
   savePin,
@@ -23,8 +25,8 @@ export function PinLockProvider() {
   const [unlocked, setUnlocked] = useState(false);
   const [hasPin, setHasPin] = useState(false);
 
-  // Sync with the local PIN record when the signed-in staff member changes.
-  // This is an external-store read, not derived render state.
+  // Read the PIN record from localStorage, and keep the state in sync with
+  // other tabs. This is an external-store read, not derived render state.
   useEffect(() => {
     if (!profile) {
       setHasPin(false);
@@ -32,8 +34,42 @@ export function PinLockProvider() {
       return;
     }
 
-    setHasPin(getPinRecord(profile.id) !== null);
-    setUnlocked(false);
+    const pinKey = pinStorageKey(profile.id);
+
+    const apply = (resetUnlocked: boolean) => {
+      const exists = getPinRecord(profile.id) !== null;
+      setHasPin(exists);
+
+      if (!exists || resetUnlocked) {
+        setUnlocked(false);
+      }
+    };
+
+    const sync = () => apply(false);
+
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key === null || event.key === pinKey) {
+        sync();
+      }
+    };
+
+    const handleVisible = () => {
+      if (document.visibilityState === 'visible') {
+        sync();
+      }
+    };
+
+    apply(true);
+
+    window.addEventListener('storage', handleStorage);
+    window.addEventListener('focus', handleVisible);
+    document.addEventListener('visibilitychange', handleVisible);
+
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('focus', handleVisible);
+      document.removeEventListener('visibilitychange', handleVisible);
+    };
   }, [profile?.id]);
 
   const lock = useCallback(() => {
@@ -47,6 +83,13 @@ export function PinLockProvider() {
     async (pin: string) => {
       if (!profile) {
         throw new Error('No staff profile');
+      }
+
+      // Another tab may have saved a PIN while this setup flow was open.
+      if (getPinRecord(profile.id)) {
+        setHasPin(true);
+        setUnlocked(false);
+        throw new PinExistsError();
       }
 
       await savePin(profile.id, pin);
@@ -66,7 +109,10 @@ export function PinLockProvider() {
 
       if (!record) {
         setHasPin(false);
-        return { ok: false, attemptsLeft: 0, lockedOut: false };
+        setUnlocked(false);
+        await signOut();
+        toast.error('Your PIN is missing from this device. Sign in with your password.');
+        return { ok: false, attemptsLeft: 0, lockedOut: true };
       }
 
       if (await verifyPin(pin, record)) {

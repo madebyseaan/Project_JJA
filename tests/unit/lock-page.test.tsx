@@ -1,11 +1,13 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createMemoryRouter, RouterProvider } from 'react-router';
-import { expect, test, vi } from 'vitest';
+import { beforeEach, expect, test, vi } from 'vitest';
 
 import type { AuthContextValue } from '@/features/auth/auth-context';
 import { LockPage } from '@/features/auth/LockPage';
+import { savePin } from '@/features/auth/pin';
 import type { PinLockContextValue, UnlockResult } from '@/features/auth/pin-lock-context';
+import { PinLockProvider } from '@/features/auth/PinLockProvider';
 
 import {
   AuthTestProvider,
@@ -15,6 +17,10 @@ import {
   signedOutValue,
   ownerProfile,
 } from '../setup/auth-test-utils';
+
+beforeEach(() => {
+  localStorage.clear();
+});
 
 type RenderOptions = {
   auth?: AuthContextValue;
@@ -137,4 +143,35 @@ test('redirects an already-unlocked user home', async () => {
   renderLockPage({ pin: pinLockValue({ unlocked: true, hasPin: true }) });
 
   expect(await screen.findByText('Staff home')).toBeInTheDocument();
+});
+
+test('a wrong PIN never reaches the staff home', async () => {
+  await savePin(ownerProfile.id, '1234');
+
+  const router = createMemoryRouter(
+    [
+      {
+        element: <PinLockProvider />,
+        children: [
+          { path: '/lock', element: <LockPage /> },
+          { path: '/', element: <div>Staff home</div> },
+          { path: '/login', element: <div>Login screen</div> },
+        ],
+      },
+    ],
+    { initialEntries: ['/lock'] },
+  );
+
+  render(
+    <AuthTestProvider value={signedInValue(ownerProfile)}>
+      <RouterProvider router={router} />
+    </AuthTestProvider>,
+  );
+
+  await screen.findByText('Welcome back');
+  await enterPin('0000');
+
+  expect(await screen.findByText('Incorrect PIN. 4 attempts left.')).toBeInTheDocument();
+  expect(screen.queryByText('Staff home')).not.toBeInTheDocument();
+  expect(router.state.location.pathname).toBe('/lock');
 });

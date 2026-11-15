@@ -1,12 +1,19 @@
 const PIN_KEY_PREFIX = 'jja.pin.';
 
+export class PinExistsError extends Error {
+  constructor() {
+    super('A PIN is already set on this device.');
+    this.name = 'PinExistsError';
+  }
+}
+
 export type PinRecord = {
   salt: string;
   hash: string;
   attempts: number;
 };
 
-function storageKey(userId: string): string {
+export function pinStorageKey(userId: string): string {
   return `${PIN_KEY_PREFIX}${userId}`;
 }
 
@@ -39,7 +46,7 @@ async function hashPin(pin: string, salt: string): Promise<string> {
 }
 
 export function getPinRecord(userId: string): PinRecord | null {
-  const raw = localStorage.getItem(storageKey(userId));
+  const raw = localStorage.getItem(pinStorageKey(userId));
 
   if (!raw) return null;
 
@@ -68,7 +75,7 @@ export async function savePin(userId: string, pin: string): Promise<void> {
   const salt = randomSalt();
   const hash = await hashPin(pin, salt);
 
-  localStorage.setItem(storageKey(userId), JSON.stringify({ salt, hash, attempts: 0 }));
+  localStorage.setItem(pinStorageKey(userId), JSON.stringify({ salt, hash, attempts: 0 }));
 }
 
 export async function verifyPin(pin: string, record: PinRecord): Promise<boolean> {
@@ -77,7 +84,7 @@ export async function verifyPin(pin: string, record: PinRecord): Promise<boolean
 }
 
 export function clearPin(userId: string): void {
-  localStorage.removeItem(storageKey(userId));
+  localStorage.removeItem(pinStorageKey(userId));
 }
 
 export function recordFailedAttempt(userId: string): number {
@@ -86,7 +93,7 @@ export function recordFailedAttempt(userId: string): number {
   if (!record) return 0;
 
   const attempts = record.attempts + 1;
-  localStorage.setItem(storageKey(userId), JSON.stringify({ ...record, attempts }));
+  localStorage.setItem(pinStorageKey(userId), JSON.stringify({ ...record, attempts }));
   return attempts;
 }
 
@@ -95,5 +102,5 @@ export function resetAttempts(userId: string): void {
 
   if (!record) return;
 
-  localStorage.setItem(storageKey(userId), JSON.stringify({ ...record, attempts: 0 }));
+  localStorage.setItem(pinStorageKey(userId), JSON.stringify({ ...record, attempts: 0 }));
 }

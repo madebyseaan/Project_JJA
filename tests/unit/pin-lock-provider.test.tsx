@@ -4,7 +4,16 @@ import { createMemoryRouter, RouterProvider } from 'react-router';
 import { beforeEach, expect, test, vi } from 'vitest';
 
 import type { AuthContextValue } from '@/features/auth/auth-context';
-import { getPinRecord, recordFailedAttempt, savePin } from '@/features/auth/pin';
+import {
+  clearPin,
+  getPinRecord,
+  PinExistsError,
+  pinStorageKey,
+  recordFailedAttempt,
+  savePin,
+  verifyPin,
+  type PinRecord,
+} from '@/features/auth/pin';
 import type { PinLockContextValue, UnlockResult } from '@/features/auth/pin-lock-context';
 import { PinLockProvider } from '@/features/auth/PinLockProvider';
 import { usePinLock } from '@/features/auth/use-pin-lock';
@@ -90,6 +99,62 @@ test('resets attempts after a correct PIN', async () => {
   expect(result?.ok).toBe(true);
   expect(getPinRecord(ownerProfile.id)?.attempts).toBe(0);
   await waitFor(() => expect(latest.current?.unlocked).toBe(true));
+});
+
+test('picks up a PIN set in another tab', async () => {
+  const { latest } = renderProvider();
+
+  await waitFor(() => expect(latest.current).not.toBeNull());
+  expect(latest.current?.hasPin).toBe(false);
+
+  await savePin(ownerProfile.id, '1234');
+
+  act(() => {
+    window.dispatchEvent(new StorageEvent('storage', { key: pinStorageKey(ownerProfile.id) }));
+  });
+
+  await waitFor(() => expect(latest.current?.hasPin).toBe(true));
+});
+
+test('refuses to overwrite a PIN set in another tab', async () => {
+  const { latest } = renderProvider();
+
+  await waitFor(() => expect(latest.current).not.toBeNull());
+
+  await savePin(ownerProfile.id, '1234');
+
+  await act(async () => {
+    await expect(latest.current?.setPin('0000')).rejects.toBeInstanceOf(PinExistsError);
+  });
+
+  const record = getPinRecord(ownerProfile.id) as PinRecord;
+
+  expect(record).not.toBeNull();
+  expect(await verifyPin('1234', record)).toBe(true);
+
+  await waitFor(() => expect(latest.current?.hasPin).toBe(true));
+  expect(latest.current?.unlocked).toBe(false);
+});
+
+test('signs out when the PIN is missing at unlock time', async () => {
+  await savePin(ownerProfile.id, '1234');
+
+  const signOut = vi.fn(async () => {});
+  const { latest } = renderProvider({ signOut });
+
+  await waitFor(() => expect(latest.current?.hasPin).toBe(true));
+
+  clearPin(ownerProfile.id);
+
+  let result: UnlockResult | undefined;
+
+  await act(async () => {
+    result = await latest.current?.unlock('1234');
+  });
+
+  expect(result).toEqual({ ok: false, attemptsLeft: 0, lockedOut: true });
+  expect(signOut).toHaveBeenCalledTimes(1);
+  await waitFor(() => expect(latest.current?.hasPin).toBe(false));
 });
 
 test('signs out after five wrong PINs', async () => {
