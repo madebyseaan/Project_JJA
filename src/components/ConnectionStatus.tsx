@@ -7,8 +7,7 @@ type ConnectionStatusProps = {
 
 export function ConnectionStatus({ online, className }: ConnectionStatusProps) {
   return (
-    <p
-      role="status"
+    <output
       aria-live="polite"
       className={cn('text-steel inline-flex items-center gap-1.5 text-xs font-semibold', className)}
     >
@@ -17,6 +16,6 @@ export function ConnectionStatus({ online, className }: ConnectionStatusProps) {
         className={cn('size-2 rounded-full', online ? 'bg-ok' : 'bg-danger')}
       />
       {online ? 'Online' : 'Offline'}
-    </p>
+    </output>
   );
 }

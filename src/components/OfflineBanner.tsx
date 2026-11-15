@@ -8,11 +8,8 @@ export function OfflineBanner({ online }: OfflineBannerProps) {
   }
 
   return (
-    <div
-      role="status"
-      className="border-danger/30 bg-danger/10 text-danger border-b px-4 py-2 text-center text-sm font-semibold"
-    >
+    <output className="border-danger/30 bg-danger/10 text-danger block border-b px-4 py-2 text-center text-sm font-semibold">
       You are offline. Changes are disabled until the connection returns.
-    </div>
+    </output>
   );
 }
