@@ -37,6 +37,20 @@ test('shows the shop capabilities and the Manila clock', () => {
   ).toBeGreaterThan(0);
 });
 
+test('toggles password visibility', async () => {
+  const user = userEvent.setup();
+  renderLogin(signedOutValue());
+
+  const password = screen.getByLabelText('Password');
+
+  expect(password).toHaveAttribute('type', 'password');
+
+  await user.click(screen.getByRole('button', { name: 'Show password' }));
+
+  expect(password).toHaveAttribute('type', 'text');
+  expect(screen.getByRole('button', { name: 'Hide password' })).toBeInTheDocument();
+});
+
 test('shows validation messages on an empty submit', async () => {
   const user = userEvent.setup();
   renderLogin(signedOutValue());
