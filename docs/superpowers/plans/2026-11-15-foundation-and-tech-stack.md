@@ -11,6 +11,8 @@
 **Spec:** `docs/spec.md`
 
 > **Delivery order:** `docs/roadmap.md` governs the step order and approval gates. This plan is the detailed reference for the foundation; its remaining tasks are folded into the roadmap steps.
+>
+> **Auth update:** staff use an employee ID mapped to a hidden internal email (`JJA-001` → `jja-001@staff.jja.internal`). Where this historical plan says “email,” read “employee ID” for the login experience.
 
 ## Global Constraints
 

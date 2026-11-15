@@ -5,8 +5,8 @@ import {
   EyeOff,
   Loader2,
   LockKeyhole,
-  Mail,
   Package,
+  UserRound,
   Receipt,
   Wrench,
 } from 'lucide-react';
@@ -38,7 +38,7 @@ export function LoginPage() {
     formState: { errors, isSubmitting },
   } = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { email: '', password: '' },
+    defaultValues: { employeeId: '', password: '' },
   });
 
   useEffect(() => {
@@ -55,7 +55,7 @@ export function LoginPage() {
     setFormError(null);
 
     try {
-      await signIn(values.email, values.password);
+      await signIn(values.employeeId, values.password);
     } catch (error) {
       if (error instanceof AppError) {
         setFormError(error.message);
@@ -148,7 +148,7 @@ export function LoginPage() {
               </span>
               <div>
                 <p className="text-sm font-semibold">Staff portal</p>
-                <p className="text-steel text-xs">Sign in with your shop account.</p>
+                <p className="text-steel text-xs">Sign in with your employee ID.</p>
               </div>
             </div>
 
@@ -159,28 +159,31 @@ export function LoginPage() {
 
             <form className="mt-6 space-y-5" onSubmit={onSubmit} noValidate>
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-base">
-                  Email
+                <Label htmlFor="employee-id" className="text-base">
+                  Employee ID
                 </Label>
                 <div className="relative">
-                  <Mail
+                  <UserRound
                     className="text-steel pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
                     aria-hidden="true"
                   />
                   <Input
-                    id="email"
-                    type="email"
-                    autoComplete="email"
-                    placeholder="you@example.com"
+                    id="employee-id"
+                    type="text"
+                    autoComplete="username"
+                    inputMode="text"
+                    autoCapitalize="characters"
+                    spellCheck={false}
+                    placeholder="JJA-001"
                     className="pl-10"
-                    aria-invalid={errors.email ? true : undefined}
-                    aria-describedby={errors.email ? 'email-error' : undefined}
-                    {...register('email')}
+                    aria-invalid={errors.employeeId ? true : undefined}
+                    aria-describedby={errors.employeeId ? 'employee-id-error' : undefined}
+                    {...register('employeeId')}
                   />
                 </div>
-                {errors.email?.message ? (
-                  <p id="email-error" className="text-danger text-sm">
-                    {errors.email.message}
+                {errors.employeeId?.message ? (
+                  <p id="employee-id-error" className="text-danger text-sm">
+                    {errors.employeeId.message}
                   </p>
                 ) : null}
               </div>

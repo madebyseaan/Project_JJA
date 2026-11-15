@@ -1,6 +1,8 @@
 import { config } from 'dotenv';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
+import { employeeIdToEmail } from '@/lib/staff-identity';
+
 config({ path: '.env.test.local' });
 
 type TestEnv = {
@@ -40,7 +42,7 @@ export function getAnonClient(): SupabaseClient {
 }
 
 type CreateStaffUserInput = {
-  email: string;
+  employeeId: string;
   password: string;
   displayName: string;
   role: 'owner' | 'mechanic';
@@ -48,13 +50,15 @@ type CreateStaffUserInput = {
 
 export async function createStaffUser(input: CreateStaffUserInput): Promise<{
   id: string;
+  employeeId: string;
   email: string;
   password: string;
 }> {
   const service = getServiceClient();
+  const email = employeeIdToEmail(input.employeeId);
 
   const { data, error } = await service.auth.admin.createUser({
-    email: input.email,
+    email,
     password: input.password,
     email_confirm: true,
     user_metadata: { display_name: input.displayName },
@@ -75,7 +79,12 @@ export async function createStaffUser(input: CreateStaffUserInput): Promise<{
     }
   }
 
-  return { id: data.user.id, email: input.email, password: input.password };
+  return {
+    id: data.user.id,
+    employeeId: input.employeeId,
+    email,
+    password: input.password,
+  };
 }
 
 export async function deleteUser(id: string): Promise<void> {

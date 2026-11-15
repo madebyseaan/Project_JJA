@@ -4,7 +4,7 @@ import type { AuthState } from '@/types/domain';
 
 export type AuthContextValue = AuthState & {
   error: string | null;
-  signIn: (email: string, password: string) => Promise<void>;
+  signIn: (employeeId: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 };

@@ -15,6 +15,7 @@ test('shows the signed-in staff name and role', () => {
 
   expect(screen.getByRole('heading', { name: 'Dad' })).toBeInTheDocument();
   expect(screen.getByText('Owner')).toBeInTheDocument();
+  expect(screen.getByText('JJA-001')).toBeInTheDocument();
 });
 
 test('signs out from the header', async () => {

@@ -34,9 +34,12 @@ export function StaffHomePage() {
         <h1 className="font-display mt-1 text-4xl font-bold tracking-tight">
           {profile.displayName}
         </h1>
-        <span className="border-line bg-soft mt-3 inline-flex border px-2.5 py-1 text-xs font-semibold">
-          {roleLabel}
-        </span>
+        <div className="mt-3 flex items-center gap-3">
+          <span className="border-line bg-soft inline-flex border px-2.5 py-1 text-xs font-semibold">
+            {roleLabel}
+          </span>
+          <span className="text-steel font-mono text-xs">{profile.employeeId}</span>
+        </div>
         <p className="text-ink-soft mt-6 max-w-md">
           The bay, inventory, and receipts arrive in the next steps. This screen proves the login
           and role.

@@ -147,11 +147,12 @@ The secret is stored in `private.app_secrets` and backed up in GitHub Actions. R
 
 ## 9. Add or change staff
 
-1. Create the user in Supabase Auth (email + password, email confirmed).
-2. The `profiles` trigger creates a `mechanic` profile.
-3. Set the role to `owner` or `mechanic` deliberately.
-4. Ask the user to sign in, set a PIN, and install the PWA.
-5. Test the role: a mechanic must not see owner routes or be able to call owner functions.
+1. Choose an employee ID, e.g. `JJA-003`.
+2. Create the user in Supabase Auth with the hidden email `<employee-id>@staff.jja.internal` (lowercase), a password, and **Auto Confirm User** on. The address is never used for mail.
+3. The `profiles` trigger creates a `mechanic` profile with the employee ID.
+4. Set `display_name` and, if needed, role to `owner` or `mechanic` deliberately.
+5. Ask the user to sign in with the employee ID, set a PIN, and install the PWA.
+6. Test the role: a mechanic must not see owner routes or be able to call owner functions.
 
 ---
 

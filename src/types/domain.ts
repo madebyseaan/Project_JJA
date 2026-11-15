@@ -2,6 +2,7 @@ export type Role = 'owner' | 'mechanic';
 
 export type Profile = {
   id: string;
+  employeeId: string;
   displayName: string;
   role: Role;
 };

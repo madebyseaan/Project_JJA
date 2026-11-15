@@ -57,35 +57,35 @@ test('shows validation messages on an empty submit', async () => {
 
   await user.click(screen.getByRole('button', { name: 'Sign in' }));
 
-  expect(await screen.findByText('Enter your email address.')).toBeInTheDocument();
+  expect(await screen.findByText('Enter your employee ID.')).toBeInTheDocument();
   expect(await screen.findByText('Enter your password.')).toBeInTheDocument();
 });
 
-test('rejects an invalid email', async () => {
+test('rejects an invalid employee ID', async () => {
   const user = userEvent.setup();
   renderLogin(signedOutValue());
 
-  await user.type(screen.getByLabelText('Email'), 'not-an-email');
+  await user.type(screen.getByLabelText('Employee ID'), 'not an id');
   await user.type(screen.getByLabelText('Password'), 'secret');
   await user.click(screen.getByRole('button', { name: 'Sign in' }));
 
-  expect(await screen.findByText('Enter a valid email address.')).toBeInTheDocument();
+  expect(await screen.findByText('Enter a valid employee ID (e.g., JJA-001).')).toBeInTheDocument();
 });
 
 test('shows the credentials error from the provider', async () => {
   const user = userEvent.setup();
   const value = signedOutValue();
   value.signIn = vi.fn(async () => {
-    throw new AppError('AUTH_INVALID', 'The email or password is incorrect.');
+    throw new AppError('AUTH_INVALID', 'The employee ID or password is incorrect.');
   });
 
   renderLogin(value);
 
-  await user.type(screen.getByLabelText('Email'), 'dad@example.com');
+  await user.type(screen.getByLabelText('Employee ID'), 'JJA-001');
   await user.type(screen.getByLabelText('Password'), 'wrong-password');
   await user.click(screen.getByRole('button', { name: 'Sign in' }));
 
-  expect(await screen.findByText('The email or password is incorrect.')).toBeInTheDocument();
+  expect(await screen.findByText('The employee ID or password is incorrect.')).toBeInTheDocument();
 });
 
 test('calls signIn with the entered values', async () => {
@@ -96,11 +96,11 @@ test('calls signIn with the entered values', async () => {
 
   renderLogin(value);
 
-  await user.type(screen.getByLabelText('Email'), 'dad@example.com');
+  await user.type(screen.getByLabelText('Employee ID'), 'JJA-001');
   await user.type(screen.getByLabelText('Password'), 'secret');
   await user.click(screen.getByRole('button', { name: 'Sign in' }));
 
   await waitFor(() => {
-    expect(signIn).toHaveBeenCalledWith('dad@example.com', 'secret');
+    expect(signIn).toHaveBeenCalledWith('JJA-001', 'secret');
   });
 });

@@ -7,6 +7,7 @@ grant usage on schema private to authenticated;
 
 create table public.profiles (
   id uuid primary key references auth.users (id) on delete cascade,
+  employee_id text not null unique check (employee_id ~ '^[A-Z0-9-]{2,20}$'),
   display_name text not null check (char_length(trim(display_name)) between 1 and 80),
   role text not null default 'mechanic' check (role in ('owner', 'mechanic')),
   created_at timestamptz not null default now(),
@@ -14,6 +15,7 @@ create table public.profiles (
 );
 
 comment on table public.profiles is 'Staff identity for the shop app.';
+comment on column public.profiles.employee_id is 'Staff login ID. The hidden auth email is derived from it.';
 comment on column public.profiles.role is 'owner manages the shop; mechanic works the bay.';
 
 alter table public.profiles enable row level security;
@@ -70,13 +72,14 @@ security definer
 set search_path = ''
 as $$
 begin
-  insert into public.profiles (id, display_name)
+  insert into public.profiles (id, employee_id, display_name)
   values (
     new.id,
+    upper(split_part(coalesce(new.email, ''), '@', 1)),
     left(
       coalesce(
         nullif(trim(new.raw_user_meta_data ->> 'display_name'), ''),
-        nullif(split_part(coalesce(new.email, ''), '@', 1), ''),
+        nullif(upper(split_part(coalesce(new.email, ''), '@', 1)), ''),
         'Staff'
       ),
       80

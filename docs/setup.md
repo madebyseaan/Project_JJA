@@ -69,35 +69,45 @@ If you change the schema later, always create a migration. Never edit the databa
 
 Do this **after** the migration is applied, so the trigger creates a profile.
 
+Staff log in with an **employee ID**, not an email. Supabase Auth still needs a login handle, so each account uses a hidden internal email that is never shown or used for mail:
+
+| Staff | Employee ID | Hidden auth email |
+|---|---|---|
+| Dad | `JJA-001` | `jja-001@staff.jja.internal` |
+| Uncle | `JJA-002` | `jja-002@staff.jja.internal` |
+
 1. **Authentication → Users → Add user**.
-2. Dad: a real email and a strong password. Enable **Auto Confirm User**.
-3. Uncle: a different email and password. Enable **Auto Confirm User**.
-4. Dad's profile is created as `mechanic`; promote it to `owner` in the SQL editor:
+2. Dad: email `jja-001@staff.jja.internal`, a strong password, **Auto Confirm User** on.
+3. Uncle: email `jja-002@staff.jja.internal`, a different password, **Auto Confirm User** on.
+4. Set the display names and role in the SQL editor:
 
 ```sql
 update public.profiles
-set role = 'owner'
-where id = (
-  select id
-  from auth.users
-  where email = 'dad@example.com'
-);
+set display_name = 'Dad', role = 'owner'
+where employee_id = 'JJA-001';
+
+update public.profiles
+set display_name = 'Uncle'
+where employee_id = 'JJA-002';
 ```
 
-Replace the email with Dad's real address.
+The trigger sets `employee_id` from the part before `@` in the auth email. The prefix must match the login ID in lowercase. If you add more staff later, use the same pattern: `jja-003@staff.jja.internal` and log in with `JJA-003`.
+
+The internal address never receives mail. Password resets are done by the owner from the Supabase dashboard.
 
 If the users already existed before the migration, backfill their profiles first:
 
 ```sql
-insert into public.profiles (id, display_name)
+insert into public.profiles (id, employee_id, display_name)
 select
   id,
-  coalesce(split_part(email, '@', 1), 'Staff')
+  upper(split_part(email, '@', 1)),
+  coalesce(upper(split_part(email, '@', 1)), 'Staff')
 from auth.users
 on conflict (id) do nothing;
 ```
 
-Then promote Dad.
+Then set the display names and role with the update statements above.
 
 ---
 
@@ -127,10 +137,10 @@ Never point these variables at production.
 
 1. Start the app: `npm run dev`.
 2. Open `/login`.
-3. Sign in as Dad. The temporary staff home should show **Dad** and **Owner**.
+3. Sign in with **JJA-001** and Dad's password. The temporary staff home should show **Dad**, `JJA-001`, and **Owner**.
 4. Refresh. The session should survive.
-5. Sign out, then sign in as Uncle. The staff home should show **Uncle** and **Mechanic**.
-6. Try a wrong password. The message should be clear and must not reveal whether the email exists.
+5. Sign out, then sign in with **JJA-002** and Uncle's password. The staff home should show **Uncle**, `JJA-002`, and **Mechanic**.
+6. Try a wrong password. The message should be clear and must not reveal whether the employee ID exists.
 
 ---
 
@@ -140,6 +150,6 @@ Never point these variables at production.
 |---|---|
 | “Almost ready” setup screen | `.env.local` is missing a variable; restart Vite after editing |
 | “No staff profile” | The user was created before the migration, or the profile row is missing |
-| Login says invalid credentials | Wrong password, unconfirmed email, or the user does not exist |
+| Login says invalid credentials | Wrong employee ID or password, unconfirmed user, or the account does not exist |
 | `db:push` asks for a password | Use the database password saved at project creation |
 | Database tests fail immediately | `.env.test.local` is missing or the migration was not pushed |

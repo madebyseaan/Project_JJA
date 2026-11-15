@@ -91,13 +91,13 @@ Status: **Design approved; setup pending.** Sean approved the login design. The 
 
 ## Step 01 — Login and staff identity
 
-**Goal:** A staff member can sign in with email and password, the app knows their name and role, and the session survives a refresh. No PIN, no app shell, and no shop data yet.
+**Goal:** A staff member can sign in with an employee ID and password, the app knows their name and role, and the session survives a refresh. No PIN, no app shell, and no shop data yet.
 
 **Why this is first:** every later screen depends on knowing who is signed in and whether they are the owner or the mechanic.
 
 ### AI builds
 
-- [x] A `profiles` table with `id`, `display_name`, `role` (`owner` or `mechanic`), and timestamps.
+- [x] A `profiles` table with `id`, `employee_id`, `display_name`, `role` (`owner` or `mechanic`), and timestamps.
 - [x] A trigger that creates a profile when a Supabase auth user is created.
 - [x] RLS helpers `private.is_staff()` and `private.is_owner()`.
 - [x] Read policies: staff can read profiles; roles are not editable from the client in this step.
@@ -105,7 +105,7 @@ Status: **Design approved; setup pending.** Sean approved the login design. The 
 - [x] A clear setup screen if the environment variables are missing.
 - [x] `src/types/domain.ts` with `Role`, `Profile`, and `AuthState`.
 - [x] `AuthProvider` and `useAuth`: session listener, profile fetch, sign in, sign out, loading.
-- [x] `/login`: email, password, validation, pending state, wrong-password error, unknown-email error, missing-profile error.
+- [x] `/login`: employee ID, password, validation, pending state, wrong-password error, unknown-ID error, missing-profile error.
 - [x] A temporary post-login screen that shows the staff name, role, and a sign-out button. The real shell comes in Step 03.
 - [x] Session persistence across refresh.
 - [x] Unit tests for the login form, auth provider, and setup screen.
@@ -116,26 +116,26 @@ Status: **Design approved; setup pending.** Sean approved the login design. The 
 ### Setup needed before the demo
 
 - [ ] Apply the migration: `npm run db:push`.
-- [ ] Create Dad and Uncle in Supabase Auth; confirm their emails.
-- [ ] Promote Dad to `owner` with the SQL in `docs/setup.md`.
+- [ ] Create Dad (`JJA-001`) and Uncle (`JJA-002`) in Supabase Auth using the synthetic staff emails; confirm them.
+- [ ] Set Dad to `owner` and set both display names with the SQL in `docs/setup.md`.
 - [ ] Put the staging keys in `.env.test.local` and run `npm run test:db`.
 - [ ] Run `npm run dev` and follow the demo script below.
 
 ### Human checkpoints
 
-- [ ] Create the two auth users in the Supabase dashboard: Dad (owner) and Uncle (mechanic).
-- [ ] Confirm both emails; keep the passwords private.
+- [ ] Create the two auth users in the Supabase dashboard: Dad (`JJA-001`, owner) and Uncle (`JJA-002`, mechanic), using the synthetic staff emails.
+- [ ] Confirm both users; keep the passwords private. Staff only type the employee ID.
 - [ ] Provide the staging project ref for migrations, and the test keys in `.env.test.local` (never in chat).
 - [ ] Approve the login visual direction after the first demo.
 
 ### Acceptance criteria
 
-- [ ] Dad signs in and sees `Owner`.
-- [ ] Uncle signs in and sees `Mechanic`.
+- [ ] Dad signs in with `JJA-001` and sees `Dad` and `Owner`.
+- [ ] Uncle signs in with `JJA-002` and sees `Uncle` and `Mechanic`.
 - [ ] Refreshing the page keeps the session.
 - [ ] Signing out returns to `/login`.
 - [ ] A wrong password shows a clear, human message.
-- [ ] An unknown email shows the same generic message (no account enumeration).
+- [ ] An unknown employee ID shows the same generic message (no account enumeration).
 - [ ] A missing profile signs the user out with a clear explanation.
 - [ ] Missing environment variables show the setup screen, not a blank page.
 - [ ] The page works at 360px and on desktop.
@@ -145,11 +145,11 @@ Status: **Design approved; setup pending.** Sean approved the login design. The 
 ### Demo script
 
 1. Open `/login` on a phone-sized window and on desktop.
-2. Sign in as Dad. Confirm the name and `Owner` role.
+2. Sign in with `JJA-001` and Dad's password. Confirm `Dad` and `Owner`.
 3. Refresh. Confirm the session survives.
 4. Sign out. Confirm the return to `/login`.
-5. Sign in as Uncle. Confirm `Mechanic`.
-6. Enter a wrong password. Confirm the error is clear and does not reveal whether the email exists.
+5. Sign in with `JJA-002` and Uncle's password. Confirm `Uncle` and `Mechanic`.
+6. Enter a wrong password. Confirm the error is clear and does not reveal whether the employee ID exists.
 7. Temporarily remove an environment variable. Confirm the setup screen appears and names the missing variable.
 
 **GATE:** Do not start Step 02 until Sean has tested this, requested any polish, and said **approved**.

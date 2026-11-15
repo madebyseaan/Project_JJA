@@ -6,12 +6,14 @@ import type { Profile } from '@/types/domain';
 
 export const ownerProfile: Profile = {
   id: 'user-owner',
+  employeeId: 'JJA-001',
   displayName: 'Dad',
   role: 'owner',
 };
 
 export const mechanicProfile: Profile = {
   id: 'user-mechanic',
+  employeeId: 'JJA-002',
   displayName: 'Uncle',
   role: 'mechanic',
 };

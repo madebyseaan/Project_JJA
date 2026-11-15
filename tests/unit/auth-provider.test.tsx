@@ -5,11 +5,11 @@ import { expect, test, vi } from 'vitest';
 
 import { AuthProvider } from '@/features/auth/AuthProvider';
 import { useAuth } from '@/features/auth/use-auth';
-import { AppError } from '@/lib/errors';
 import type { Role } from '@/types/domain';
 
 type ProfileRow = {
   id: string;
+  employee_id: string;
   display_name: string;
   role: Role;
 };
@@ -57,7 +57,12 @@ function wrapperFor(client: SupabaseClient) {
 test('loads the profile for an existing session', async () => {
   const { client } = createMockClient({
     session: { user: { id: 'user-1' } },
-    profile: { id: 'user-1', display_name: 'Dad', role: 'owner' },
+    profile: {
+      id: 'user-1',
+      employee_id: 'JJA-001',
+      display_name: 'Dad',
+      role: 'owner',
+    },
   });
 
   const { result } = renderHook(() => useAuth(), { wrapper: wrapperFor(client) });
@@ -68,6 +73,7 @@ test('loads the profile for an existing session', async () => {
 
   expect(result.current.profile).toEqual({
     id: 'user-1',
+    employeeId: 'JJA-001',
     displayName: 'Dad',
     role: 'owner',
   });
@@ -100,7 +106,7 @@ test('signs out when the auth user has no profile', async () => {
 });
 
 test('maps invalid credentials to a clear error', async () => {
-  const { client } = createMockClient({
+  const { client, signInWithPassword } = createMockClient({
     signInError: { message: 'Invalid login credentials', status: 400 },
   });
 
@@ -111,16 +117,27 @@ test('maps invalid credentials to a clear error', async () => {
   });
 
   await act(async () => {
-    await expect(result.current.signIn('dad@example.com', 'wrong')).rejects.toBeInstanceOf(
-      AppError,
-    );
+    await expect(result.current.signIn('JJA-001', 'wrong')).rejects.toMatchObject({
+      code: 'AUTH_INVALID',
+      message: 'The employee ID or password is incorrect.',
+    });
+  });
+
+  expect(signInWithPassword).toHaveBeenCalledWith({
+    email: 'jja-001@staff.jja.internal',
+    password: 'wrong',
   });
 });
 
 test('clears the profile on sign out', async () => {
   const { client } = createMockClient({
     session: { user: { id: 'user-1' } },
-    profile: { id: 'user-1', display_name: 'Dad', role: 'owner' },
+    profile: {
+      id: 'user-1',
+      employee_id: 'JJA-001',
+      display_name: 'Dad',
+      role: 'owner',
+    },
   });
 
   const { result } = renderHook(() => useAuth(), { wrapper: wrapperFor(client) });

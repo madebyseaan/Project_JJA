@@ -169,7 +169,7 @@ A completed sale can be voided in full when it was a genuine mistake or a full r
 
 | Route | Access | Purpose |
 |---|---|---|
-| `/login` | Public | Staff email/password sign-in |
+| `/login` | Public | Staff employee ID/password sign-in |
 | `/lock` | Staff | PIN screen lock; unlock or sign out |
 | `/bay` | Staff | Live queue, new ticket, ticket search |
 | `/bay/ticket/:id` | Staff | Ticket detail: items, labor, payments, verification, status, complete |
@@ -232,7 +232,7 @@ No Next.js, no OpenNext, no Serwist, no `jose`, no Prisma, no Fastify.
                ▼
 ┌──────────────────────────────┐
 │  Supabase Free               │
-│  - Auth (email/password)     │
+│  - Auth (employee ID)        │
 │  - PostgREST + RLS           │
 │  - PostgreSQL functions      │
 │  - Realtime (staff)          │
@@ -289,12 +289,13 @@ Static files: Cloudflare Workers static assets
 | Column | Type | Notes |
 |---|---|---|
 | `id` | `uuid` PK | References `auth.users(id)` on delete cascade |
+| `employee_id` | `text` unique not null | Login ID, e.g. `JJA-001`; derived from the auth email prefix |
 | `display_name` | `text` not null | Shown in the UI and audit log |
 | `role` | `text` not null | `owner` or `mechanic` |
 | `created_at` | `timestamptz` not null | |
 | `updated_at` | `timestamptz` not null | |
 
-A trigger creates a profile when an auth user is created. The default role is `mechanic`; the owner role is assigned deliberately.
+A trigger creates a profile when an auth user is created. It sets `employee_id` from the part of the auth email before `@` (uppercased) and takes the display name from user metadata. The default role is `mechanic`; the owner role is assigned deliberately.
 
 ### 10.3 `public.parts`
 
@@ -649,10 +650,11 @@ Each entry stores actor, action, entity, before/after, and timestamp. The audit 
 
 ### 13.1 Staff accounts
 
-- Supabase Auth, email + password.
-- Public sign-ups disabled. Two accounts created manually.
-- A trigger creates a `profiles` row; the owner role is assigned deliberately.
-- Password reset uses Supabase email. For two users, a manual dashboard reset is an acceptable fallback.
+- Staff log in with an **employee ID** and password, e.g. `JJA-001`.
+- Supabase Auth uses a hidden internal email derived from the ID: `JJA-001` → `jja-001@staff.jja.internal`. The staff never see or type the email; the internal address never receives mail.
+- Public sign-ups disabled. Two accounts created manually, auto-confirmed.
+- A trigger creates a `profiles` row with `employee_id`, display name, and the default `mechanic` role. The owner role is assigned deliberately.
+- Password resets are done by the owner in the Supabase dashboard. There is no self-service email reset because the internal address is not a mailbox.
 
 ### 13.2 PIN lock
 

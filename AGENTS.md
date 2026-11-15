@@ -286,7 +286,7 @@ VITE_SUPABASE_ANON_KEY=
 
 ## 11. Auth, roles, and security
 
-- Supabase Auth email/password. Public sign-ups disabled. Two accounts: owner and mechanic.
+- Supabase Auth with a hidden internal email derived from the employee ID (`JJA-001` → `jja-001@staff.jja.internal`). Staff log in with the employee ID + password; they never see or type the email. Public sign-ups disabled. Two accounts: owner and mechanic.
 - `profiles.role` is `owner` or `mechanic`. `private.is_staff()` and `private.is_owner()` are security-definer helpers used by RLS.
 - The PIN is local, hashed with salted SHA-256 in `localStorage`. It is a screen lock, not identity. Never send it to the server.
 - Lock after 5 minutes idle; five bad attempts force a full sign-out.

@@ -6,6 +6,7 @@ const password = 'test-password-123';
 
 type TestUser = {
   id: string;
+  employeeId: string;
   email: string;
   password: string;
 };
@@ -17,14 +18,14 @@ beforeAll(async () => {
   const stamp = Date.now();
 
   dad = await createStaffUser({
-    email: `dad-${stamp}@example.com`,
+    employeeId: `JJA-D${stamp}`,
     password,
     displayName: 'Dad Test',
     role: 'owner',
   });
 
   uncle = await createStaffUser({
-    email: `uncle-${stamp}@example.com`,
+    employeeId: `JJA-U${stamp}`,
     password,
     displayName: 'Uncle Test',
     role: 'mechanic',
@@ -40,13 +41,14 @@ describe('profiles', () => {
   it('creates a profile from the auth user and keeps the default mechanic role', async () => {
     const { data, error } = await getServiceClient()
       .from('profiles')
-      .select('id, display_name, role')
+      .select('id, employee_id, display_name, role')
       .eq('id', uncle.id)
       .single();
 
     expect(error).toBeNull();
     expect(data).toMatchObject({
       id: uncle.id,
+      employee_id: uncle.employeeId,
       display_name: 'Uncle Test',
       role: 'mechanic',
     });

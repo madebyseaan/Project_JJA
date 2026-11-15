@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { AppError } from '@/lib/errors';
+import { employeeIdToEmail } from '@/lib/staff-identity';
 import { getSupabaseClient } from '@/lib/supabase';
 import type { AuthState, Profile, Role } from '@/types/domain';
 
@@ -10,6 +11,7 @@ import { AuthContext, type AuthContextValue } from './auth-context';
 
 type ProfileRow = {
   id: string;
+  employee_id: string;
   display_name: string;
   role: Role;
 };
@@ -17,6 +19,7 @@ type ProfileRow = {
 function toProfile(row: ProfileRow): Profile {
   return {
     id: row.id,
+    employeeId: row.employee_id,
     displayName: row.display_name,
     role: row.role,
   };
@@ -37,7 +40,7 @@ export function AuthProvider({ children, client }: AuthProviderProps) {
     async (userId: string) => {
       const { data, error: profileError } = await supabase
         .from('profiles')
-        .select('id, display_name, role')
+        .select('id, employee_id, display_name, role')
         .eq('id', userId)
         .maybeSingle();
 
@@ -110,11 +113,11 @@ export function AuthProvider({ children, client }: AuthProviderProps) {
   }, [supabase, loadProfile]);
 
   const signIn = useCallback(
-    async (email: string, password: string) => {
+    async (employeeId: string, password: string) => {
       setError(null);
 
       const { error: signInError } = await supabase.auth.signInWithPassword({
-        email,
+        email: employeeIdToEmail(employeeId),
         password,
       });
 
@@ -123,7 +126,7 @@ export function AuthProvider({ children, client }: AuthProviderProps) {
       const message = signInError.message.toLowerCase();
 
       if (message.includes('invalid login') || message.includes('invalid credentials')) {
-        throw new AppError('AUTH_INVALID', 'The email or password is incorrect.');
+        throw new AppError('AUTH_INVALID', 'The employee ID or password is incorrect.');
       }
 
       if (signInError.status === 429 || message.includes('rate limit')) {
