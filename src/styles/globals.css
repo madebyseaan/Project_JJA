@@ -1,5 +1,8 @@
 @import 'tailwindcss';
 
+/* The app is light-only. Scope `dark:` to an explicit class so the OS setting cannot tint inputs. */
+@custom-variant dark (&:is(.dark *));
+
 @theme {
   --color-paper: #f1f2ee;
   --color-surface: #ffffff;

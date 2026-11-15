@@ -51,7 +51,7 @@ A step is not done until all of these are true:
 | # | Step | Status |
 |---|---|---|
 | 00 | Foundation: repo, stack, design system, Supabase connection, skills | Done |
-| 01 | **Login and staff identity** | **Next** |
+| 01 | **Login and staff identity** | **In review — setup pending** |
 | 02 | PIN lock and idle lock | Waiting |
 | 03 | App shell and navigation | Waiting |
 | 04 | Inventory and stock | Waiting |
@@ -67,7 +67,7 @@ A step is not done until all of these are true:
 ## 4. Current step
 
 **Step 01 — Login and staff identity.**
-Status: **not started.** Do not begin Step 02 until Sean approves Step 01.
+Status: **In review.** The code and tests are in place. The demo waits for the Supabase migration, the two staff accounts, and Sean's polish pass. Do not begin Step 02 until Sean approves Step 01.
 
 ---
 
@@ -97,21 +97,29 @@ Status: **not started.** Do not begin Step 02 until Sean approves Step 01.
 
 ### AI builds
 
-- [ ] A `profiles` table with `id`, `display_name`, `role` (`owner` or `mechanic`), and timestamps.
-- [ ] A trigger that creates a profile when a Supabase auth user is created.
-- [ ] RLS helpers `private.is_staff()` and `private.is_owner()`.
-- [ ] Read policies: staff can read profiles; roles are not editable from the client in this step.
-- [ ] `src/lib/supabase.ts`: browser client from `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`.
-- [ ] A clear setup screen if the environment variables are missing.
-- [ ] `src/types/domain.ts` with `Role`, `Profile`, and `AuthState`.
-- [ ] `AuthProvider` and `useAuth`: session listener, profile fetch, sign in, sign out, loading.
-- [ ] `/login`: email, password, validation, pending state, wrong-password error, unknown-email error, missing-profile error.
-- [ ] A temporary post-login screen that shows the staff name, role, and a sign-out button. The real shell comes in Step 03.
-- [ ] Session persistence across refresh.
-- [ ] Unit tests for the login form, auth provider, and setup screen.
-- [ ] Database tests for the profile trigger, roles, and RLS.
-- [ ] A GitHub Actions verify workflow: typecheck, lint, format, file size, unit tests, build.
-- [ ] A short implementation plan in `docs/superpowers/plans/` before coding.
+- [x] A `profiles` table with `id`, `display_name`, `role` (`owner` or `mechanic`), and timestamps.
+- [x] A trigger that creates a profile when a Supabase auth user is created.
+- [x] RLS helpers `private.is_staff()` and `private.is_owner()`.
+- [x] Read policies: staff can read profiles; roles are not editable from the client in this step.
+- [x] `src/lib/supabase.ts`: browser client from `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`.
+- [x] A clear setup screen if the environment variables are missing.
+- [x] `src/types/domain.ts` with `Role`, `Profile`, and `AuthState`.
+- [x] `AuthProvider` and `useAuth`: session listener, profile fetch, sign in, sign out, loading.
+- [x] `/login`: email, password, validation, pending state, wrong-password error, unknown-email error, missing-profile error.
+- [x] A temporary post-login screen that shows the staff name, role, and a sign-out button. The real shell comes in Step 03.
+- [x] Session persistence across refresh.
+- [x] Unit tests for the login form, auth provider, and setup screen.
+- [x] Database tests for the profile trigger, roles, and RLS (written; run after setup).
+- [x] A GitHub Actions verify workflow: typecheck, lint, format, file size, unit tests, build.
+- [x] A short implementation plan in `docs/superpowers/plans/`.
+
+### Setup needed before the demo
+
+- [ ] Apply the migration: `npm run db:push`.
+- [ ] Create Dad and Uncle in Supabase Auth; confirm their emails.
+- [ ] Promote Dad to `owner` with the SQL in `docs/setup.md`.
+- [ ] Put the staging keys in `.env.test.local` and run `npm run test:db`.
+- [ ] Run `npm run dev` and follow the demo script below.
 
 ### Human checkpoints
 

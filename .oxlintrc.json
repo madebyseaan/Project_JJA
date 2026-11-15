@@ -15,6 +15,18 @@
         "react/only-export-components": "off",
         "jsx-a11y/label-has-associated-control": "off"
       }
+    },
+    {
+      "files": ["tests/**/*.{ts,tsx}"],
+      "rules": {
+        "react/only-export-components": "off"
+      }
+    },
+    {
+      "files": ["src/components/FullPageLoading.tsx"],
+      "rules": {
+        "jsx-a11y/prefer-tag-over-role": "off"
+      }
     }
   ]
 }

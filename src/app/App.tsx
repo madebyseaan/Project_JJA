@@ -1,13 +1,35 @@
-import { BrandMark } from '@/components/BrandMark';
+import { RouterProvider } from 'react-router';
+
+import { Toaster } from '@/components/ui/sonner';
+import { AuthProvider } from '@/features/auth/AuthProvider';
+import { SetupRequiredPage } from '@/features/auth/SetupRequiredPage';
+import { isSupabaseConfigured } from '@/lib/supabase';
+
+import { router } from './router';
+
+function missingVariables(): string[] {
+  const missing: string[] = [];
+
+  if (!import.meta.env.VITE_SUPABASE_URL) {
+    missing.push('VITE_SUPABASE_URL');
+  }
+
+  if (!import.meta.env.VITE_SUPABASE_ANON_KEY) {
+    missing.push('VITE_SUPABASE_ANON_KEY');
+  }
+
+  return missing;
+}
 
 export function App() {
+  if (!isSupabaseConfigured) {
+    return <SetupRequiredPage missing={missingVariables()} />;
+  }
+
   return (
-    <main className="bg-paper text-ink min-h-screen px-6 py-10">
-      <div className="mx-auto flex max-w-xl flex-col gap-4">
-        <BrandMark className="size-12" title="Motor Works" />
-        <h1 className="font-display text-4xl font-bold tracking-tight">Motor Works POS</h1>
-        <p className="text-ink-soft text-base">Shop operations, built for the bay.</p>
-      </div>
-    </main>
+    <AuthProvider>
+      <RouterProvider router={router} />
+      <Toaster />
+    </AuthProvider>
   );
 }
