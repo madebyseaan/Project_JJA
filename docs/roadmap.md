@@ -51,7 +51,7 @@ A step is not done until all of these are true:
 | # | Step | Status |
 |---|---|---|
 | 00 | Foundation: repo, stack, design system, Supabase connection, skills | Done |
-| 01 | **Login and staff identity** | **Design approved — setup pending** |
+| 01 | **Login and staff identity** | **Setup complete — login check pending** |
 | 02 | PIN lock and idle lock | Waiting |
 | 03 | App shell and navigation | Waiting |
 | 04 | Inventory and stock | Waiting |
@@ -67,7 +67,7 @@ A step is not done until all of these are true:
 ## 4. Current step
 
 **Step 01 — Login and staff identity.**
-Status: **Design approved; setup pending.** Sean approved the login design. The remaining work is the Supabase migration, the two staff accounts, and a real sign-in. Do not begin Step 02 until the setup and a real sign-in are confirmed.
+Status: **Setup complete; login check pending.** The migration is applied and the profiles are ready: `JJA-001` Dad (owner), `JJA-002` Uncle (mechanic). The remaining check is a real sign-in. The database test keys can be added later in `.env.test.local`. Do not begin Step 02 until the sign-in is confirmed.
 
 ---
 
@@ -115,11 +115,11 @@ Status: **Design approved; setup pending.** Sean approved the login design. The 
 
 ### Setup needed before the demo
 
-- [ ] Apply the migration: `npm run db:push`.
-- [ ] Create Dad (`JJA-001`) and Uncle (`JJA-002`) in Supabase Auth using the synthetic staff emails; confirm them.
-- [ ] Set Dad to `owner` and set both display names with the SQL in `docs/setup.md`.
+- [x] Apply the migration.
+- [x] Create Dad (`JJA-001`) and Uncle (`JJA-002`) in Supabase Auth using the synthetic staff emails.
+- [x] Set Dad to `owner` and set both display names.
 - [ ] Put the staging keys in `.env.test.local` and run `npm run test:db`.
-- [ ] Run `npm run dev` and follow the demo script below.
+- [ ] Sign in with `JJA-001` and confirm the demo script below.
 
 ### Human checkpoints
 
