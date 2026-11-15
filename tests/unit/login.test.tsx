@@ -25,6 +25,15 @@ function renderLogin(value: AuthContextValue) {
   );
 }
 
+test('shows the shop capabilities and the Manila clock', () => {
+  renderLogin(signedOutValue());
+
+  expect(screen.getByText('Bay')).toBeInTheDocument();
+  expect(screen.getByText('Stock')).toBeInTheDocument();
+  expect(screen.getByText('Receipts')).toBeInTheDocument();
+  expect(screen.getAllByText(/Manila/).length).toBeGreaterThan(0);
+});
+
 test('shows validation messages on an empty submit', async () => {
   const user = userEvent.setup();
   renderLogin(signedOutValue());

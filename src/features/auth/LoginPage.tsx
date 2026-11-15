@@ -1,4 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Package, Receipt, Wrench } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router';
@@ -8,6 +9,7 @@ import { FullPageLoading } from '@/components/FullPageLoading';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useManilaClock } from '@/hooks/use-manila-clock';
 import { AppError } from '@/lib/errors';
 
 import { loginSchema, type LoginValues } from './schemas';
@@ -16,6 +18,7 @@ import { useAuth } from './use-auth';
 export function LoginPage() {
   const { status, signIn, error: authError } = useAuth();
   const navigate = useNavigate();
+  const manilaTime = useManilaClock();
   const [formError, setFormError] = useState<string | null>(null);
 
   const {
@@ -56,8 +59,10 @@ export function LoginPage() {
 
   return (
     <main className="bg-paper min-h-screen md:grid md:grid-cols-[1.05fr_0.95fr]">
-      <section className="bg-ink text-paper hidden p-8 md:flex xl:p-12">
-        <div className="mx-auto grid h-full w-full max-w-[40rem] grid-rows-[auto_1fr_auto]">
+      <section className="bg-ink text-paper relative hidden overflow-hidden p-8 md:flex xl:p-12">
+        <div aria-hidden="true" className="blueprint-grid pointer-events-none absolute inset-0" />
+
+        <div className="relative mx-auto grid h-full w-full max-w-[40rem] grid-rows-[auto_1fr_auto]">
           <BrandMark className="text-paper size-12 xl:size-14" title="Motor Works" />
 
           <div className="flex flex-col justify-center py-10">
@@ -65,7 +70,7 @@ export function LoginPage() {
               Staff access
             </p>
             <h1 className="font-display text-paper text-[clamp(3.25rem,6vw,7rem)] leading-[0.9] font-bold tracking-tight">
-              The bay,
+              <span className="bg-safety text-ink inline-block px-2 py-0.5">The bay,</span>
               <br />
               in order.
             </h1>
@@ -73,17 +78,38 @@ export function LoginPage() {
               Tickets, stock, and receipts for the shop.{' '}
               <span className="xl:block">One ledger, no loose ends.</span>
             </p>
+
+            <div className="text-paper/60 mt-8 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm xl:text-base">
+              <span className="inline-flex items-center gap-2">
+                <Wrench className="text-safety size-4" aria-hidden="true" />
+                Bay
+              </span>
+              <span className="inline-flex items-center gap-2">
+                <Package className="text-safety size-4" aria-hidden="true" />
+                Stock
+              </span>
+              <span className="inline-flex items-center gap-2">
+                <Receipt className="text-safety size-4" aria-hidden="true" />
+                Receipts
+              </span>
+            </div>
           </div>
 
-          <p className="text-paper/50 text-xs">Motor Works POS · Philippines</p>
+          <div className="border-paper/10 text-paper/50 flex items-center justify-between gap-4 border-t pt-4 text-xs">
+            <span>Motor Works POS</span>
+            <span className="font-mono text-[11px]">Manila · {manilaTime}</span>
+          </div>
         </div>
       </section>
 
       <section className="flex min-h-screen items-center justify-center px-5 py-10 md:min-h-0 md:px-8 xl:px-12">
         <div className="w-full max-w-md xl:max-w-lg">
-          <div className="mb-8 md:hidden">
-            <BrandMark className="size-12" title="Motor Works" />
-            <p className="font-display mt-4 text-2xl font-bold tracking-tight">Motor Works POS</p>
+          <div className="mb-8 flex items-start justify-between gap-4 md:hidden">
+            <div>
+              <BrandMark className="size-12" title="Motor Works" />
+              <p className="font-display mt-4 text-2xl font-bold tracking-tight">Motor Works POS</p>
+            </div>
+            <span className="text-steel font-mono text-xs">Manila · {manilaTime}</span>
           </div>
 
           <h2 className="font-display text-4xl font-bold tracking-tight xl:text-5xl">Sign in</h2>
