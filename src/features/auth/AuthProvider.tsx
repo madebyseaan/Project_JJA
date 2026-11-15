@@ -35,6 +35,8 @@ export function AuthProvider({ children, client }: AuthProviderProps) {
   const [state, setState] = useState<AuthState>({ status: 'loading', profile: null });
   const [error, setError] = useState<string | null>(null);
   const mountedRef = useRef(true);
+  const signedInRef = useRef(false);
+  const manualSignOutRef = useRef(false);
 
   const loadProfile = useCallback(
     async (userId: string) => {
@@ -49,6 +51,8 @@ export function AuthProvider({ children, client }: AuthProviderProps) {
       if (profileError) {
         setError('Could not load your staff profile. Try again.');
         setState({ status: 'signed-out', profile: null });
+        signedInRef.current = false;
+        manualSignOutRef.current = true;
         await supabase.auth.signOut();
         return;
       }
@@ -58,11 +62,14 @@ export function AuthProvider({ children, client }: AuthProviderProps) {
       if (!row) {
         setError('Your account has no staff profile. Ask the owner to check your access.');
         setState({ status: 'signed-out', profile: null });
+        signedInRef.current = false;
+        manualSignOutRef.current = true;
         await supabase.auth.signOut();
         return;
       }
 
       setError(null);
+      signedInRef.current = true;
       setState({ status: 'signed-in', profile: toProfile(row) });
     },
     [supabase],
@@ -80,6 +87,7 @@ export function AuthProvider({ children, client }: AuthProviderProps) {
       if (!active) return;
 
       if (!session) {
+        signedInRef.current = false;
         setState({ status: 'signed-out', profile: null });
         return;
       }
@@ -94,7 +102,18 @@ export function AuthProvider({ children, client }: AuthProviderProps) {
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT' || !session) {
         if (!active) return;
+
+        const wasSignedIn = signedInRef.current;
+        const manual = manualSignOutRef.current;
+
+        signedInRef.current = false;
+        manualSignOutRef.current = false;
         setState({ status: 'signed-out', profile: null });
+
+        if (wasSignedIn && !manual) {
+          setError('Your session expired. Sign in again.');
+        }
+
         return;
       }
 
@@ -115,6 +134,7 @@ export function AuthProvider({ children, client }: AuthProviderProps) {
   const signIn = useCallback(
     async (employeeId: string, password: string) => {
       setError(null);
+      manualSignOutRef.current = false;
 
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email: employeeIdToEmail(employeeId),
@@ -142,6 +162,8 @@ export function AuthProvider({ children, client }: AuthProviderProps) {
   );
 
   const signOut = useCallback(async () => {
+    manualSignOutRef.current = true;
+    signedInRef.current = false;
     await supabase.auth.signOut();
     setError(null);
     setState({ status: 'signed-out', profile: null });

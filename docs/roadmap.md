@@ -51,8 +51,8 @@ A step is not done until all of these are true:
 | # | Step | Status |
 |---|---|---|
 | 00 | Foundation: repo, stack, design system, Supabase connection, skills | Done |
-| 01 | **Login and staff identity** | **Setup complete — login check pending** |
-| 02 | PIN lock and idle lock | Waiting |
+| 01 | **Login and staff identity** | **Done — approved** |
+| 02 | **PIN lock and idle lock** | **In review — built; awaiting approval** |
 | 03 | App shell and navigation | Waiting |
 | 04 | Inventory and stock | Waiting |
 | 05 | Bay tickets | Waiting |
@@ -66,8 +66,8 @@ A step is not done until all of these are true:
 
 ## 4. Current step
 
-**Step 01 — Login and staff identity.**
-Status: **Setup complete; login check pending.** The migration is applied and the profiles are ready: `JJA-001` Dad (owner), `JJA-002` Uncle (mechanic). The remaining check is a real sign-in. The database test keys can be added later in `.env.test.local`. Do not begin Step 02 until the sign-in is confirmed.
+**Step 02 — PIN lock and idle lock.**
+Status: **In review.** Built and verified — `npm run check` is green with 52 unit tests, and the setup, unlock, and wrong-PIN screens are captured at 390px, 768px, and 1920px. Waiting for Sean's review. The plan is `docs/superpowers/plans/2026-11-15-step-02-pin-lock.md`. Do not begin Step 03 until Sean approves Step 02.
 
 ---
 
@@ -118,8 +118,8 @@ Status: **Setup complete; login check pending.** The migration is applied and th
 - [x] Apply the migration.
 - [x] Create Dad (`JJA-001`) and Uncle (`JJA-002`) in Supabase Auth using the synthetic staff emails.
 - [x] Set Dad to `owner` and set both display names.
-- [ ] Put the staging keys in `.env.test.local` and run `npm run test:db`.
-- [ ] Sign in with `JJA-001` and confirm the demo script below.
+- [ ] Put the staging keys in `.env.test.local` and run `npm run test:db`. (Can be added later; the manual sign-in is confirmed.)
+- [x] Sign in with `JJA-001` and confirm the demo script below.
 
 ### Human checkpoints
 
@@ -162,19 +162,32 @@ Status: **Setup complete; login check pending.** The migration is applied and th
 
 ### AI builds
 
-- [ ] `pin.ts`: salted SHA-256 hash in `localStorage`, per user, never sent to the server.
-- [ ] First-login PIN setup: enter twice, save, continue.
-- [ ] `/lock`: staff name, Manila clock, 64px keypad.
-- [ ] Idle lock after 5 minutes; reset on pointer and keyboard activity.
-- [ ] Five wrong attempts clears the PIN and signs out.
-- [ ] Session-expiry handling: explain and return to `/login`.
-- [ ] Unit tests with fake timers and a mocked auth session.
+- [x] `pin.ts`: salted SHA-256 hash in `localStorage`, per user, never sent to the server.
+- [x] First-login PIN setup: enter twice, save, continue.
+- [x] `/lock`: staff name, Manila clock, 64px keypad.
+- [x] Idle lock after 5 minutes; reset on pointer and keyboard activity.
+- [x] Five wrong attempts clears the PIN and signs out.
+- [x] Session-expiry handling: explain and return to `/login`.
+- [x] Unit tests with fake timers and a mocked auth session.
+- [x] Shared brand panel and mobile header so login and lock match.
 
 ### Human checkpoints
 
 - [ ] Try the keypad with one hand, on the actual phone.
 - [ ] Confirm the lock timing feels right for the shop.
 - [ ] Approve the copy and the lock screen look.
+
+### Demo script
+
+1. Sign in with `JJA-001` and the owner password.
+2. On first entry, set a 4-digit PIN and confirm it. The app opens the staff home.
+3. Press **Lock**. The lock screen shows Dad's name, `JJA-001`, and the Manila clock.
+4. Enter a wrong PIN. Confirm the message counts down from 4 attempts.
+5. Enter the correct PIN. The staff home returns.
+6. Leave the screen idle for 5 minutes. Confirm it locks by itself.
+7. Press **Forgot PIN? Sign in with password.** Confirm it clears the PIN and returns to `/login`.
+
+Screenshots: `docs/screenshots/step-02-pin-setup-{desktop,tablet,mobile}.png`, `step-02-pin-unlock-*.png`, `step-02-pin-error-*.png`.
 
 **GATE:** Do not start Step 03 until Sean says **approved**.
 

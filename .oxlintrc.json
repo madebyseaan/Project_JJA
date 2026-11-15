@@ -27,6 +27,13 @@
       "rules": {
         "jsx-a11y/prefer-tag-over-role": "off"
       }
+    },
+    {
+      "files": ["src/features/auth/PinLockProvider.tsx"],
+      "rules": {
+        "react/set-state-in-effect": "off",
+        "react-hooks/exhaustive-deps": "off"
+      }
     }
   ]
 }

@@ -1,9 +1,11 @@
 import { BrandMark } from '@/components/BrandMark';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/features/auth/use-auth';
+import { usePinLock } from '@/features/auth/use-pin-lock';
 
 export function StaffHomePage() {
   const { profile, signOut } = useAuth();
+  const { lock } = usePinLock();
 
   if (!profile) {
     return null;
@@ -23,9 +25,14 @@ export function StaffHomePage() {
             </div>
           </div>
 
-          <Button variant="outline" size="lg" onClick={() => void signOut()}>
-            Sign out
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="touch" onClick={lock}>
+              Lock
+            </Button>
+            <Button variant="outline" size="touch" onClick={() => void signOut()}>
+              Sign out
+            </Button>
+          </div>
         </div>
       </header>
 

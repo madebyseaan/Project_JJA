@@ -21,6 +21,8 @@ type MockOptions = {
   signInError?: { message: string; status?: number } | null;
 };
 
+type AuthChangeHandler = (event: string, session: { user: { id: string } } | null) => void;
+
 function createMockClient(options: MockOptions = {}) {
   const { session = null, profile = null, profileError = null, signInError = null } = options;
 
@@ -36,16 +38,26 @@ function createMockClient(options: MockOptions = {}) {
     error: signInError,
   }));
   const getSession = vi.fn(async () => ({ data: { session }, error: null }));
-  const onAuthStateChange = vi.fn(() => ({
-    data: { subscription: { unsubscribe } },
-  }));
+
+  let authChangeHandler: AuthChangeHandler | null = null;
+
+  const onAuthStateChange = vi.fn((handler: AuthChangeHandler) => {
+    authChangeHandler = handler;
+    return { data: { subscription: { unsubscribe } } };
+  });
 
   const client = {
     auth: { getSession, onAuthStateChange, signInWithPassword, signOut },
     from,
   } as unknown as SupabaseClient;
 
-  return { client, signOut, signInWithPassword };
+  return {
+    client,
+    signOut,
+    signInWithPassword,
+    emitAuth: (event: string, nextSession: { user: { id: string } } | null) =>
+      authChangeHandler?.(event, nextSession),
+  };
 }
 
 function wrapperFor(client: SupabaseClient) {
@@ -127,6 +139,59 @@ test('maps invalid credentials to a clear error', async () => {
     email: 'jja-001@staff.jja.internal',
     password: 'wrong',
   });
+});
+
+test('explains a naturally expired session', async () => {
+  const { client, emitAuth } = createMockClient({
+    session: { user: { id: 'user-1' } },
+    profile: {
+      id: 'user-1',
+      employee_id: 'JJA-001',
+      display_name: 'Dad',
+      role: 'owner',
+    },
+  });
+
+  const { result } = renderHook(() => useAuth(), { wrapper: wrapperFor(client) });
+
+  await waitFor(() => {
+    expect(result.current.status).toBe('signed-in');
+  });
+
+  await act(async () => {
+    emitAuth('SIGNED_OUT', null);
+  });
+
+  await waitFor(() => {
+    expect(result.current.status).toBe('signed-out');
+  });
+
+  expect(result.current.error).toBe('Your session expired. Sign in again.');
+});
+
+test('does not show the expiry message on a manual sign out', async () => {
+  const { client } = createMockClient({
+    session: { user: { id: 'user-1' } },
+    profile: {
+      id: 'user-1',
+      employee_id: 'JJA-001',
+      display_name: 'Dad',
+      role: 'owner',
+    },
+  });
+
+  const { result } = renderHook(() => useAuth(), { wrapper: wrapperFor(client) });
+
+  await waitFor(() => {
+    expect(result.current.status).toBe('signed-in');
+  });
+
+  await act(async () => {
+    await result.current.signOut();
+  });
+
+  expect(result.current.status).toBe('signed-out');
+  expect(result.current.error).toBeNull();
 });
 
 test('clears the profile on sign out', async () => {
