@@ -93,7 +93,7 @@ Rules:
 └─────────────────────────────┘
 ```
 
-- Top bar: shop name, connection dot, lock.
+- Top bar: shop name, signed-in staff name (truncated), connection dot, lock.
 - Bottom tabs: Bay, Stock, Owner (owner only).
 - Primary actions are 56px tall; other targets are at least 48px.
 - The queue is a vertical list of job rows with a 4px status stripe on the left.
@@ -101,7 +101,7 @@ Rules:
 
 ### Desktop
 
-- Left rail: brand mark, nav, staff name, lock. Width 220px.
+- Left rail: brand mark, nav, staff name, connection status, lock, sign out. Width 220px.
 - Content max-width 1280px.
 - Bay: 380px queue on the left, ticket work-order sheet on the right.
 - Inventory: a dense ledger table with filters above.

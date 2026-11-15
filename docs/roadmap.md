@@ -53,7 +53,7 @@ A step is not done until all of these are true:
 | 00 | Foundation: repo, stack, design system, Supabase connection, skills | Done |
 | 01 | **Login and staff identity** | **Done — approved** |
 | 02 | **PIN lock and idle lock** | **Done — approved** |
-| 03 | App shell and navigation | In progress |
+| 03 | **App shell and navigation** | **In review — built; awaiting approval** |
 | 04 | Inventory and stock | Waiting |
 | 05 | Bay tickets | Waiting |
 | 06 | Payments and completion | Waiting |
@@ -67,12 +67,12 @@ A step is not done until all of these are true:
 ## 4. Current step
 
 **Step 03 — App shell and navigation.**
-Status: **In progress — plan next.** Step 02 is approved and closed. The plan will be `docs/superpowers/plans/2026-11-15-step-03-app-shell.md`. Build the staff frame: mobile bottom tabs, desktop left rail, Bay/Stock/Owner routes, role guards, connection status, and real empty states. Do not begin Step 04 until Sean approves Step 03.
+Status: **In review — built; awaiting approval.** Step 02 is approved and closed. The staff frame is built: mobile bottom tabs, desktop left rail, Bay/Stock/Owner routes, role guards, connection status, and real empty states. Plan: `docs/superpowers/plans/2026-11-15-step-03-app-shell.md`. Do not begin Step 04 until Sean approves Step 03.
 
 **Next session starts here.** Start fresh from this section; do not rebuild Step 02.
 
-1. Write the Step 03 plan, then build only that scope.
-2. Run `npm run check`, capture 360px and desktop screenshots, and stop for Sean's review.
+1. Review Step 03 at 360px and desktop with the demo script below; request polish.
+2. On approval, mark Step 03 done and start Step 04.
 3. Prefer code and unit tests for verification. Do not use opencode browse unless Sean asks; it was slow and left a tab in a test state.
 
 ---
@@ -208,13 +208,13 @@ Screenshots: `docs/screenshots/step-02-pin-setup-{desktop,tablet,mobile}.png`, `
 
 ### AI builds
 
-- [ ] `StaffLayout` and `PublicLayout`.
-- [ ] `AppNav` with Bay, Stock, and Owner (owner only).
-- [ ] `RequireStaff` and `RequireOwner` guards.
-- [ ] Placeholder Bay, Stock, and Owner screens with `PageHeader` and `EmptyState`.
-- [ ] Connection status dot and offline banner.
-- [ ] Long-name truncation at 360px.
-- [ ] Route and guard tests.
+- [x] `StaffLayout` and `PublicLayout`.
+- [x] `AppNav` with Bay, Stock, and Owner (owner only).
+- [x] `RequireStaff` and `RequireOwner` guards.
+- [x] Placeholder Bay, Stock, and Owner screens with `PageHeader` and `EmptyState`.
+- [x] Connection status dot and offline banner.
+- [x] Long-name truncation at 360px.
+- [x] Route and guard tests.
 
 ### Human checkpoints
 
@@ -222,6 +222,20 @@ Screenshots: `docs/screenshots/step-02-pin-setup-{desktop,tablet,mobile}.png`, `
 - [ ] Confirm the mobile tab bar is comfortable.
 - [ ] Confirm the desktop rail feels balanced.
 - [ ] Confirm a mechanic cannot reach `/owner`.
+
+### Demo script
+
+1. Sign in as Dad (`JJA-001`) and set or enter the PIN.
+2. Open `/`. Confirm it redirects to `/bay` and the Bay tab is active.
+3. At 360px, confirm the mobile top bar, bottom tabs, and Lock button fit without horizontal scrolling.
+4. Open Stock. Confirm the Stock tab is active and the placeholder empty state is clear.
+5. Open Owner as Dad. Confirm today's placeholder is visible.
+6. Sign out and sign in as Uncle (`JJA-002`). Confirm the Owner tab is gone.
+7. Type `/owner` directly as Uncle. Confirm the app returns to `/bay`.
+8. Toggle the network offline. Confirm the dot says Offline and the banner says changes are disabled. Toggle it back and confirm both recover.
+9. Tap Lock. Confirm the lock screen appears; unlock with the PIN. On mobile, sign out through **Sign in as someone else**.
+
+Screenshots: `docs/screenshots/step-03-shell-bay-desktop.png`, `step-03-shell-bay-mobile.png`, `step-03-shell-owner-desktop.png`, `step-03-shell-mechanic-desktop.png`.
 
 **GATE:** Do not start Step 04 until Sean says **approved**.
 
