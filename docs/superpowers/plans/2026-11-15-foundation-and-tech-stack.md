@@ -6,7 +6,7 @@
 
 **Architecture:** A static React + Vite SPA served from Cloudflare Workers static assets. Supabase provides auth, PostgreSQL, and realtime. The browser never writes transactional tables directly; all writes go through PostgreSQL functions. This plan covers **Phase 0 only** — the shell, tooling, design system, and baseline database. Inventory, bay, receipts, and owner features get separate plans.
 
-**Tech Stack:** React, Vite, TypeScript (strict), Tailwind CSS v4, shadcn/ui, React Router, TanStack Query, React Hook Form + zod, Supabase JS, `vite-plugin-pwa`, Vitest, Testing Library, Playwright, Cloudflare Workers static assets, GitHub Actions.
+**Tech Stack:** React, Vite, TypeScript (strict), Tailwind CSS v4, shadcn/ui, React Router, TanStack Query, React Hook Form + zod, Supabase JS, `vite-plugin-pwa`, Oxlint + Prettier, Vitest, Testing Library, Playwright, Cloudflare Workers static assets, GitHub Actions.
 
 **Spec:** `docs/spec.md`
 
@@ -140,7 +140,7 @@ opencode.jsonc
 ### Task 1: Scaffold the Vite app and tooling
 
 **Files:**
-- Create: `package.json`, `vite.config.ts`, `tsconfig.json`, `tsconfig.app.json`, `tsconfig.node.json`, `index.html`, `src/main.tsx`, `src/app/App.tsx`, `src/styles/globals.css`, `src/vite-env.d.ts`, `eslint.config.js`, `.prettierrc`, `.prettierignore`, `vitest.config.ts`, `tests/setup/setup.ts`, `tests/unit/app.test.tsx`
+- Create: `package.json`, `vite.config.ts`, `tsconfig.json`, `tsconfig.app.json`, `tsconfig.node.json`, `index.html`, `src/main.tsx`, `src/app/App.tsx`, `src/styles/globals.css`, `src/vite-env.d.ts`, `.oxlintrc.json`, `.prettierrc`, `.prettierignore`, `vitest.config.ts`, `tests/setup/setup.ts`, `tests/unit/app.test.tsx`
 - Modify: `.gitignore` if needed
 
 **Interfaces:**
@@ -160,7 +160,7 @@ Copy `index.html`, `src/`, `public/`, `package.json`, `tsconfig.json`, `tsconfig
 
 ```bash
 npm install react-router @tanstack/react-query @supabase/supabase-js zod react-hook-form @hookform/resolvers @tanstack/react-table sonner qrcode.react papaparse lucide-react clsx tailwind-merge class-variance-authority
-npm install -D typescript vite @vitejs/plugin-react vitest @testing-library/react @testing-library/jest-dom @testing-library/user-event jsdom eslint typescript-eslint eslint-plugin-react-hooks eslint-plugin-react-refresh eslint-plugin-jsx-a11y eslint-config-prettier prettier prettier-plugin-tailwindcss @playwright/test supabase wrangler @types/node @types/papaparse
+npm install -D typescript vite @vitejs/plugin-react vitest @testing-library/react @testing-library/jest-dom @testing-library/user-event jsdom oxlint prettier prettier-plugin-tailwindcss @playwright/test supabase wrangler @types/node @types/papaparse
 ```
 
 - [ ] **Step 3: Configure strict TypeScript and the `@/` alias**
@@ -184,7 +184,7 @@ Add every script from `AGENTS.md` section 6 to `package.json`. `npm run check` m
 
 ```json
 "typecheck": "tsc --noEmit",
-"lint": "eslint .",
+"lint": "oxlint",
 "format:check": "prettier --check .",
 "test": "vitest run tests/unit",
 "build": "npm run typecheck && vite build",
@@ -193,9 +193,9 @@ Add every script from `AGENTS.md` section 6 to `package.json`. `npm run check` m
 
 Add `test:db`: `vitest run tests/db`, and `test:e2e`: `playwright test`.
 
-- [ ] **Step 5: Configure ESLint and Prettier**
+- [ ] **Step 5: Configure Oxlint and Prettier**
 
-Create a flat `eslint.config.js` using `typescript-eslint`, `eslint-plugin-react-hooks`, `eslint-plugin-react-refresh`, `eslint-plugin-jsx-a11y`, and `eslint-config-prettier`. Ignore `dist/`, `coverage/`, `playwright-report/`, `test-results/`, and `src/types/database.types.ts`.
+Use `.oxlintrc.json` with the React, TypeScript, JSX accessibility, and import plugins. Ignore `dist/`, `coverage/`, `playwright-report/`, `test-results/`, and `src/types/database.types.ts`.
 
 Create `.prettierrc`:
 

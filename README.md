@@ -2,7 +2,7 @@
 
 A phone-friendly web app for one motorcycle parts and repair shop: walk-in tickets, inventory, payments, tamper-evident e-receipts, and daily sales for QuickBooks Desktop.
 
-**Status:** specification and engineering rules written. Application scaffold follows the implementation plan.
+**Status:** Phase 0 foundation in progress — app scaffolded, design system and features following the implementation plan.
 
 **Budget:** ₱0 per month. Static React app on Cloudflare, Supabase Free for auth, database, and realtime.
 
@@ -29,6 +29,7 @@ Read `docs/spec.md` and `AGENTS.md` before changing code.
 - React Hook Form + zod
 - Supabase (PostgreSQL, Auth, Realtime)
 - `vite-plugin-pwa`
+- Oxlint + Prettier
 - Vitest + Playwright
 - Cloudflare Workers static assets
 - GitHub Actions
@@ -49,7 +50,7 @@ Docker is optional locally. Database integration tests run in GitHub Actions; pr
 
 ---
 
-## Quickstart (after scaffolding)
+## Quickstart
 
 ```bash
 npm install

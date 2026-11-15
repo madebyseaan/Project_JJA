@@ -67,6 +67,7 @@ If a change alters behavior, update the spec in the same pull request. A change 
 | Toasts | Sonner |
 | QR | `qrcode.react` |
 | CSV | papaparse |
+| Lint / format | Oxlint + Prettier |
 | Unit tests | Vitest + Testing Library |
 | E2E | Playwright |
 | Hosting | Cloudflare Workers static assets |
@@ -181,13 +182,13 @@ VITE_SUPABASE_ANON_KEY=
 ## 8. TypeScript and code conventions
 
 - TypeScript **strict**. `noUncheckedIndexedAccess` and `verbatimModuleSyntax` are on.
-- No `any`. Use `unknown` and narrow it. ESLint enforces this.
+- No `any`. Use `unknown` and narrow it. Oxlint enforces this.
 - No non-null assertion (`!`) unless the invariant is obvious and a comment explains why.
 - Prefer `type` over `interface` for data shapes. Component props may use either; be consistent within a file.
 - Use `const` objects and union types instead of `enum`.
-- Named exports everywhere. Default exports only where a tool requires them (`vite.config.ts`, `eslint.config.js`).
+- Named exports everywhere. Default exports only where a tool requires them (`vite.config.ts`, `vitest.config.ts`).
 - Use the `@/` path alias for `src/`. Do not write `../../..` chains.
-- Import order: external packages, `@/` imports, relative imports, type-only imports. ESLint enforces it.
+- Import order: external packages, `@/` imports, relative imports, type-only imports. Keep it consistent; Prettier handles formatting.
 - Prefer small pure functions. Business logic lives in PostgreSQL functions or a feature's `api.ts`; components render.
 - No `useEffect` for data fetching. Use TanStack Query.
 - No global state library. Server state is Query; UI state is local.
