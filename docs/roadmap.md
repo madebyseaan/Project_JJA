@@ -67,7 +67,14 @@ A step is not done until all of these are true:
 ## 4. Current step
 
 **Step 02 — PIN lock and idle lock.**
-Status: **In review.** Built and verified — `npm run check` is green with 52 unit tests, and the setup, unlock, and wrong-PIN screens are captured at 390px, 768px, and 1920px. Waiting for Sean's review. The plan is `docs/superpowers/plans/2026-11-15-step-02-pin-lock.md`. Do not begin Step 03 until Sean approves Step 02.
+Status: **In review.** Built and verified — `npm run check` is green with 56 unit tests, and the setup, unlock, and wrong-PIN screens are captured at 390px, 768px, and 1920px. The cross-tab PIN fix is in `06dbada`. Waiting for Sean's review. The plan is `docs/superpowers/plans/2026-11-15-step-02-pin-lock.md`. Do not begin Step 03 until Sean approves Step 02.
+
+**Next session starts here.** Start fresh from this section; do not rebuild Step 02.
+
+1. The interrupted browser repro may have cleared the local PIN or left test PIN `1234`. Ask Sean to refresh `/lock` once. If it says **Set your PIN**, set it again; if the PIN fails, try `1234` and use **Forgot PIN? Sign in with password**.
+2. Sean tests in one tab: **Lock** → wrong PIN → stays locked and counts down from 4 → correct PIN → home.
+3. If Sean says **approved**, mark Step 02 Done and start Step 03.
+4. Prefer code and unit tests for verification. Do not use opencode browse unless Sean asks; it was slow and left a tab in a test state.
 
 ---
 

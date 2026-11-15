@@ -147,7 +147,7 @@ type PinLockContextValue = {
 
 - `npm run check`: typecheck, lint, format, size check, 56 unit tests (15 files), and the production build pass.
 - Database tests and E2E were not run because Docker is unavailable on this machine. No database touched this step.
-- Browser checks used temporary PIN records. Sean's record was backed up and restored untouched.
+- Browser checks used temporary PIN records. The last cross-tab repro was interrupted before cleanup, so Sean's local PIN may have been cleared or replaced by test PIN `1234`. See the handoff below.
 
 ## Review fix — cross-tab PIN state
 
@@ -159,5 +159,17 @@ Regression tests:
 - a PIN removed before unlock signs out,
 - a stale setup tab cannot overwrite an existing PIN,
 - the real provider + lock page reject a wrong PIN and stay on `/lock`.
+
+## Session handoff — 15 Nov 2026
+
+**Latest commit:** `06dbada` — `fix: prevent stale tabs from resetting the PIN`. Step 02 is built; do not rebuild it.
+
+**State:** 56 unit tests pass and `npm run check` is green. Screenshots are in `docs/screenshots/step-02-pin-{setup,unlock,error}-{desktop,tablet,mobile}.png`.
+
+**Open item:** Sean's manual check in one tab. The last browser repro was interrupted before cleanup, so the local PIN may be missing or set to test PIN `1234`; reset it with **Forgot PIN? Sign in with password** if needed.
+
+**Working preference:** verify with unit tests and ask Sean to check the UI manually. Do not use opencode browse for this step unless Sean asks; it was slow and left a tab in a test state.
+
+**Next:** Sean says **approved** → mark Step 02 Done → start Step 03 (app shell and navigation).
 
 **Gate:** Sean must say **approved** before Step 03.
