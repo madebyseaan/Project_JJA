@@ -51,7 +51,7 @@ A step is not done until all of these are true:
 | # | Step | Status |
 |---|---|---|
 | 00 | Foundation: repo, stack, design system, Supabase connection, skills | Done |
-| 01 | **Login and staff identity** | **In review — setup pending** |
+| 01 | **Login and staff identity** | **Design approved — setup pending** |
 | 02 | PIN lock and idle lock | Waiting |
 | 03 | App shell and navigation | Waiting |
 | 04 | Inventory and stock | Waiting |
@@ -67,7 +67,7 @@ A step is not done until all of these are true:
 ## 4. Current step
 
 **Step 01 — Login and staff identity.**
-Status: **In review.** The code and tests are in place. The demo waits for the Supabase migration, the two staff accounts, and Sean's polish pass. Do not begin Step 02 until Sean approves Step 01.
+Status: **Design approved; setup pending.** Sean approved the login design. The remaining work is the Supabase migration, the two staff accounts, and a real sign-in. Do not begin Step 02 until the setup and a real sign-in are confirmed.
 
 ---
 
