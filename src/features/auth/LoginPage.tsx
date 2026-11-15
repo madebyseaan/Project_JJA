@@ -63,7 +63,10 @@ export function LoginPage() {
         <div aria-hidden="true" className="blueprint-grid pointer-events-none absolute inset-0" />
 
         <div className="relative mx-auto grid h-full w-full max-w-[40rem] grid-rows-[auto_1fr_auto]">
-          <BrandMark className="text-paper size-12 xl:size-14" title="Motor Works" />
+          <BrandMark
+            className="size-16 xl:size-24"
+            title="J.J.A Motor Accessories and Motorcycle Repair"
+          />
 
           <div className="flex flex-col justify-center py-10">
             <p className="border-safety text-paper/70 mb-5 border-l-4 pl-3 text-sm md:text-base">
@@ -81,22 +84,29 @@ export function LoginPage() {
 
             <div className="text-paper/60 mt-8 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm xl:text-base">
               <span className="inline-flex items-center gap-2">
-                <Wrench className="text-safety size-4" aria-hidden="true" />
+                <Wrench className="text-brand-red size-4" aria-hidden="true" />
                 Bay
               </span>
               <span className="inline-flex items-center gap-2">
-                <Package className="text-safety size-4" aria-hidden="true" />
+                <Package className="text-brand-blue size-4" aria-hidden="true" />
                 Stock
               </span>
               <span className="inline-flex items-center gap-2">
-                <Receipt className="text-safety size-4" aria-hidden="true" />
+                <Receipt className="text-brand-gold size-4" aria-hidden="true" />
                 Receipts
               </span>
             </div>
           </div>
 
           <div className="border-paper/10 text-paper/50 flex items-center justify-between gap-4 border-t pt-4 text-xs">
-            <span>Motor Works POS</span>
+            <div className="flex items-center gap-2">
+              <span className="flex h-1 w-9 overflow-hidden" aria-hidden="true">
+                <span className="bg-brand-red h-full w-1/3" />
+                <span className="bg-brand-blue h-full w-1/3" />
+                <span className="bg-brand-gold h-full w-1/3" />
+              </span>
+              <span>J.J.A · Est. 2023</span>
+            </div>
             <span className="font-mono text-[11px]">Manila · {manilaTime}</span>
           </div>
         </div>
@@ -105,9 +115,17 @@ export function LoginPage() {
       <section className="flex min-h-screen items-center justify-center px-5 py-10 md:min-h-0 md:px-8 xl:px-12">
         <div className="w-full max-w-md xl:max-w-lg">
           <div className="mb-8 flex items-start justify-between gap-4 md:hidden">
-            <div>
-              <BrandMark className="size-12" title="Motor Works" />
-              <p className="font-display mt-4 text-2xl font-bold tracking-tight">Motor Works POS</p>
+            <div className="flex items-start gap-3">
+              <BrandMark
+                className="size-14"
+                title="J.J.A Motor Accessories and Motorcycle Repair"
+              />
+              <div>
+                <p className="font-display text-2xl leading-tight font-bold tracking-tight">
+                  J.J.A
+                </p>
+                <p className="text-steel text-xs">Motor Accessories &amp; Repair</p>
+              </div>
             </div>
             <span className="text-steel font-mono text-xs">Manila · {manilaTime}</span>
           </div>

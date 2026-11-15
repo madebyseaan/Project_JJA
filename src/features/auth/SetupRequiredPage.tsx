@@ -9,7 +9,7 @@ export function SetupRequiredPage({ missing }: SetupRequiredPageProps) {
   return (
     <main className="bg-paper flex min-h-screen items-center justify-center px-5 py-10">
       <section className="border-line bg-surface w-full max-w-md border p-6">
-        <BrandMark className="size-12" title="Motor Works" />
+        <BrandMark className="size-12" title="J.J.A Motor Accessories and Motorcycle Repair" />
         <h1 className="font-display mt-6 text-3xl font-bold tracking-tight">Almost ready</h1>
         <p className="text-ink-soft mt-2 text-sm">
           The app needs its Supabase connection before it can sign anyone in.

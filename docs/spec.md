@@ -11,7 +11,7 @@
 
 ## 1. Summary
 
-A phone-friendly web app for one motorcycle parts and repair shop.
+A phone-friendly web app for **J.J.A Motor Accessories and Motorcycle Repair Shop** (Est. 2023), one motorcycle parts and repair shop in the Philippines.
 
 The mechanic creates a walk-in ticket at the counter, adds parts and labor, verifies the parts physically, takes payment, and the system issues a tamper-evident e-receipt. The owner manages inventory, sees the day's sales, reconciles cash, and exports daily sales to CSV for QuickBooks Desktop.
 

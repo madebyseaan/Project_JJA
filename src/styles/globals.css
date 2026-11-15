@@ -18,6 +18,9 @@
   --color-warn: #a66a00;
   --color-danger: #b3261e;
   --color-soft: #e5e7e1;
+  --color-brand-red: #e21b1b;
+  --color-brand-blue: #2647c9;
+  --color-brand-gold: #f5b301;
 
   --font-ui: 'Barlow', ui-sans-serif, system-ui, sans-serif;
   --font-display: 'Barlow Condensed', 'Barlow', ui-sans-serif, sans-serif;
@@ -80,12 +83,12 @@
   background-image:
     linear-gradient(
       to right,
-      color-mix(in oklab, var(--color-paper) 7%, transparent) 1px,
+      color-mix(in oklab, var(--color-brand-blue) 9%, transparent) 1px,
       transparent 1px
     ),
     linear-gradient(
       to bottom,
-      color-mix(in oklab, var(--color-paper) 7%, transparent) 1px,
+      color-mix(in oklab, var(--color-brand-blue) 9%, transparent) 1px,
       transparent 1px
     );
   background-size: 48px 48px;

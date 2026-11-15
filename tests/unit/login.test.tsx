@@ -32,6 +32,9 @@ test('shows the shop capabilities and the Manila clock', () => {
   expect(screen.getByText('Stock')).toBeInTheDocument();
   expect(screen.getByText('Receipts')).toBeInTheDocument();
   expect(screen.getAllByText(/Manila/).length).toBeGreaterThan(0);
+  expect(
+    screen.getAllByAltText('J.J.A Motor Accessories and Motorcycle Repair').length,
+  ).toBeGreaterThan(0);
 });
 
 test('shows validation messages on an empty submit', async () => {

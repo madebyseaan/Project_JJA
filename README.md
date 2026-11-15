@@ -1,6 +1,6 @@
-# Motorcycle Parts & Repair Shop POS
+# J.J.A Motor Accessories & Repair POS
 
-A phone-friendly web app for one motorcycle parts and repair shop: walk-in tickets, inventory, payments, tamper-evident e-receipts, and daily sales for QuickBooks Desktop.
+A phone-friendly web app for **J.J.A Motor Accessories and Motorcycle Repair Shop** (Est. 2023): walk-in tickets, inventory, payments, tamper-evident e-receipts, and daily sales for QuickBooks Desktop.
 
 **Status:** Phase 0 foundation in progress — app scaffolded, design system and features following the implementation plan.
 

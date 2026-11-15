@@ -14,7 +14,7 @@ This file is the engineering contract for anyone — human or AI — working in 
 
 ## 1. What this project is
 
-A web app for **one** motorcycle parts and repair shop in the Philippines.
+A web app for **J.J.A Motor Accessories and Motorcycle Repair Shop** (Est. 2023), one motorcycle parts and repair shop in the Philippines.
 
 - The mechanic creates a walk-in ticket at the counter, adds parts and labor, verifies the parts, takes payment, and issues an e-receipt.
 - The owner manages inventory, sees daily sales, reconciles cash, and exports CSV for QuickBooks Desktop.

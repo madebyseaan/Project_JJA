@@ -17,6 +17,8 @@ Three ideas drive every screen:
 2. **Money and stock are the hero numbers.** They are large, tabular, and easy to scan.
 3. **One accent, used with intent.** Safety orange marks the action, the focus, and the thing that needs attention. Everything else is paper, ink, and steel.
 
+**Brand:** J.J.A Motor Accessories and Motorcycle Repair Shop (Est. 2023). The logo is the circular gear badge in `public/brand/jja-logo.jpg`. The app keeps the Service Bay Ledger palette; the logo's red, blue, and gold appear only as small identifiers — the capability icons, the blueprint-grid tint, and the footer stripe. They never become action colors.
+
 ---
 
 ## 2. Palette
@@ -36,11 +38,14 @@ Three ideas drive every screen:
 | `ok` | `#2E7D4F` | Ready, success |
 | `warn` | `#A66A00` | Verifying, warning |
 | `danger` | `#B3261E` | Errors, void, cancel |
+| `brand-red` | `#E21B1B` | Logo hint: Bay icon and footer stripe only |
+| `brand-blue` | `#2647C9` | Logo hint: Stock icon, blueprint-grid tint |
+| `brand-gold` | `#F5B301` | Logo hint: Receipts icon, footer stripe |
 
 Rules:
 
-- No gradients, glass effects, or soft grey card shadows.
-- No second brand accent. Status colors are functional, not decorative.
+- No gradients, glass effects, or soft grey card shadows. The logo may contain gradients; the UI does not.
+- No second **action** accent. Safety orange is the only color used for primary actions and focus. The logo's red, blue, and gold are detail accents only.
 - Status is always paired with a text label. Color alone never carries meaning.
 - The receipt uses `surface` on a `paper` background, with a dashed perforation rule.
 
@@ -110,7 +115,7 @@ Rules:
 - **Owner:** date header, revenue split (parts/labor), payment split (cash/GCash/Maya), low stock, day close. Horizontal rules separate sections.
 - **Receipt:** white sheet, shop header, receipt number, items, totals, payment, verification code in mono, QR, and a stamped VERIFIED mark.
 - **Verify:** two large inputs and a result panel. Valid is `ok`; void is `danger`; no match is neutral.
-- **Login:** split at 768px. Left: the branding panel, with the content centered in a 40rem column; a faint blueprint grid behind it; an intentional safety-orange block behind “The bay,”; the headline scales with `clamp(3.25rem, 6vw, 7rem)`; the subtitle is at most 26rem wide; a capability row (Bay, Stock, Receipts) sits below it; the brand, footer rule, and live Manila clock align to the column. Right: the form, centered, max-w-md and max-w-lg at `xl`; the primary button is 56px. Below 768px: a compact brand header with the Manila clock, then the form in one column.
+- **Login:** split at 768px. Left: the J.J.A badge at the top; a faint blue-tinted blueprint grid behind the panel; an intentional safety-orange block behind “The bay,”; the headline scales with `clamp(3.25rem, 6vw, 7rem)`; the subtitle is at most 26rem wide; a capability row (Bay, Stock, Receipts) uses the logo's red, blue, and gold icons; the footer has a tri-color stripe, `J.J.A · Est. 2023`, and a live Manila clock. Right: the form, centered, max-w-md and max-w-lg at `xl`; the primary button is 56px. Below 768px: a compact brand header with the badge, the shop name, and the clock, then the form in one column.
 - **Lock:** large PIN pad, 64px keys, staff name, Manila time.
 
 ---
@@ -129,7 +134,7 @@ Rules:
 - **Empty state:** short text plus the next action. Never a decorative illustration that pushes the action below the fold.
 - **Loading:** skeletons shaped like the content. Not a centered spinner.
 - **Icons:** lucide, 20px; 24px in navigation. 2px stroke.
-- **Brand mark:** a hexagonal bolt head with a slotted `M`, ink on safety orange. One mark, used in the rail, login, and app icon.
+- **Brand mark:** the J.J.A circular gear badge from `public/brand/jja-logo.jpg`, clipped to a circle on paper. One mark, used in the rail, login, loading, and setup screens.
 
 ---
 

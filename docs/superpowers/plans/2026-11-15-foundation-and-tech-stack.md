@@ -239,7 +239,7 @@ Expected: FAIL because `App` does not exist.
 
 - [ ] **Step 9: Implement the minimal `App`**
 
-`src/app/App.tsx` renders a single `<h1>Motor Works POS</h1>` inside a `<main>`. `src/main.tsx` imports `./styles/globals.css` and renders `<App />` into `#root`. Create an empty `src/styles/globals.css` for now.
+`src/app/App.tsx` renders a single `<h1>J.J.A POS</h1>` inside a `<main>`. `src/main.tsx` imports `./styles/globals.css` and renders `<App />` into `#root`. Create an empty `src/styles/globals.css` for now.
 
 - [ ] **Step 10: Run the test and the full check**
 
@@ -746,8 +746,8 @@ VitePWA({
   registerType: 'prompt',
   includeAssets: ['mark.svg', 'apple-touch-icon-180x180.png'],
   manifest: {
-    name: 'Motor Works POS',
-    short_name: 'Motor Works',
+    name: 'J.J.A POS',
+    short_name: 'J.J.A',
     description: 'Tickets, stock, and receipts for the shop',
     theme_color: '#12181A',
     background_color: '#F1F2EE',

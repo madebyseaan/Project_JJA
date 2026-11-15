@@ -16,10 +16,10 @@ export function StaffHomePage() {
       <header className="border-line bg-surface border-b">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-4 px-5 py-3">
           <div className="flex min-w-0 items-center gap-3">
-            <BrandMark className="size-9" />
+            <BrandMark className="size-10" />
             <div className="min-w-0">
-              <p className="font-display truncate text-lg leading-tight font-bold">Motor Works</p>
-              <p className="text-steel truncate text-xs">Staff home</p>
+              <p className="font-display truncate text-lg leading-tight font-bold">J.J.A</p>
+              <p className="text-steel truncate text-xs">Motor Accessories &amp; Repair</p>
             </div>
           </div>
 
