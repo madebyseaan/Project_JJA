@@ -8,3 +8,5 @@ src/types/database.types.ts
 docs
 AGENTS.md
 README.md
+.agents
+.opencode

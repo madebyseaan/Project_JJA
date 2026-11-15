@@ -16,6 +16,8 @@ A web app for **one** motorcycle parts and repair shop in the Philippines.
 
 **This is not the multi-tenant POS product described by the `pos-*` skills.** That product uses a monorepo, Fastify, Prisma, and `storeId` scoping. None of that applies here. If a `pos-*` skill is loaded, ignore its architecture and database conventions; use this file and `docs/spec.md`.
 
+**Supabase skills:** `.agents/skills/supabase` and `.agents/skills/supabase-postgres-best-practices` are installed project-locally. Use them for auth, RLS, migrations, SQL, and troubleshooting. They include Next.js/SSR advice; this repo is a static Vite SPA, so ignore server components, middleware, cookie auth, and `NEXT_PUBLIC_*` guidance. The rules in this file and `docs/spec.md` win.
+
 ---
 
 ## 2. Read first
