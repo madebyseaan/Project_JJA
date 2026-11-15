@@ -965,3 +965,55 @@ Give Sean the demo script below. Do not mark Step 03 done, do not merge, and do 
 ## Gate
 
 Step 03 is **In review**. Sean must test at 360px and desktop and say **approved** before Step 04 begins.
+
+---
+
+## Session audit — 15 November 2026
+
+**Branch:** `feat/step-03-app-shell`, cut from `main` at `2066ca3`.
+**State:** built and verified; awaiting screenshots and Sean's review. The branch is local only — not pushed.
+
+**Starting state:** Steps 01 and 02 approved; login and PIN lock confirmed working. The Step 03 plan was committed but no shell code existed. Baseline `npm run check` passed with 56 tests.
+
+### What shipped
+
+| Commit | Change |
+|---|---|
+| `16398ec` | `PageHeader` and `EmptyState` (4 tests) |
+| `3a52856` | `useOnlineStatus`, `ConnectionStatus`, `OfflineBanner` (6 tests) |
+| `6d56c09` | `AppNav` rail and bottom tabs (3 tests) |
+| `7ad4df0` | `RequireStaff`, `RequireOwner`, `RequireUnlocked` (10 tests) |
+| `600eec2` | `StaffLayout`, `PublicLayout`, Bay/Stock/Owner pages, router (full suite 81) |
+| `ac3f46d` | `<output>` for live status; `.superpowers` excluded from Prettier |
+| `d3248c9` | `design.md` and `roadmap.md` updated to In review |
+
+### Verification
+
+- `npm run check` — PASS: typecheck, lint with no warnings, Prettier, file-size check, 81 unit tests in 23 files, production build.
+- Not run: `npm run test:db` (no database change in this step; Docker is unavailable locally) and `npm run test:e2e` (no end-to-end suite yet).
+- Every test file was watched fail before its implementation, except the pre-existing suite.
+
+### Decisions
+
+1. The database test fix stays a separate concern: `fix/db-permission-tests` (`ef969ce`) is pushed but unmerged. GitHub CLI is installed but not authenticated, so the PR is still to open:
+   https://github.com/madebyseaan/Project_JJA/compare/main...fix/db-permission-tests?expand=1
+2. `RequireAuth` was deleted and `router.tsx` rewired to `RequireStaff` inside Task 4, so every commit typechecks (the plan deleted it before Task 5 rewired the router).
+3. `routes.test.tsx` was written and watched fail against the old router before the router rewrite, preserving RED→GREEN (the plan listed the rewrite first).
+4. `role="status"` became `<output>`, whose implicit role is `status`, to clear two Oxlint accessibility warnings. Tests still query by role and pass.
+5. `.superpowers` was added to `.prettierignore`: the SDD ledger is scratch and must not fail `format:check`.
+6. A Windows CRLF flip in `docs/roadmap.md` was normalized back to LF, keeping the docs diff at 27 insertions and 13 deletions.
+
+### Left open
+
+- Screenshots not captured. The in-app browser window was not visible and the tab was signed out; screenshots need a signed-in tab in a visible window. The dev server ran at `http://localhost:5175` and was stopped at the end of the session.
+- A fresh-context review was dispatched; its findings were not applied before the pause.
+- The branch is not pushed and no PR exists yet.
+- Sean has not reviewed Step 03.
+
+### Next session
+
+1. Run `npm run dev`, open the app, sign in as `JJA-001`, and enter the PIN.
+2. Capture `docs/screenshots/step-03-shell-bay-desktop.png`, `step-03-shell-bay-mobile.png`, `step-03-shell-owner-desktop.png`, and `step-03-shell-mechanic-desktop.png` at 1440px and 360px.
+3. Apply any review findings test-first, then re-run `npm run check`.
+4. Commit the screenshots, push `feat/step-03-app-shell`, and open the PR.
+5. Walk Sean through the demo script at 360px and desktop; stop for approval before Step 04.
