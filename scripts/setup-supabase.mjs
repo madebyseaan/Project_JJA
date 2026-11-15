@@ -151,9 +151,13 @@ try {
     );
   }
 
-  console.log('\nProfiles ready:');
-  for (const person of staff) {
-    console.log(`  ${person.employeeId}  ${person.displayName}  ${person.role}`);
+  const { rows: profileRows } = await db.query(
+    'select employee_id, display_name, role from public.profiles order by employee_id',
+  );
+
+  console.log('\nProfiles in database:');
+  for (const row of profileRows) {
+    console.log(`  ${row.employee_id}  ${row.display_name}  ${row.role}`);
   }
 
   if (generated.length > 0) {
