@@ -12,7 +12,9 @@ A phone-friendly web app for one motorcycle parts and repair shop: walk-in ticke
 
 | Document | Purpose |
 |---|---|
+| [`docs/roadmap.md`](docs/roadmap.md) | Step-by-step delivery order and approval gates |
 | [`docs/spec.md`](docs/spec.md) | Product and technical specification — the source of truth |
+| [`docs/design.md`](docs/design.md) | Service Bay Ledger design system |
 | [`AGENTS.md`](AGENTS.md) | Engineering rules and the contract for AI agents |
 | [`docs/runbook.md`](docs/runbook.md) | Deploy, backup, restore, and incident procedures |
 | [`docs/decisions/`](docs/decisions/) | Architecture decision records |

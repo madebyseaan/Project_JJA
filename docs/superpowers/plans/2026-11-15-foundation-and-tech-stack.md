@@ -10,6 +10,8 @@
 
 **Spec:** `docs/spec.md`
 
+> **Delivery order:** `docs/roadmap.md` governs the step order and approval gates. This plan is the detailed reference for the foundation; its remaining tasks are folded into the roadmap steps.
+
 ## Global Constraints
 
 - Node 24+, npm 11+.

@@ -7,7 +7,8 @@ This file is the engineering contract for anyone — human or AI — working in 
 ## 0. Highest priority
 
 1. **No file may exceed 1,000 lines of code.** This is a hard limit, not a target. Split by responsibility into components, hooks, feature modules, or SQL function files before a file gets close. If a file would cross 1,000 lines, stop and split it first.
-2. **The repository root contains only `README.md` and `AGENTS.md`.** Every other Markdown document belongs under `docs/` — `docs/spec.md`, `docs/design.md`, `docs/runbook.md`, `docs/setup.md`, `docs/decisions/`, and `docs/superpowers/plans/`. Never create `NOTES.md`, `TODO.md`, `CHANGELOG.md`, or any other Markdown file at the root.
+2. **The repository root contains only `README.md` and `AGENTS.md`.** Every other Markdown document belongs under `docs/` — `docs/roadmap.md`, `docs/spec.md`, `docs/design.md`, `docs/runbook.md`, `docs/setup.md`, `docs/decisions/`, and `docs/superpowers/plans/`. Never create `NOTES.md`, `TODO.md`, `CHANGELOG.md`, or any other Markdown file at the root.
+3. **One roadmap step at a time.** `docs/roadmap.md` defines the delivery order. Do not begin the next step until the human architect has tested the current step, requested any polish, and said **approved**.
 
 ---
 
@@ -31,10 +32,11 @@ A web app for **one** motorcycle parts and repair shop in the Philippines.
 
 Before any change:
 
-1. [`docs/spec.md`](docs/spec.md) — product behavior, data model, rules.
-2. [`docs/runbook.md`](docs/runbook.md) — deploy, backup, restore, incidents.
-3. [`docs/decisions/`](docs/decisions/) — why the architecture is what it is.
-4. [`README.md`](README.md) — setup and commands.
+1. [`docs/roadmap.md`](docs/roadmap.md) — the current step, its gate, and the delivery order.
+2. [`docs/spec.md`](docs/spec.md) — product behavior, data model, rules.
+3. [`docs/runbook.md`](docs/runbook.md) — deploy, backup, restore, incidents.
+4. [`docs/decisions/`](docs/decisions/) — why the architecture is what it is.
+5. [`README.md`](README.md) — setup and commands.
 
 If a change alters behavior, update the spec in the same pull request. A change that contradicts the spec is a bug or a new decision — not something to quietly implement.
 
@@ -125,6 +127,7 @@ tests/
   e2e/
 docs/
   design.md
+  roadmap.md
   setup.md
   spec.md
   runbook.md
@@ -369,6 +372,7 @@ These are the highest-risk paths. Change them only with tests.
 ## 15. Documentation
 
 - `docs/spec.md` is the source of truth. Update it when behavior changes.
+- `docs/roadmap.md` is the delivery order and approval gates. Update it when a step is finished, split, blocked, or reordered.
 - `docs/design.md` is the visual system. Update it when a token, layout, or component rule changes.
 - `docs/runbook.md` is the operations manual. Update it when deploy, backup, restore, or staff procedures change.
 - `docs/setup.md` is the first-run guide. Keep the commands accurate.
@@ -400,6 +404,9 @@ These are the highest-risk paths. Change them only with tests.
 10. If something is blocked, say what is blocked and what you tried. Do not guess.
 11. Place every new file in the repository layout. Never create a new top-level folder or a root-level Markdown file without updating `AGENTS.md` and the plan.
 12. Before a file approaches 1,000 lines, stop and split it. The size check is part of `npm run check`.
+13. Read `docs/roadmap.md` before starting. Work only on the current step.
+14. A step ends with `npm run check`, a demo script, and screenshots. Wait for the human architect's approval before starting the next step.
+15. If a request belongs to a later step, write it in the roadmap instead of building it now.
 
 ---
 
