@@ -39,6 +39,39 @@ The app opens on the Vite URL, usually `http://localhost:5173`.
 
 ---
 
+## 2b. One-command setup (recommended)
+
+If you do not want to use the SQL editor and the Users page, let the setup script do it.
+
+1. Create `.env.setup.local` in the repo root. It is gitignored.
+
+```dotenv
+SUPABASE_DB_URL=postgresql://postgres:<password>@db.<ref>.supabase.co:5432/postgres
+SUPABASE_SERVICE_ROLE_KEY=<service-role-or-secret-key>
+
+# Optional. If omitted, strong passwords are generated and printed once.
+JJA_001_PASSWORD=
+JJA_002_PASSWORD=
+```
+
+2. Get the two values:
+   - **Supabase → Connect** → **Direct connection** or **Session pooler**. Copy the full URI including the password. Do not use the transaction pooler for migrations.
+   - **Project Settings → API → Secret keys** → copy the service-role/secret key.
+
+3. Run:
+
+```bash
+npm run setup:supabase
+```
+
+The script applies the migration if needed, creates `JJA-001` (Dad, owner) and `JJA-002` (Uncle, mechanic), and sets the display names. If it generates passwords, it writes them to `.staff-credentials.local` (gitignored) instead of printing them.
+
+4. Save the generated passwords, then delete both `.staff-credentials.local` and `.env.setup.local`. Rotate the secret key if you want.
+
+The manual sections below remain as a fallback.
+
+---
+
 ## 3. Supabase project settings
 
 In the dashboard:

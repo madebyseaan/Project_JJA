@@ -27,6 +27,7 @@
     "db:push": "supabase db push",
     "db:types": "supabase gen types typescript --linked --schema public > src/types/database.types.ts",
     "db:types:check": "npm run db:types && git diff --exit-code -- src/types/database.types.ts",
+    "setup:supabase": "node scripts/setup-supabase.mjs",
     "deploy": "npm run build && wrangler deploy"
   },
   "dependencies": {
@@ -65,6 +66,7 @@
     "dotenv": "^18.0.10",
     "jsdom": "^29.1.1",
     "oxlint": "^1.90.0",
+    "pg": "^8.23.1",
     "prettier": "^3.10.1",
     "prettier-plugin-tailwindcss": "^0.8.1",
     "supabase": "^3.1.0",
