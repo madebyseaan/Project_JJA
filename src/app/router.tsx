@@ -5,8 +5,8 @@ import { LockPage } from '@/features/auth/LockPage';
 import { PinLockProvider } from '@/features/auth/PinLockProvider';
 import { LoginPage } from '@/features/auth/LoginPage';
 
-import { RequireAuth } from './RequireAuth';
-import { RequireUnlocked } from './RequireUnlocked';
+import { RequireStaff } from './guards/RequireStaff';
+import { RequireUnlocked } from './guards/RequireUnlocked';
 import { StaffHomePage } from './StaffHomePage';
 
 export const routes: RouteObject[] = [
@@ -22,7 +22,7 @@ export const routes: RouteObject[] = [
         element: <LockPage />,
       },
       {
-        element: <RequireAuth />,
+        element: <RequireStaff />,
         children: [
           {
             element: <RequireUnlocked />,

@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { expect, test } from 'vitest';
 
-import { RequireAuth } from '@/app/RequireAuth';
+import { RequireStaff } from '@/app/guards/RequireStaff';
 import type { AuthContextValue } from '@/features/auth/auth-context';
 
 import {
@@ -17,7 +17,7 @@ function renderGuard(value: AuthContextValue) {
     [
       { path: '/login', element: <div>Login screen</div> },
       {
-        element: <RequireAuth />,
+        element: <RequireStaff />,
         children: [{ path: '/', element: <div>Staff home</div> }],
       },
     ],
