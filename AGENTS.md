@@ -131,6 +131,7 @@ docs/
   setup.md
   spec.md
   runbook.md
+  screenshots/
   decisions/
   superpowers/plans/
 scripts/

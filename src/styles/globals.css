@@ -98,7 +98,7 @@
   }
 
   ::selection {
-    background-color: var(--color-safety);
+    background-color: color-mix(in oklab, var(--color-safety) 25%, transparent);
     color: var(--color-ink);
   }
 
