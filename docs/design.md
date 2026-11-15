@@ -110,7 +110,7 @@ Rules:
 - **Owner:** date header, revenue split (parts/labor), payment split (cash/GCash/Maya), low stock, day close. Horizontal rules separate sections.
 - **Receipt:** white sheet, shop header, receipt number, items, totals, payment, verification code in mono, QR, and a stamped VERIFIED mark.
 - **Verify:** two large inputs and a result panel. Valid is `ok`; void is `danger`; no match is neutral.
-- **Login:** split at 768px. Left: the branding panel, with the content centered in a 40rem column; the headline scales with `clamp(3.25rem, 6vw, 7rem)`, the subtitle is at most 26rem wide, and the brand and footer sit at the column edges. Right: the form, centered, max-w-md and max-w-lg at `xl`; the primary button is 56px. Below 768px: a compact brand header and the form in one column.
+- **Login:** split at 768px. Left: the branding panel, with the content centered in a 40rem column; a faint blueprint grid behind it; an intentional safety-orange block behind “The bay,”; the headline scales with `clamp(3.25rem, 6vw, 7rem)`; the subtitle is at most 26rem wide; a capability row (Bay, Stock, Receipts) sits below it; the brand, footer rule, and live Manila clock align to the column. Right: the form, centered, max-w-md and max-w-lg at `xl`; the primary button is 56px. Below 768px: a compact brand header with the Manila clock, then the form in one column.
 - **Lock:** large PIN pad, 64px keys, staff name, Manila time.
 
 ---
