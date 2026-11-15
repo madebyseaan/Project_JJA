@@ -124,11 +124,12 @@ export function PinLockProvider() {
       const attempts = recordFailedAttempt(profile.id);
 
       if (attempts >= 5) {
-        clearPin(profile.id);
-        setHasPin(false);
+        // A full sign-out is the lockout. Keep the PIN so the next password
+        // sign-in can ask for it again, and give the shift a fresh set of tries.
+        resetAttempts(profile.id);
         setUnlocked(false);
         await signOut();
-        toast.error('Too many attempts. Sign in with your password.');
+        toast.error('Too many attempts. Sign in with your password. Your PIN is still saved.');
         return { ok: false, attemptsLeft: 0, lockedOut: true };
       }
 

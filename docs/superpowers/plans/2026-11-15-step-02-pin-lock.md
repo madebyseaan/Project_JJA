@@ -4,7 +4,7 @@
 > **Spec:** `docs/spec.md` sections 5, 13.2.
 > **Design:** `docs/design.md` sections 4, 7, 8.
 
-**Goal:** After a real sign-in, the staff member sets a 4-digit PIN. The app locks after 5 minutes idle or on demand. Five wrong PINs clear the PIN and sign the user out. No PIN is ever sent to the server.
+**Goal:** After a real sign-in, the staff member sets a 4-digit PIN. The app locks after 5 minutes idle or on demand. Five wrong PINs sign the user out, while the PIN stays saved for the next password sign-in. No PIN is ever sent to the server.
 
 ---
 
@@ -106,7 +106,7 @@ type PinLockContextValue = {
 - [x] `hasPin` read from `localStorage` for the current profile.
 - [x] `lock()` sets unlocked false and goes to `/lock`.
 - [x] `setPin` saves and unlocks.
-- [x] `unlock` verifies; on failure increments attempts. At 5, clear the PIN, sign out, show a toast, and go to `/login`.
+- [x] `unlock` verifies; on failure increments attempts. At 5, reset attempts, keep the PIN, sign out, show a toast, and go to `/login`.
 - [x] `clearPinAndSignOut` clears the PIN and signs out (forgot-PIN recovery).
 - [x] Idle lock runs only while signed in and unlocked.
 - [x] Tests: 5 attempts locks out, success resets attempts, setPin marks hasPin/unlocked.
@@ -160,16 +160,18 @@ Regression tests:
 - a stale setup tab cannot overwrite an existing PIN,
 - the real provider + lock page reject a wrong PIN and stay on `/lock`.
 
+## Review fix — lockout keeps the PIN
+
+Five wrong PINs used to delete the `localStorage` record, so the next password sign-in showed **Set your PIN** and looked like the PIN was never saved. The lockout now resets the attempt count, keeps the PIN, and signs out. The next password sign-in asks for the saved PIN with a fresh set of five attempts. **Forgot PIN? Sign in with password** remains the recovery path and does clear it.
+
+Regression test: `keeps the PIN and signs out after five wrong PINs` in `tests/unit/pin-lock-provider.test.tsx`.
+
 ## Session handoff — 15 Nov 2026
 
-**Latest commit:** `06dbada` — `fix: prevent stale tabs from resetting the PIN`. Step 02 is built; do not rebuild it.
-
-**State:** 56 unit tests pass and `npm run check` is green. Screenshots are in `docs/screenshots/step-02-pin-{setup,unlock,error}-{desktop,tablet,mobile}.png`.
-
-**Open item:** Sean's manual check in one tab. The last browser repro was interrupted before cleanup, so the local PIN may be missing or set to test PIN `1234`; reset it with **Forgot PIN? Sign in with password** if needed.
+**State:** Step 02 approved and closed. The lockout fix keeps the saved PIN after five wrong attempts. `npm run check` is green with 56 unit tests. Screenshots are in `docs/screenshots/step-02-pin-{setup,unlock,error}-{desktop,tablet,mobile}.png`. Do not rebuild Step 02.
 
 **Working preference:** verify with unit tests and ask Sean to check the UI manually. Do not use opencode browse for this step unless Sean asks; it was slow and left a tab in a test state.
 
-**Next:** Sean says **approved** → mark Step 02 Done → start Step 03 (app shell and navigation).
+**Next:** Step 03 — app shell and navigation. Write the plan first.
 
-**Gate:** Sean must say **approved** before Step 03.
+**Gate:** Passed — Sean approved Step 02 on 15 Nov 2026.

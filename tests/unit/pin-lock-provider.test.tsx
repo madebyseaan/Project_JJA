@@ -157,7 +157,7 @@ test('signs out when the PIN is missing at unlock time', async () => {
   await waitFor(() => expect(latest.current?.hasPin).toBe(false));
 });
 
-test('signs out after five wrong PINs', async () => {
+test('keeps the PIN and signs out after five wrong PINs', async () => {
   await savePin(ownerProfile.id, '1234');
 
   const signOut = vi.fn(async () => {});
@@ -172,8 +172,13 @@ test('signs out after five wrong PINs', async () => {
   });
 
   expect(signOut).toHaveBeenCalledTimes(1);
-  expect(getPinRecord(ownerProfile.id)).toBeNull();
-  await waitFor(() => expect(latest.current?.hasPin).toBe(false));
+
+  const record = getPinRecord(ownerProfile.id) as PinRecord;
+
+  expect(record).not.toBeNull();
+  expect(record.attempts).toBe(0);
+  expect(await verifyPin('1234', record)).toBe(true);
+  await waitFor(() => expect(latest.current?.hasPin).toBe(true));
 });
 
 test('locks and navigates to the lock screen', async () => {

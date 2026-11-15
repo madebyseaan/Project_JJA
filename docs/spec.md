@@ -661,7 +661,7 @@ Each entry stores actor, action, entity, before/after, and timestamp. The audit 
 - After first login, each user sets a 4-digit PIN.
 - The PIN is stored locally as salted SHA-256 via Web Crypto. It never reaches the server.
 - The app locks after 5 minutes of idle time (configurable 1–30 minutes) or when the user taps Lock.
-- Five wrong attempts force a full sign-out.
+- Five wrong attempts force a full sign-out. The PIN stays saved; the next password sign-in asks for it again with a fresh set of attempts. **Forgot PIN** clears it.
 - The PIN is a convenience lock, not the security boundary. The session and database roles are the boundary.
 - A lost device: change the password and revoke sessions from the Supabase dashboard. Runbook step.
 

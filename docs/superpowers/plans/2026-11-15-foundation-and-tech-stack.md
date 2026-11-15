@@ -520,14 +520,14 @@ export function recordFailedAttempt(userId: string): number
 - `hashPin('1234')` and `verifyPin('1234', stored)` → true.
 - `verifyPin('0000', stored)` → false.
 - Hashing the same PIN twice yields different salts and hashes.
-- `recordFailedAttempt` returns 1, 2, 3, 4, 5; after 5, the caller clears the PIN.
+- `recordFailedAttempt` returns 1, 2, 3, 4, 5; after 5, the caller resets attempts and keeps the PIN.
 
 - [ ] **Step 2: Write the failing auth and lock tests**
 
 - Login form rejects an empty email and shows a validation message.
 - Login form rejects a password shorter than 6 characters.
 - Lock screen shows the staff display name and a 4-digit keypad.
-- Five wrong PINs call `signOut` and clear the PIN.
+- Five wrong PINs call `signOut` and keep the PIN.
 - Idle lock fires after the timeout and resets on a pointer event.
 - A `SIGNED_OUT` auth event while on `/lock` shows “Session expired. Sign in again.” and links to `/login`.
 - Missing env vars render the setup screen naming `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`.

@@ -52,8 +52,8 @@ A step is not done until all of these are true:
 |---|---|---|
 | 00 | Foundation: repo, stack, design system, Supabase connection, skills | Done |
 | 01 | **Login and staff identity** | **Done — approved** |
-| 02 | **PIN lock and idle lock** | **In review — built; awaiting approval** |
-| 03 | App shell and navigation | Waiting |
+| 02 | **PIN lock and idle lock** | **Done — approved** |
+| 03 | App shell and navigation | In progress |
 | 04 | Inventory and stock | Waiting |
 | 05 | Bay tickets | Waiting |
 | 06 | Payments and completion | Waiting |
@@ -66,15 +66,14 @@ A step is not done until all of these are true:
 
 ## 4. Current step
 
-**Step 02 — PIN lock and idle lock.**
-Status: **In review.** Built and verified — `npm run check` is green with 56 unit tests, and the setup, unlock, and wrong-PIN screens are captured at 390px, 768px, and 1920px. The cross-tab PIN fix is in `06dbada`. Waiting for Sean's review. The plan is `docs/superpowers/plans/2026-11-15-step-02-pin-lock.md`. Do not begin Step 03 until Sean approves Step 02.
+**Step 03 — App shell and navigation.**
+Status: **In progress — plan next.** Step 02 is approved and closed. The plan will be `docs/superpowers/plans/2026-11-15-step-03-app-shell.md`. Build the staff frame: mobile bottom tabs, desktop left rail, Bay/Stock/Owner routes, role guards, connection status, and real empty states. Do not begin Step 04 until Sean approves Step 03.
 
 **Next session starts here.** Start fresh from this section; do not rebuild Step 02.
 
-1. The interrupted browser repro may have cleared the local PIN or left test PIN `1234`. Ask Sean to refresh `/lock` once. If it says **Set your PIN**, set it again; if the PIN fails, try `1234` and use **Forgot PIN? Sign in with password**.
-2. Sean tests in one tab: **Lock** → wrong PIN → stays locked and counts down from 4 → correct PIN → home.
-3. If Sean says **approved**, mark Step 02 Done and start Step 03.
-4. Prefer code and unit tests for verification. Do not use opencode browse unless Sean asks; it was slow and left a tab in a test state.
+1. Write the Step 03 plan, then build only that scope.
+2. Run `npm run check`, capture 360px and desktop screenshots, and stop for Sean's review.
+3. Prefer code and unit tests for verification. Do not use opencode browse unless Sean asks; it was slow and left a tab in a test state.
 
 ---
 
@@ -165,7 +164,9 @@ Status: **In review.** Built and verified — `npm run check` is green with 56 u
 
 ## Step 02 — PIN lock and idle lock
 
-**Goal:** After login, a 4-digit PIN locks the screen. The app locks after 5 minutes idle. Five wrong PINs sign the user out. An expired session returns to login with a clear message.
+**Status:** Done — approved 15 Nov 2026.
+
+**Goal:** After login, a 4-digit PIN locks the screen. The app locks after 5 minutes idle. Five wrong PINs sign the user out while keeping the saved PIN. An expired session returns to login with a clear message.
 
 ### AI builds
 
@@ -173,7 +174,7 @@ Status: **In review.** Built and verified — `npm run check` is green with 56 u
 - [x] First-login PIN setup: enter twice, save, continue.
 - [x] `/lock`: staff name, Manila clock, 64px keypad.
 - [x] Idle lock after 5 minutes; reset on pointer and keyboard activity.
-- [x] Five wrong attempts clears the PIN and signs out.
+- [x] Five wrong attempts signs out and keeps the saved PIN; the next password sign-in resets the attempts.
 - [x] Session-expiry handling: explain and return to `/login`.
 - [x] Unit tests with fake timers and a mocked auth session.
 - [x] Shared brand panel and mobile header so login and lock match.
@@ -183,7 +184,7 @@ Status: **In review.** Built and verified — `npm run check` is green with 56 u
 
 - [ ] Try the keypad with one hand, on the actual phone.
 - [ ] Confirm the lock timing feels right for the shop.
-- [ ] Approve the copy and the lock screen look.
+- [x] Approve the copy and the lock screen look.
 
 ### Demo script
 
@@ -197,7 +198,7 @@ Status: **In review.** Built and verified — `npm run check` is green with 56 u
 
 Screenshots: `docs/screenshots/step-02-pin-setup-{desktop,tablet,mobile}.png`, `step-02-pin-unlock-*.png`, `step-02-pin-error-*.png`.
 
-**GATE:** Do not start Step 03 until Sean says **approved**.
+**GATE:** Passed — Sean approved Step 02 on 15 Nov 2026.
 
 ---
 
