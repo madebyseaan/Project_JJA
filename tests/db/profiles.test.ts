@@ -65,11 +65,12 @@ describe('profiles', () => {
     expect(data?.role).toBe('owner');
   });
 
-  it('hides profiles from the anon role', async () => {
+  it('denies table access to the anon role', async () => {
     const { data, error } = await getAnonClient().from('profiles').select('id');
 
-    expect(error).toBeNull();
-    expect(data).toEqual([]);
+    // anon has no table grants; the database must refuse the read.
+    expect(error).toMatchObject({ code: '42501' });
+    expect(data).toBeNull();
   });
 
   it('lets signed-in staff read profiles', async () => {
@@ -97,8 +98,9 @@ describe('profiles', () => {
       .eq('id', uncle.id)
       .select();
 
-    expect(error).toBeNull();
-    expect(data).toEqual([]);
+    // authenticated has select-only grants; direct writes must be refused.
+    expect(error).toMatchObject({ code: '42501' });
+    expect(data).toBeNull();
 
     const { data: after } = await getServiceClient()
       .from('profiles')
