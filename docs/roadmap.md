@@ -72,7 +72,7 @@ Status: **In review — built; awaiting approval.** Step 02 is approved and clos
 **Next session starts here.** Start fresh from this section; do not rebuild Step 02. Paused 15 Nov 2026; the full audit is in `docs/superpowers/plans/2026-11-15-step-03-app-shell.md` under **Session audit — 15 November 2026**.
 
 1. Run `npm run dev`, sign in as `JJA-001`, and capture the four Step 03 screenshots at 1440px and 360px.
-2. Apply any review findings, re-run `npm run check`, commit the screenshots, push the branch, and open the PR.
+2. Commit the screenshots, push the branch, and open the PR. Review findings were applied on 16 Nov and `npm run check` passes with 85 tests.
 3. Review Step 03 with the demo script below; request polish.
 4. On approval, mark Step 03 done and start Step 04.
 5. Prefer code and unit tests for verification. Do not use opencode browse unless Sean asks; it was slow and left a tab in a test state.
