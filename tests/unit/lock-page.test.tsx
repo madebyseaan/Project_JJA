@@ -121,6 +121,21 @@ test('unlocks with the correct PIN', async () => {
   expect(await screen.findByText('Staff home')).toBeInTheDocument();
 });
 
+test('signs in as someone else without clearing the PIN', async () => {
+  const user = userEvent.setup();
+  const signOut = vi.fn(async () => {});
+  const clearPinAndSignOut = vi.fn(async () => {});
+  const auth = { ...signedInValue(ownerProfile), signOut };
+  const pin = pinLockValue({ unlocked: false, hasPin: true, clearPinAndSignOut });
+
+  renderLockPage({ auth, pin });
+
+  await user.click(screen.getByRole('button', { name: 'Sign in as someone else' }));
+
+  expect(signOut).toHaveBeenCalledTimes(1);
+  expect(clearPinAndSignOut).not.toHaveBeenCalled();
+});
+
 test('offers a password sign-in when the PIN is forgotten', async () => {
   const user = userEvent.setup();
   const clearPinAndSignOut = vi.fn(async () => {});

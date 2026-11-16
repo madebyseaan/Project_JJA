@@ -1,23 +1,26 @@
 import { Outlet } from 'react-router';
 
+import { AppNav } from '@/app/AppNav';
 import { BrandMark } from '@/components/BrandMark';
 import { ConnectionStatus } from '@/components/ConnectionStatus';
+import { FullPageLoading } from '@/components/FullPageLoading';
 import { OfflineBanner } from '@/components/OfflineBanner';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/features/auth/use-auth';
 import { usePinLock } from '@/features/auth/use-pin-lock';
 import { useOnlineStatus } from '@/hooks/use-online-status';
 
-import { AppNav } from '../AppNav';
-
 export function StaffLayout() {
-  const { profile, signOut } = useAuth();
+  const auth = useAuth();
   const { lock } = usePinLock();
   const online = useOnlineStatus();
 
-  if (!profile) {
-    return null;
+  // RequireStaff owns redirects; this is a defensive frame, never a blank screen.
+  if (auth.status !== 'signed-in') {
+    return <FullPageLoading />;
   }
+
+  const { profile, signOut } = auth;
 
   return (
     <div className="bg-paper min-h-screen md:grid md:grid-cols-[220px_minmax(0,1fr)]">
@@ -56,23 +59,25 @@ export function StaffLayout() {
       </aside>
 
       <div className="flex min-w-0 flex-col md:min-h-screen">
-        <header className="border-line bg-surface sticky top-0 z-30 border-b md:hidden">
-          <div className="flex items-center gap-3 px-4 py-2">
-            <BrandMark className="size-9" />
-            <div className="min-w-0 flex-1">
-              <p className="font-display truncate text-lg leading-tight font-bold">J.J.A</p>
-              <p className="text-steel truncate text-xs" title={profile.displayName}>
-                {profile.displayName}
-              </p>
+        <div className="sticky top-0 z-30 md:z-20">
+          <header className="border-line bg-surface border-b md:hidden">
+            <div className="flex items-center gap-3 px-4 py-2">
+              <BrandMark className="size-9" />
+              <div className="min-w-0 flex-1">
+                <p className="font-display truncate text-lg leading-tight font-bold">J.J.A</p>
+                <p className="text-steel truncate text-xs" title={profile.displayName}>
+                  {profile.displayName}
+                </p>
+              </div>
+              <ConnectionStatus online={online} className="shrink-0" />
+              <Button variant="outline" size="touch" className="shrink-0" onClick={lock}>
+                Lock
+              </Button>
             </div>
-            <ConnectionStatus online={online} className="shrink-0" />
-            <Button variant="outline" size="touch" className="shrink-0" onClick={lock}>
-              Lock
-            </Button>
-          </div>
-        </header>
+          </header>
 
-        <OfflineBanner online={online} />
+          <OfflineBanner online={online} />
+        </div>
 
         <main className="mx-auto w-full max-w-[1280px] flex-1 px-4 pt-6 pb-24 md:px-8 md:pt-8 md:pb-8">
           <Outlet />

@@ -35,7 +35,7 @@ export function AppNav({ role, variant, className }: AppNavProps) {
         className,
       )}
     >
-      <ul className={cn(variant === 'rail' ? 'flex flex-col gap-1' : 'flex')}>
+      <ul className={cn(variant === 'rail' ? 'flex flex-col gap-2' : 'flex')}>
         {items.map(({ label, to, Icon }) => (
           <li key={to} className={variant === 'tabs' ? 'flex-1' : undefined}>
             <NavLink
@@ -50,11 +50,11 @@ export function AppNav({ role, variant, className }: AppNavProps) {
                       : 'text-ink-soft hover:bg-soft border-transparent'),
                   variant === 'tabs' && 'min-h-16 flex-1 flex-col justify-center gap-1 border-t-2',
                   variant === 'tabs' &&
-                    (isActive ? 'border-safety text-safety' : 'text-steel border-transparent'),
+                    (isActive ? 'border-safety text-safety-dark' : 'text-steel border-transparent'),
                 )
               }
             >
-              <Icon className="size-5" aria-hidden="true" />
+              <Icon className="size-6" aria-hidden="true" />
               {label}
             </NavLink>
           </li>

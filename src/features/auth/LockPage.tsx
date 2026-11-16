@@ -16,7 +16,7 @@ import { usePinLock } from './use-pin-lock';
 type Stage = 'setup' | 'confirm' | 'unlock';
 
 export function LockPage() {
-  const { status, profile } = useAuth();
+  const { status, profile, signOut } = useAuth();
   const { unlocked, hasPin, setPin, unlock, clearPinAndSignOut } = usePinLock();
   const navigate = useNavigate();
   const manilaTime = useManilaClock();
@@ -173,17 +173,25 @@ export function LockPage() {
               </div>
             ) : null}
 
-            <div className="border-line mt-6 border-t pt-4 text-center">
+            <div className="border-line mt-6 space-y-1 border-t pt-4 text-center">
               <Button
                 type="button"
                 variant="link"
                 className="text-steel min-h-12 w-full px-3 text-xs"
-                onClick={() => void clearPinAndSignOut()}
+                onClick={() => void signOut()}
               >
-                {stage === 'unlock'
-                  ? 'Forgot PIN? Sign in with password.'
-                  : 'Sign in as someone else'}
+                Sign in as someone else
               </Button>
+              {stage === 'unlock' ? (
+                <Button
+                  type="button"
+                  variant="link"
+                  className="text-steel min-h-12 w-full px-3 text-xs"
+                  onClick={() => void clearPinAndSignOut()}
+                >
+                  Forgot PIN? Sign in with password.
+                </Button>
+              ) : null}
             </div>
           </div>
 

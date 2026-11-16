@@ -13,7 +13,7 @@ export function ConnectionStatus({ online, className }: ConnectionStatusProps) {
     >
       <span
         aria-hidden="true"
-        className={cn('size-2 rounded-full', online ? 'bg-ok' : 'bg-danger')}
+        className={cn('size-1.5 rounded-full', online ? 'bg-ok' : 'bg-danger')}
       />
       {online ? 'Online' : 'Offline'}
     </output>

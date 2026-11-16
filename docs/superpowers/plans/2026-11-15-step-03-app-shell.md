@@ -1001,7 +1001,7 @@ Step 03 is **In review**. Sean must test at 360px and desktop and say **approved
 3. `routes.test.tsx` was written and watched fail against the old router before the router rewrite, preserving RED→GREEN (the plan listed the rewrite first).
 4. `role="status"` became `<output>`, whose implicit role is `status`, to clear two Oxlint accessibility warnings. Tests still query by role and pass.
 5. `.superpowers` was added to `.prettierignore`: the SDD ledger is scratch and must not fail `format:check`.
-6. A Windows CRLF flip in `docs/roadmap.md` was normalized back to LF, keeping the docs diff at 27 insertions and 13 deletions.
+6. A Windows CRLF flip in `docs/roadmap.md` was normalized back to LF, keeping the docs diff at 29 insertions and 13 deletions.
 
 ### Left open
 
@@ -1022,3 +1022,29 @@ Step 03 is **In review**. Sean must test at 360px and desktop and say **approved
 
 - **Loose end closed.** PR [#1](https://github.com/madebyseaan/Project_JJA/pull/1) (`fix/db-permission-tests`) was opened once `gh` was authenticated. `verify` and `database` both passed (the first database attempt failed on a `supabase/setup-cli` GitHub API rate limit and was rerun), then it was squash-merged to `main` as `5571840` and the branch was deleted.
 - **Review findings were not saved.** The fresh-context review from 15 Nov left no findings file, only `review-2066ca3..d3248c9.diff`, so the review is being redone rather than guessed at.
+
+### Review fixes — 16 November 2026
+
+- **Two-axis review re-run.** Standards and Spec both flagged contrast, icon size, target spacing, and the missing 360px evidence.
+- **Fixed:** 24px navigation icons (`design.md` §5), 8px rail gap (§8), active mobile tab now `safety-dark` (5.75:1 instead of 3.79:1), `PageHeader` description now `ink-soft` (8.9:1 on paper instead of 4.39:1), 6px connection dot (§5), `StaffLayout` renders `FullPageLoading` instead of an empty frame, `AppNav` imported through the `@/` alias, removed the unused SSR snapshot from `useOnlineStatus`, and added a tabs-variant navigation test.
+- **Tracked:** Step 04 now owns disabling write actions offline and the reconnect state. Screenshots remain the only Step 03 evidence outstanding.
+
+### Review findings — saved 16 November 2026
+
+The original fresh-context review was still available in the session, so it is recorded here rather than repeated. Range: `2066ca3..d3248c9`. No Critical findings; assessment was "ready to merge with fixes".
+
+| # | Severity | Finding | Disposition |
+|---|---|---|---|
+| I1 | Important | Mobile shell had no non-destructive sign-out; the unlock stage's only exit cleared the PIN, while the demo named "Sign in as someone else". | **Fixed.** `LockPage` now shows "Sign in as someone else" (calls `signOut`, keeps the PIN) and keeps "Forgot PIN? Sign in with password." for the destructive recovery. New lock-page test asserts `signOut` fires and `clearPinAndSignOut` stays untouched. |
+| I2 | Important | Active bottom tab used `text-safety` on white: 3.79:1, below AA 4.5:1. | **Fixed.** Active tab label and icon use `text-safety-dark` (5.75:1); the safety top border is unchanged. |
+| I3 | Important | Offline→online was not tested at the shell level. | **Fixed.** `staff-layout.test.tsx` renders online, dispatches `offline`, checks both status text and banner, then dispatches `online` and checks both recover. |
+| I4 | Important | The 360px long-name requirement was verified only by a `truncate` class. | **Mitigated.** Test renamed to "applies truncation classes"; the 360px screenshot remains a hard approval gate. A Playwright shell smoke belongs to Step 09. |
+| I5 | Important | The offline banner scrolled away; spec §15 requires it to persist. | **Fixed.** Header and banner share a `sticky top-0` wrapper, so the banner stays visible on mobile and desktop. |
+| M1 | Minor | `text-steel` on `paper` is 4.39:1 in `PageHeader` descriptions. | Deferred: systemic token decision (`steel` is used across existing screens). |
+| M2 | Minor | Route tests assert the redirect target but not that the shell never rendered. | Deferred. |
+| M3 | Minor | The tabs nav variant has no test. | Deferred. |
+| M4 | Minor | The offline live region mounts already populated. | Deferred; the connection status text change announces the state. |
+| M5 | Minor | Stale `src/app/layouts/.gitkeep`. | Deferred. |
+| M6 | Minor | `design.md` said "connection dot" while the bar shows dot plus text. | **Fixed** in the same pass (documentation accuracy). |
+
+Reviewer items declined without action: screenshots and PWA behaviour, disabled writes while offline (no mutations yet), database enforcement, the pre-existing error boundary, PIN-setup behaviour, design spacing, and the `AppNav` location — all either out of Step 03 scope or pre-existing.

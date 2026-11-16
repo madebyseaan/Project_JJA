@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { afterEach, expect, test, vi } from 'vitest';
@@ -14,6 +14,7 @@ import {
   PinLockTestProvider,
   pinLockValue,
   signedInValue,
+  signedOutValue,
 } from '../setup/auth-test-utils';
 
 function setOnline(value: boolean) {
@@ -83,7 +84,7 @@ test('signs out from the desktop rail', async () => {
   expect(signOut).toHaveBeenCalledTimes(1);
 });
 
-test('truncates a long staff name', () => {
+test('applies truncation classes to a long staff name', () => {
   const longName = 'Alexandria Cassandra Dela Cruz-Montenegro';
 
   renderLayout({ profile: { ...ownerProfile, displayName: longName } });
@@ -100,4 +101,34 @@ test('shows the offline banner when the browser is offline', () => {
   renderLayout();
 
   expect(screen.getAllByText(/you are offline/i).length).toBeGreaterThan(0);
+});
+
+test('updates the status and banner when the connection returns', () => {
+  renderLayout();
+
+  expect(screen.getAllByText('Online').length).toBeGreaterThan(0);
+  expect(screen.queryByText(/you are offline/i)).not.toBeInTheDocument();
+
+  act(() => {
+    setOnline(false);
+    window.dispatchEvent(new Event('offline'));
+  });
+
+  expect(screen.getAllByText('Offline').length).toBeGreaterThan(0);
+  expect(screen.getAllByText(/you are offline/i).length).toBeGreaterThan(0);
+
+  act(() => {
+    setOnline(true);
+    window.dispatchEvent(new Event('online'));
+  });
+
+  expect(screen.getAllByText('Online').length).toBeGreaterThan(0);
+  expect(screen.queryByText(/you are offline/i)).not.toBeInTheDocument();
+});
+
+test('shows a loading frame instead of a blank screen without a signed-in session', () => {
+  renderLayout({ auth: signedOutValue() });
+
+  expect(screen.getByRole('status')).toBeInTheDocument();
+  expect(screen.queryByText('Bay content')).not.toBeInTheDocument();
 });

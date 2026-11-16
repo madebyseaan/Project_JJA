@@ -254,6 +254,7 @@ Screenshots: `docs/screenshots/step-03-shell-bay-desktop.png`, `step-03-shell-ba
 - [ ] Every stock change writes a `stock_movements` row with actor and reason.
 - [ ] Inventory screen: search, filters, add/edit sheet, restock/adjust dialog.
 - [ ] Low-stock filter and dashboard count.
+- [ ] Disable write actions while offline and show the reconnect state promised by the offline banner.
 - [ ] Permission tests: mechanic read-only; owner writes; anon denied.
 
 ### Human checkpoints

@@ -5,9 +5,9 @@ import { expect, test } from 'vitest';
 import { AppNav } from '@/app/AppNav';
 import type { Role } from '@/types/domain';
 
-function renderNav(role: Role, initialEntries = ['/bay']) {
+function renderNav(role: Role, initialEntries = ['/bay'], variant: 'rail' | 'tabs' = 'rail') {
   const router = createMemoryRouter(
-    [{ path: '*', element: <AppNav role={role} variant="rail" /> }],
+    [{ path: '*', element: <AppNav role={role} variant={variant} /> }],
     { initialEntries },
   );
 
@@ -35,4 +35,12 @@ test('marks the current route', () => {
 
   expect(screen.getByRole('link', { name: 'Stock' })).toHaveAttribute('aria-current', 'page');
   expect(screen.getByRole('link', { name: 'Bay' })).not.toHaveAttribute('aria-current');
+});
+
+test('renders the bottom tabs with the same filtering and active state', () => {
+  renderNav('mechanic', ['/bay'], 'tabs');
+
+  expect(screen.getByRole('link', { name: 'Bay' })).toHaveAttribute('aria-current', 'page');
+  expect(screen.getByRole('link', { name: 'Stock' })).not.toHaveAttribute('aria-current');
+  expect(screen.queryByRole('link', { name: 'Owner' })).not.toBeInTheDocument();
 });

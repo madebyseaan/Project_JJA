@@ -93,7 +93,7 @@ Rules:
 └─────────────────────────────┘
 ```
 
-- Top bar: shop name, signed-in staff name (truncated), connection dot, lock.
+- Top bar: shop name, signed-in staff name (truncated), connection status, lock.
 - Bottom tabs: Bay, Stock, Owner (owner only).
 - Primary actions are 56px tall; other targets are at least 48px.
 - The queue is a vertical list of job rows with a 4px status stripe on the left.

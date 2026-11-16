@@ -14,10 +14,6 @@ function getSnapshot() {
   return navigator.onLine;
 }
 
-function getServerSnapshot() {
-  return true;
-}
-
 export function useOnlineStatus(): boolean {
-  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  return useSyncExternalStore(subscribe, getSnapshot);
 }
