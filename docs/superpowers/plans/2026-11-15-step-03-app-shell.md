@@ -1017,3 +1017,8 @@ Step 03 is **In review**. Sean must test at 360px and desktop and say **approved
 3. Apply any review findings test-first, then re-run `npm run check`.
 4. Commit the screenshots, push `feat/step-03-app-shell`, and open the PR.
 5. Walk Sean through the demo script at 360px and desktop; stop for approval before Step 04.
+
+### Follow-up — 16 November 2026
+
+- **Loose end closed.** PR [#1](https://github.com/madebyseaan/Project_JJA/pull/1) (`fix/db-permission-tests`) was opened once `gh` was authenticated. `verify` and `database` both passed (the first database attempt failed on a `supabase/setup-cli` GitHub API rate limit and was rerun), then it was squash-merged to `main` as `5571840` and the branch was deleted.
+- **Review findings were not saved.** The fresh-context review from 15 Nov left no findings file, only `review-2066ca3..d3248c9.diff`, so the review is being redone rather than guessed at.
