@@ -1014,7 +1014,7 @@ Step 03 is **In review**. Sean must test at 360px and desktop and say **approved
 
 1. Run `npm run dev`, open the app, sign in as `JJA-001`, and enter the PIN.
 2. Capture `docs/screenshots/step-03-shell-bay-desktop.png`, `step-03-shell-bay-mobile.png`, `step-03-shell-owner-desktop.png`, and `step-03-shell-mechanic-desktop.png` at 1440px and 360px.
-3. Apply any review findings test-first, then re-run `npm run check`.
+3. Apply any review findings test-first, then re-run `npm run check`. (Applied 16 Nov; see **Review findings** below.)
 4. Commit the screenshots, push `feat/step-03-app-shell`, and open the PR.
 5. Walk Sean through the demo script at 360px and desktop; stop for approval before Step 04.
 
@@ -1040,11 +1040,15 @@ The original fresh-context review was still available in the session, so it is r
 | I3 | Important | Offline→online was not tested at the shell level. | **Fixed.** `staff-layout.test.tsx` renders online, dispatches `offline`, checks both status text and banner, then dispatches `online` and checks both recover. |
 | I4 | Important | The 360px long-name requirement was verified only by a `truncate` class. | **Mitigated.** Test renamed to "applies truncation classes"; the 360px screenshot remains a hard approval gate. A Playwright shell smoke belongs to Step 09. |
 | I5 | Important | The offline banner scrolled away; spec §15 requires it to persist. | **Fixed.** Header and banner share a `sticky top-0` wrapper, so the banner stays visible on mobile and desktop. |
-| M1 | Minor | `text-steel` on `paper` is 4.39:1 in `PageHeader` descriptions. | Deferred: systemic token decision (`steel` is used across existing screens). |
+| M1 | Minor | `text-steel` on `paper` is 4.39:1 in `PageHeader` descriptions. | **Fixed.** `PageHeader` description uses `text-ink-soft`. |
 | M2 | Minor | Route tests assert the redirect target but not that the shell never rendered. | Deferred. |
-| M3 | Minor | The tabs nav variant has no test. | Deferred. |
+| M3 | Minor | The tabs nav variant has no test. | **Fixed.** `app-nav.test.tsx` now parameterises the variant and covers tab filtering and `aria-current`. |
 | M4 | Minor | The offline live region mounts already populated. | Deferred; the connection status text change announces the state. |
 | M5 | Minor | Stale `src/app/layouts/.gitkeep`. | Deferred. |
 | M6 | Minor | `design.md` said "connection dot" while the bar shows dot plus text. | **Fixed** in the same pass (documentation accuracy). |
 
 Reviewer items declined without action: screenshots and PWA behaviour, disabled writes while offline (no mutations yet), database enforcement, the pre-existing error boundary, PIN-setup behaviour, design spacing, and the `AppNav` location — all either out of Step 03 scope or pre-existing.
+
+The fix pass was committed as `c4b80bd` on 16 November. It also carried three polish changes beyond the findings: 24px navigation icons (design §5), an 8px rail gap (design §8), and a 6px connection dot. The client-only `useOnlineStatus` dropped its unused server snapshot.
+
+Verification after the fix pass: `npm run check` — typecheck, lint, Prettier, file-size, **85 unit tests in 23 files**, and the production build all pass. Screenshots remain the only open Step 03 item.
