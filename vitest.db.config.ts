@@ -11,6 +11,9 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['tests/db/**/*.test.ts'],
+    // The database tests share one Supabase instance. Running files in
+    // parallel lets one test's cleanup and counters leak into another's totals.
+    fileParallelism: false,
     clearMocks: true,
     restoreMocks: true,
   },
