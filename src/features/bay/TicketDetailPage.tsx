@@ -5,14 +5,16 @@ import { Link, useParams } from 'react-router';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAuth } from '@/features/auth/use-auth';
 import { useOnlineStatus } from '@/hooks/use-online-status';
 import { formatManilaDateTime } from '@/lib/dates';
-import { formatCentavos } from '@/lib/money';
+import { formatCentavos, sumCentavos } from '@/lib/money';
 
 import { AddLaborDialog } from './components/AddLaborDialog';
 import { AddPartSheet } from './components/AddPartSheet';
 import { TicketLaborCard } from './components/TicketLaborCard';
 import { TicketPartsCard } from './components/TicketPartsCard';
+import { TicketPaymentsCard } from './components/TicketPaymentsCard';
 import { TicketStatusActions } from './components/TicketStatusActions';
 import { useTicket, useTicketRealtime } from './hooks/use-tickets';
 import { ticketTypeLabel } from './schemas';
@@ -41,9 +43,14 @@ function TicketWorkspace({
 }) {
   const [addPartOpen, setAddPartOpen] = useState(false);
   const [addLaborOpen, setAddLaborOpen] = useState(false);
-  const { ticket, items, labor } = detail;
+  const auth = useAuth();
+  const { ticket, items, labor, payments, receipt } = detail;
   const editable = OPEN_STATUSES.has(ticket.status);
   const verifiedCount = items.filter((item) => item.verifiedAt !== null).length;
+  const unverifiedCount = items.length - verifiedCount;
+  const paid = sumCentavos(payments.map((payment) => payment.amountCentavos));
+  const balance = ticket.totalCentavos - paid;
+  const isOwner = auth.status === 'signed-in' && auth.profile.role === 'owner';
 
   return (
     <>
@@ -108,6 +115,15 @@ function TicketWorkspace({
             isOnline={isOnline}
             onAddLabor={() => setAddLaborOpen(true)}
           />
+          <TicketPaymentsCard
+            ticket={ticket}
+            payments={payments}
+            receipt={receipt}
+            editable={editable}
+            isOnline={isOnline}
+            isOwner={isOwner}
+            unverifiedCount={unverifiedCount}
+          />
         </div>
 
         <aside className="border-line bg-surface hidden rounded-lg border p-4 lg:block lg:self-start">
@@ -136,6 +152,14 @@ function TicketWorkspace({
               <dd>
                 {verifiedCount} of {items.length}
               </dd>
+            </div>
+            <div className="flex justify-between gap-2">
+              <dt className="text-steel">Paid</dt>
+              <dd className="font-mono tabular-nums">{formatCentavos(paid)}</dd>
+            </div>
+            <div className="flex justify-between gap-2">
+              <dt className="text-steel">Balance</dt>
+              <dd className="font-mono tabular-nums">{formatCentavos(balance)}</dd>
             </div>
           </dl>
         </aside>

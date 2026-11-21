@@ -29,6 +29,24 @@ export const laborFormSchema = z.object({
 
 export type LaborFormValues = z.infer<typeof laborFormSchema>;
 
+const paymentAmount = z
+  .string()
+  .trim()
+  .min(1, 'Enter the amount.')
+  .refine((value) => {
+    const centavos = parsePesoToCentavos(value);
+    return centavos !== null && centavos > 0;
+  }, 'Enter a valid amount greater than zero.');
+
+export const paymentSchema = z.object({
+  method: z.enum(['CASH', 'GCASH', 'MAYA', 'OTHER']),
+  amount: paymentAmount,
+  referenceNo: z.string().trim().max(60, 'Keep the reference under 60 characters.'),
+  note: z.string().trim().max(500, 'Keep the note under 500 characters.'),
+});
+
+export type PaymentValues = z.infer<typeof paymentSchema>;
+
 export type StatusAction = {
   label: string;
   status: TicketStatus;
