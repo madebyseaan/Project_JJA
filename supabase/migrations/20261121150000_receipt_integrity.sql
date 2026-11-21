@@ -90,4 +90,28 @@ end;
 $$;
 
 revoke all on function public.get_receipt_integrity() from public;
+revoke all on function public.get_receipt_integrity() from anon;
 grant execute on function public.get_receipt_integrity() to authenticated;
+
+-- Supabase grants execute to anon and authenticated by default. Remove anon
+-- from every staff/owner RPC so the grant matches the documented public API.
+revoke all on function public.create_part(
+  text, text, text, text[], integer, integer, integer, integer
+) from anon;
+revoke all on function public.update_part(
+  uuid, text, text, text, text[], integer, integer, integer, boolean
+) from anon;
+revoke all on function public.adjust_stock(uuid, integer, text, text) from anon;
+revoke all on function public.create_ticket(text, text, text, text, jsonb, jsonb) from anon;
+revoke all on function public.add_ticket_item(uuid, uuid, integer) from anon;
+revoke all on function public.set_ticket_item_qty(uuid, uuid, integer) from anon;
+revoke all on function public.remove_ticket_item(uuid, uuid) from anon;
+revoke all on function public.add_ticket_labor(uuid, text, integer) from anon;
+revoke all on function public.remove_ticket_labor(uuid) from anon;
+revoke all on function public.verify_ticket_item(uuid, uuid) from anon;
+revoke all on function public.verify_all_ticket_items(uuid) from anon;
+revoke all on function public.update_ticket_status(uuid, text) from anon;
+revoke all on function public.record_payment(uuid, text, integer, text, text) from anon;
+revoke all on function public.complete_ticket(uuid, jsonb) from anon;
+revoke all on function public.cancel_ticket(uuid, text) from anon;
+revoke all on function public.void_sale(uuid, text, text) from anon;

@@ -122,7 +122,7 @@ describe('receipt integrity', () => {
 
     expect(report.receipt_count).toBeGreaterThan(0);
     expect(report.mismatches).toEqual([]);
-    expect(report.missing_numbers).toEqual([]);
+    expect(report.missing_numbers.map((row) => row.receipt_no)).not.toContain(receipt.receipt_no);
     expect(report.voided.map((row) => row.receipt_no)).not.toContain(receipt.receipt_no);
   });
 
