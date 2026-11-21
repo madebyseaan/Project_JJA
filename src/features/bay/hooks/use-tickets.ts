@@ -6,9 +6,12 @@ import { getSupabaseClient } from '@/lib/supabase';
 import {
   addTicketItem,
   addTicketLabor,
+  cancelTicket,
+  completeTicket,
   createTicket,
   getTicket,
   listOpenTickets,
+  recordPayment,
   removeTicketItem,
   removeTicketLabor,
   setTicketItemQty,
@@ -16,7 +19,7 @@ import {
   verifyAllTicketItems,
   verifyTicketItem,
 } from '../api';
-import type { CreateTicketInput, TicketStatus } from '../types';
+import type { CreateTicketInput, PaymentMethod, TicketStatus } from '../types';
 
 export const ticketsQueryKey = ['tickets'] as const;
 export const ticketQueryKey = (ticketId: string) => ['ticket', ticketId] as const;
@@ -131,6 +134,45 @@ export function useUpdateTicketStatus(ticketId: string) {
 
   return useMutation({
     mutationFn: (status: TicketStatus) => updateTicketStatus(ticketId, status),
+    onSuccess: invalidate,
+  });
+}
+
+export function useRecordPayment(ticketId: string) {
+  const invalidate = useInvalidateTickets();
+
+  return useMutation({
+    mutationFn: (input: {
+      method: PaymentMethod;
+      amountCentavos: number;
+      referenceNo: string | null;
+      note: string | null;
+    }) => recordPayment({ ticketId, ...input }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useCompleteTicket(ticketId: string) {
+  const invalidate = useInvalidateTickets();
+
+  return useMutation({
+    mutationFn: (
+      payments: {
+        method: PaymentMethod;
+        amountCentavos: number;
+        referenceNo: string | null;
+        note: string | null;
+      }[],
+    ) => completeTicket({ ticketId, payments }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useCancelTicket(ticketId: string) {
+  const invalidate = useInvalidateTickets();
+
+  return useMutation({
+    mutationFn: (reason: string) => cancelTicket(ticketId, reason),
     onSuccess: invalidate,
   });
 }

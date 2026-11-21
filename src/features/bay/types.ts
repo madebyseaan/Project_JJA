@@ -48,6 +48,36 @@ export type TicketDetail = {
   ticket: Ticket;
   items: TicketItem[];
   labor: TicketLabor[];
+  payments: TicketPayment[];
+  receipt: Receipt | null;
+};
+
+export type PaymentMethod = 'CASH' | 'GCASH' | 'MAYA' | 'OTHER';
+
+export type TicketPayment = {
+  id: string;
+  ticketId: string;
+  method: PaymentMethod;
+  amountCentavos: number;
+  referenceNo: string | null;
+  receivedBy: string;
+  receivedByName: string | null;
+  receivedAt: string;
+  note: string | null;
+};
+
+export type Receipt = {
+  id: string;
+  receiptNo: string;
+  ticketId: string;
+  status: 'ISSUED' | 'VOID';
+  issuedAt: string;
+  issuedBy: string;
+  totalCentavos: number;
+  verificationCode: string;
+  publicToken: string;
+  voidedAt: string | null;
+  voidReason: string | null;
 };
 
 export type TicketLineInput = {

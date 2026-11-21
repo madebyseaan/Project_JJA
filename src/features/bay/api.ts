@@ -3,10 +3,13 @@ import { getSupabaseClient } from '@/lib/supabase';
 
 import type {
   CreateTicketInput,
+  PaymentMethod,
+  Receipt,
   Ticket,
   TicketDetail,
   TicketItem,
   TicketLabor,
+  TicketPayment,
   TicketStatus,
   TicketType,
 } from './types';
@@ -67,6 +70,40 @@ type TicketLaborRow = {
   created_at: string;
 };
 
+type TicketPaymentRow = {
+  id: string;
+  ticket_id: string;
+  method: TicketPayment['method'];
+  amount_centavos: number;
+  reference_no: string | null;
+  received_by: string;
+  received_at: string;
+  note: string | null;
+  receiver: { display_name: string }[] | { display_name: string } | null;
+};
+
+type ReceiptRow = {
+  id: string;
+  receipt_no: string;
+  ticket_id: string;
+  status: Receipt['status'];
+  issued_at: string;
+  issued_by: string;
+  total_centavos: number;
+  verification_code: string;
+  public_token: string;
+  voided_at: string | null;
+  void_reason: string | null;
+};
+
+function receiverName(row: TicketPaymentRow): string | null {
+  if (Array.isArray(row.receiver)) {
+    return row.receiver[0]?.display_name ?? null;
+  }
+
+  return row.receiver?.display_name ?? null;
+}
+
 function mapTicket(row: TicketRow): Ticket {
   return {
     id: row.id,
@@ -113,6 +150,36 @@ function mapLabor(row: TicketLaborRow): TicketLabor {
   };
 }
 
+function mapPayment(row: TicketPaymentRow): TicketPayment {
+  return {
+    id: row.id,
+    ticketId: row.ticket_id,
+    method: row.method,
+    amountCentavos: row.amount_centavos,
+    referenceNo: row.reference_no,
+    receivedBy: row.received_by,
+    receivedByName: receiverName(row),
+    receivedAt: row.received_at,
+    note: row.note,
+  };
+}
+
+function mapReceipt(row: ReceiptRow): Receipt {
+  return {
+    id: row.id,
+    receiptNo: row.receipt_no,
+    ticketId: row.ticket_id,
+    status: row.status,
+    issuedAt: row.issued_at,
+    issuedBy: row.issued_by,
+    totalCentavos: row.total_centavos,
+    verificationCode: row.verification_code,
+    publicToken: row.public_token,
+    voidedAt: row.voided_at,
+    voidReason: row.void_reason,
+  };
+}
+
 export async function listOpenTickets(): Promise<Ticket[]> {
   const { data, error } = await getSupabaseClient()
     .from('v_open_tickets')
@@ -129,25 +196,45 @@ export async function listOpenTickets(): Promise<Ticket[]> {
 export async function getTicket(ticketId: string): Promise<TicketDetail> {
   const client = getSupabaseClient();
 
-  const [ticketResult, itemsResult, laborResult] = await Promise.all([
-    client.from('tickets').select(TICKET_COLUMNS).eq('id', ticketId).maybeSingle(),
-    client
-      .from('ticket_items')
-      .select(
-        'id,ticket_id,part_id,part_name_at_time,qty,unit_price_at_time_centavos,unit_cost_at_time_centavos,line_total_centavos,verified_at,verified_by,created_at',
-      )
-      .eq('ticket_id', ticketId)
-      .order('created_at', { ascending: true }),
-    client
-      .from('ticket_labor')
-      .select('id,ticket_id,description,amount_centavos,created_by,created_at')
-      .eq('ticket_id', ticketId)
-      .order('created_at', { ascending: true }),
-  ]);
+  const [ticketResult, itemsResult, laborResult, paymentsResult, receiptResult] = await Promise.all(
+    [
+      client.from('tickets').select(TICKET_COLUMNS).eq('id', ticketId).maybeSingle(),
+      client
+        .from('ticket_items')
+        .select(
+          'id,ticket_id,part_id,part_name_at_time,qty,unit_price_at_time_centavos,unit_cost_at_time_centavos,line_total_centavos,verified_at,verified_by,created_at',
+        )
+        .eq('ticket_id', ticketId)
+        .order('created_at', { ascending: true }),
+      client
+        .from('ticket_labor')
+        .select('id,ticket_id,description,amount_centavos,created_by,created_at')
+        .eq('ticket_id', ticketId)
+        .order('created_at', { ascending: true }),
+      client
+        .from('ticket_payments')
+        .select(
+          'id,ticket_id,method,amount_centavos,reference_no,received_by,received_at,note,receiver:profiles!ticket_payments_received_by_fkey(display_name)',
+        )
+        .eq('ticket_id', ticketId)
+        .order('received_at', { ascending: true }),
+      client
+        .from('receipts')
+        .select(
+          'id,receipt_no,ticket_id,status,issued_at,issued_by,total_centavos,verification_code,public_token,voided_at,void_reason',
+        )
+        .eq('ticket_id', ticketId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    ],
+  );
 
   if (ticketResult.error) throw toAppError(ticketResult.error);
   if (itemsResult.error) throw toAppError(itemsResult.error);
   if (laborResult.error) throw toAppError(laborResult.error);
+  if (paymentsResult.error) throw toAppError(paymentsResult.error);
+  if (receiptResult.error) throw toAppError(receiptResult.error);
 
   if (!ticketResult.data) {
     throw toAppError({ message: 'TICKET_NOT_FOUND' });
@@ -157,6 +244,8 @@ export async function getTicket(ticketId: string): Promise<TicketDetail> {
     ticket: mapTicket(ticketResult.data as unknown as TicketRow),
     items: ((itemsResult.data ?? []) as unknown as TicketItemRow[]).map(mapItem),
     labor: ((laborResult.data ?? []) as unknown as TicketLaborRow[]).map(mapLabor),
+    payments: ((paymentsResult.data ?? []) as unknown as TicketPaymentRow[]).map(mapPayment),
+    receipt: receiptResult.data ? mapReceipt(receiptResult.data as unknown as ReceiptRow) : null,
   };
 }
 
@@ -282,6 +371,67 @@ export async function updateTicketStatus(ticketId: string, status: TicketStatus)
   const { data, error } = await getSupabaseClient().rpc('update_ticket_status', {
     p_ticket_id: ticketId,
     p_status: status,
+  });
+
+  if (error) {
+    throw toAppError(error);
+  }
+
+  return mapTicket(data as unknown as TicketRow);
+}
+
+export async function recordPayment(input: {
+  ticketId: string;
+  method: PaymentMethod;
+  amountCentavos: number;
+  referenceNo: string | null;
+  note: string | null;
+}): Promise<TicketPayment> {
+  const { data, error } = await getSupabaseClient().rpc('record_payment', {
+    p_ticket_id: input.ticketId,
+    p_method: input.method,
+    p_amount_centavos: input.amountCentavos,
+    p_reference_no: input.referenceNo,
+    p_note: input.note,
+  });
+
+  if (error) {
+    throw toAppError(error);
+  }
+
+  return mapPayment(data as unknown as TicketPaymentRow);
+}
+
+export async function completeTicket(input: {
+  ticketId: string;
+  payments: {
+    method: PaymentMethod;
+    amountCentavos: number;
+    referenceNo: string | null;
+    note: string | null;
+  }[];
+}): Promise<Receipt> {
+  const { data, error } = await getSupabaseClient().rpc('complete_ticket', {
+    p_ticket_id: input.ticketId,
+    p_payments: input.payments.map((payment) => ({
+      method: payment.method,
+      amount_centavos: payment.amountCentavos,
+      reference_no: payment.referenceNo,
+      note: payment.note,
+    })),
+  });
+
+  if (error) {
+    throw toAppError(error);
+  }
+
+  return mapReceipt(data as unknown as ReceiptRow);
+}
+
+export async function cancelTicket(ticketId: string, reason: string): Promise<Ticket> {
+  const { data, error } = await getSupabaseClient().rpc('cancel_ticket', {
+    p_ticket_id: ticketId,
+    p_reason: reason,
   });
 
   if (error) {

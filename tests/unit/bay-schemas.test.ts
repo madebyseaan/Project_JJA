@@ -3,6 +3,7 @@ import { describe, expect, test } from 'vitest';
 import {
   laborFormSchema,
   newTicketSchema,
+  paymentSchema,
   statusActions,
   ticketTypeLabel,
 } from '@/features/bay/schemas';
@@ -53,5 +54,29 @@ describe('bay schemas', () => {
   test('labels the ticket type', () => {
     expect(ticketTypeLabel('REPAIR')).toBe('Repair');
     expect(ticketTypeLabel('SALE')).toBe('Sale');
+  });
+
+  test('validates payments', () => {
+    expect(
+      paymentSchema.safeParse({ method: 'CASH', amount: '100', referenceNo: '', note: '' }).success,
+    ).toBe(true);
+    expect(
+      paymentSchema.safeParse({ method: 'GCASH', amount: '100.50', referenceNo: 'REF', note: '' })
+        .success,
+    ).toBe(true);
+    expect(
+      paymentSchema.safeParse({ method: 'CASH', amount: '0', referenceNo: '', note: '' }).success,
+    ).toBe(false);
+    expect(
+      paymentSchema.safeParse({ method: 'CARD', amount: '100', referenceNo: '', note: '' }).success,
+    ).toBe(false);
+    expect(
+      paymentSchema.safeParse({
+        method: 'CASH',
+        amount: '100',
+        referenceNo: 'x'.repeat(61),
+        note: '',
+      }).success,
+    ).toBe(false);
   });
 });
