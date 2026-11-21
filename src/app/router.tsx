@@ -6,8 +6,10 @@ import { LoginPage } from '@/features/auth/LoginPage';
 import { PinLockProvider } from '@/features/auth/PinLockProvider';
 import { BayPage } from '@/routes/BayPage';
 import { OwnerPage } from '@/routes/OwnerPage';
+import { ReceiptPage } from '@/routes/ReceiptPage';
 import { StockPage } from '@/routes/StockPage';
 import { TicketPage } from '@/routes/TicketPage';
+import { VerifyPage } from '@/routes/VerifyPage';
 
 import { RequireOwner } from './guards/RequireOwner';
 import { RequireStaff } from './guards/RequireStaff';
@@ -29,6 +31,14 @@ export const routes: RouteObject[] = [
           {
             path: '/lock',
             element: <LockPage />,
+          },
+          {
+            path: '/r/:token',
+            element: <ReceiptPage />,
+          },
+          {
+            path: '/verify',
+            element: <VerifyPage />,
           },
         ],
       },
