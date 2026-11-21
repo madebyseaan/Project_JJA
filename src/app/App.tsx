@@ -5,6 +5,7 @@ import { AuthProvider } from '@/features/auth/AuthProvider';
 import { SetupRequiredPage } from '@/features/auth/SetupRequiredPage';
 import { isSupabaseConfigured } from '@/lib/supabase';
 
+import { AppProviders } from './providers';
 import { router } from './router';
 
 function missingVariables(): string[] {
@@ -27,9 +28,11 @@ export function App() {
   }
 
   return (
-    <AuthProvider>
-      <RouterProvider router={router} />
-      <Toaster />
-    </AuthProvider>
+    <AppProviders>
+      <AuthProvider>
+        <RouterProvider router={router} />
+        <Toaster />
+      </AuthProvider>
+    </AppProviders>
   );
 }

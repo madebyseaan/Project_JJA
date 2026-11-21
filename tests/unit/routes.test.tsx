@@ -1,4 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { expect, test, vi } from 'vitest';
 
@@ -27,13 +28,18 @@ function renderApp(
   pin: PinLockContextValue = pinLockValue({ unlocked: true, hasPin: true }),
 ) {
   const router = createMemoryRouter(routes, { initialEntries: [path] });
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
 
   render(
-    <AuthTestProvider value={auth}>
-      <PinLockTestProvider value={pin}>
-        <RouterProvider router={router} />
-      </PinLockTestProvider>
-    </AuthTestProvider>,
+    <QueryClientProvider client={queryClient}>
+      <AuthTestProvider value={auth}>
+        <PinLockTestProvider value={pin}>
+          <RouterProvider router={router} />
+        </PinLockTestProvider>
+      </AuthTestProvider>
+    </QueryClientProvider>,
   );
 
   return router;
