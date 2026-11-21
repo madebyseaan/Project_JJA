@@ -123,7 +123,11 @@ export function CompleteTicketDialog({
           </div>
 
           <DialogFooter>
-            <Button size="touch" render={<Link to={`/r/${receipt.publicToken}`} />}>
+            <Button
+              size="touch"
+              nativeButton={false}
+              render={<Link to={`/r/${receipt.publicToken}`} />}
+            >
               View receipt
             </Button>
             <Button

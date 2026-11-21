@@ -12,7 +12,7 @@
 
 - [x] `supabase/migrations/20261121140000_payments_receipts.sql`: payments, receipts, counters, HMAC secret, views, RPCs.
 - [x] `tests/db/payments.test.ts`: deposits, overpayment, verification gate, completion, stock deduction, receipt HMAC, public token, cancellation refunds, void sale, permissions.
-- [ ] CI database job validates the migration and tests.
+- [x] CI database job validates the migration and tests.
 
 ### Task 2 — Payment UI
 
@@ -23,8 +23,8 @@
 ### Task 3 — Verification
 
 - [x] Unit tests for payment schema and receipt display.
-- [ ] `npm run check` and CI.
-- [ ] Commit and PR.
+- [x] `npm run check` and CI.
+- [x] Commit and PR.
 
 ## Gate
 

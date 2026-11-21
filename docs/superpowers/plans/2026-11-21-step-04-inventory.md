@@ -20,42 +20,42 @@
 
 ### Task 1 — Database schema and RPCs
 
-- [ ] Create `supabase/migrations/20261121120000_inventory.sql`:
+- [x] Create `supabase/migrations/20261121120000_inventory.sql`:
   - `public.parts`, `public.stock_movements`, `public.audit_events`, `public.shop_settings`.
   - RLS: staff read parts/settings; owner reads ledger/audit; no write grants.
   - `private.require_staff()`, `private.require_owner()`.
   - `create_part`, `update_part`, `adjust_stock` with audit rows.
-- [ ] Extend `tests/setup/db.ts` with staff sign-in helpers.
-- [ ] Add `tests/db/inventory.test.ts`: owner CRUD, ledger rows, mechanic denied, anon denied, no direct writes, stock floor.
-- [ ] Verify: `npm run test:db` in CI (local Docker unavailable).
+- [x] Extend `tests/setup/db.ts` with staff sign-in helpers.
+- [x] Add `tests/db/inventory.test.ts`: owner CRUD, ledger rows, mechanic denied, anon denied, no direct writes, stock floor.
+- [x] Verify: `npm run test:db` in CI (local Docker unavailable).
 
 ### Task 2 — Money and date libraries
 
-- [ ] `src/lib/money.ts`: parse peso strings to centavos without floats, format centavos, parse/format signed amounts.
-- [ ] `src/lib/dates.ts`: Manila business date, date/time display, relative age.
-- [ ] Unit tests for parsing, formatting, invalid input, Manila boundaries.
+- [x] `src/lib/money.ts`: parse peso strings to centavos without floats, format centavos, parse/format signed amounts.
+- [x] `src/lib/dates.ts`: Manila business date, date/time display, relative age.
+- [x] Unit tests for parsing, formatting, invalid input, Manila boundaries.
 
 ### Task 3 — Inventory API and queries
 
-- [ ] `src/features/inventory/types.ts`, `api.ts`, `hooks/use-parts.ts`, `schemas.ts`.
-- [ ] Reads use explicit columns; writes call RPCs.
-- [ ] Query keys and invalidation for parts, ledger, low stock.
-- [ ] Server-state provider: add TanStack Query to `src/app/providers.tsx`.
+- [x] `src/features/inventory/types.ts`, `api.ts`, `hooks/use-parts.ts`, `schemas.ts`.
+- [x] Reads use explicit columns; writes call RPCs.
+- [x] Query keys and invalidation for parts, ledger, low stock.
+- [x] Server-state provider: add TanStack Query to `src/app/providers.tsx`.
 
 ### Task 4 — Inventory screen
 
-- [ ] `src/features/inventory/components/PartsTable.tsx` (TanStack Table, search, category/active/low-stock filters).
-- [ ] `PartFormSheet.tsx` (create/edit, RHF + zod, owner only).
-- [ ] `StockAdjustDialog.tsx` (restock/adjust, reason, note, owner only).
-- [ ] `StockLedgerSheet.tsx` (owner-only movement history for a part).
-- [ ] Route `src/routes/StockPage.tsx` composes the screen with loading, empty, error, and offline-disabled states.
-- [ ] Unit tests for filters/table and form schema; component tests for read-only mechanic.
+- [x] `src/features/inventory/components/PartsTable.tsx` (TanStack Table, search, category/active/low-stock filters).
+- [x] `PartFormSheet.tsx` (create/edit, RHF + zod, owner only).
+- [x] `StockAdjustDialog.tsx` (restock/adjust, reason, note, owner only).
+- [x] `StockLedgerSheet.tsx` (owner-only movement history for a part).
+- [x] Route `src/routes/StockPage.tsx` composes the screen with loading, empty, error, and offline-disabled states.
+- [x] Unit tests for filters/table and form schema; component tests for read-only mechanic.
 
 ### Task 5 — Docs and verification
 
-- [ ] Update `docs/roadmap.md` Step 04 status.
-- [ ] `npm run check`.
-- [ ] Commit and open PR; CI database job is the SQL verification.
+- [x] Update `docs/roadmap.md` Step 04 status.
+- [x] `npm run check`.
+- [x] Commit and open PR; CI database job is the SQL verification.
 
 ## Gate
 

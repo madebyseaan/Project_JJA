@@ -196,7 +196,7 @@ export function OwnerAuditPage() {
         )}
       </section>
 
-      <Button variant="ghost" size="touch" render={<Link to="/owner" />}>
+      <Button variant="ghost" size="touch" nativeButton={false} render={<Link to="/owner" />}>
         Back to the owner dashboard
       </Button>
     </div>

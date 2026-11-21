@@ -2,7 +2,7 @@
 
 A phone-friendly web app for **J.J.A Motor Accessories and Motorcycle Repair Shop** (Est. 2023): walk-in tickets, inventory, payments, tamper-evident e-receipts, and daily sales for QuickBooks Desktop.
 
-**Status:** Phase 0 foundation in progress — app scaffolded, design system and features following the implementation plan.
+**Status:** Phase 1 is built through the owner dashboard and launch tooling. Steps 03–08 are verified by `npm run check` and the CI database job; launch is waiting on deployment secrets, a real-device UAT day, and the restore drill. See [`docs/roadmap.md`](docs/roadmap.md).
 
 **Budget:** ₱0 per month. Static React app on Cloudflare, Supabase Free for auth, database, and realtime.
 

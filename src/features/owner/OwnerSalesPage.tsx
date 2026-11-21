@@ -151,7 +151,7 @@ export function OwnerSalesPage() {
           title="No receipts on this date"
           description="Completed sales appear here with their receipt number and total."
           action={
-            <Button variant="outline" size="touch" render={<Link to="/bay" />}>
+            <Button variant="outline" size="touch" nativeButton={false} render={<Link to="/bay" />}>
               Open the bay
             </Button>
           }
@@ -243,7 +243,7 @@ export function OwnerSalesPage() {
         </>
       )}
 
-      <Button variant="ghost" size="touch" render={<Link to="/owner" />}>
+      <Button variant="ghost" size="touch" nativeButton={false} render={<Link to="/owner" />}>
         <ReceiptText aria-hidden="true" />
         Back to the owner dashboard
       </Button>

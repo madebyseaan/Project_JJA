@@ -211,7 +211,7 @@ export function TicketDetailPage() {
         <p role="alert" className="text-danger">
           No ticket was selected.
         </p>
-        <Button variant="outline" size="touch" render={<Link to="/bay" />}>
+        <Button variant="outline" size="touch" nativeButton={false} render={<Link to="/bay" />}>
           <ArrowLeft aria-hidden="true" />
           Back to the bay
         </Button>
@@ -226,7 +226,7 @@ export function TicketDetailPage() {
   if (ticket.isError) {
     return (
       <div className="space-y-4">
-        <Button variant="outline" size="touch" render={<Link to="/bay" />}>
+        <Button variant="outline" size="touch" nativeButton={false} render={<Link to="/bay" />}>
           <ArrowLeft aria-hidden="true" />
           Back to the bay
         </Button>
@@ -249,7 +249,7 @@ export function TicketDetailPage() {
   return (
     <div className="space-y-4 pb-20 md:pb-0">
       <div className="flex items-center gap-2">
-        <Button variant="ghost" size="touch" render={<Link to="/bay" />}>
+        <Button variant="ghost" size="touch" nativeButton={false} render={<Link to="/bay" />}>
           <ArrowLeft aria-hidden="true" />
           Bay
         </Button>

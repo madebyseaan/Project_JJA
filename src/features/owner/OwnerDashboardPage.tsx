@@ -45,15 +45,30 @@ export function OwnerDashboardPage() {
         description="Today's sales, cash, and low stock."
         actions={
           <>
-            <Button variant="outline" size="touch" render={<Link to="/owner/sales" />}>
+            <Button
+              variant="outline"
+              size="touch"
+              nativeButton={false}
+              render={<Link to="/owner/sales" />}
+            >
               <ReceiptText aria-hidden="true" />
               Sales
             </Button>
-            <Button variant="outline" size="touch" render={<Link to="/owner/audit" />}>
+            <Button
+              variant="outline"
+              size="touch"
+              nativeButton={false}
+              render={<Link to="/owner/audit" />}
+            >
               <History aria-hidden="true" />
               Audit
             </Button>
-            <Button variant="outline" size="touch" render={<Link to="/owner/settings" />}>
+            <Button
+              variant="outline"
+              size="touch"
+              nativeButton={false}
+              render={<Link to="/owner/settings" />}
+            >
               <Settings aria-hidden="true" />
               Settings
             </Button>
@@ -241,7 +256,12 @@ export function OwnerDashboardPage() {
               title="No sales on this date"
               description="Completed tickets will appear here with their receipts."
               action={
-                <Button variant="outline" size="touch" render={<Link to="/bay" />}>
+                <Button
+                  variant="outline"
+                  size="touch"
+                  nativeButton={false}
+                  render={<Link to="/bay" />}
+                >
                   Open the bay
                 </Button>
               }

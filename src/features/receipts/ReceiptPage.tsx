@@ -193,7 +193,7 @@ function ReceiptSheet({ receipt }: { receipt: PublicReceipt }) {
           <Printer aria-hidden="true" />
           Save as PDF
         </Button>
-        <Button variant="outline" size="touch" render={<Link to="/verify" />}>
+        <Button variant="outline" size="touch" nativeButton={false} render={<Link to="/verify" />}>
           Verify another receipt
         </Button>
       </div>
@@ -248,7 +248,12 @@ export function ReceiptPage() {
             receipt number.
           </p>
           <div className="mt-4 flex justify-center gap-2">
-            <Button variant="outline" size="touch" render={<Link to="/verify" />}>
+            <Button
+              variant="outline"
+              size="touch"
+              nativeButton={false}
+              render={<Link to="/verify" />}
+            >
               <CheckCircle2 aria-hidden="true" />
               Verify a receipt
             </Button>

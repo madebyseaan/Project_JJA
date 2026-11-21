@@ -20,8 +20,8 @@
 
 ### Task 2 — Verification
 
-- [ ] `npm run check` and CI database job.
-- [ ] Commit and PR.
+- [x] `npm run check` and CI database job.
+- [x] Commit and PR.
 
 ## Gate
 

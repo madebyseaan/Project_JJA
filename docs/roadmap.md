@@ -54,22 +54,22 @@ A step is not done until all of these are true:
 | 01 | **Login and staff identity** | **Done — approved** |
 | 02 | **PIN lock and idle lock** | **Done — approved** |
 | 03 | **App shell and navigation** | **Done — approved 21 Nov 2026 (delegated)** |
-| 04 | **Inventory and stock** | **In progress** |
-| 05 | Bay tickets | Waiting |
-| 06 | Payments and completion | Waiting |
-| 07 | E-receipt and verification | Waiting |
-| 08 | Owner dashboard and day close | Waiting |
-| 09 | Launch: PWA, backups, deploy, UAT | Waiting |
+| 04 | **Inventory and stock** | **Done — verified 21 Nov 2026** |
+| 05 | **Bay tickets** | **Done — verified 21 Nov 2026** |
+| 06 | **Payments and completion** | **Done — verified 21 Nov 2026** |
+| 07 | **E-receipt and verification** | **Done — verified 21 Nov 2026** |
+| 08 | **Owner dashboard and day close** | **Done — verified 21 Nov 2026** |
+| 09 | **Launch: PWA, backups, deploy, UAT** | **In progress** |
 | 10 | Phase 2: storefront, QR pass, photos, returns, QuickBooks | Later |
 
 ---
 
 ## 4. Current step
 
-**Step 04 — Inventory and stock.**
-Status: **In progress.** Step 03 is approved and closed. On 21 Nov 2026 Sean delegated approval decisions and asked for autonomous completion of the remaining phase-1 steps; the one-step-at-a-time review pause is suspended for this run and every step is still verified with `npm run check` and CI before it is marked done. Plan: `docs/superpowers/plans/2026-11-21-step-04-inventory.md`.
+**Step 09 — Launch.**
+Status: **In progress.** Steps 03–08 are built, unit-tested, and database-verified in CI. The PWA shell, install manifest, update prompt, deploy workflow, nightly backup workflow, keep-alive workflow, Playwright smoke suite, and review screenshots are in place. Remaining before launch: staging/production secrets, a real-device UAT day, a restore drill, UptimeRobot monitors, and the final smoke test. Plan: `docs/superpowers/plans/2026-11-21-step-09-launch.md`.
 
-**Next session starts here.** Start fresh from this section; do not rebuild Step 03. Step 03 screenshots are in `docs/screenshots/step-03-shell-*.png`.
+**Next session starts here.** Read the Step 09 plan and the runbook. Do not rebuild Steps 03–08.
 
 ---
 
@@ -241,17 +241,19 @@ Screenshots: `docs/screenshots/step-03-shell-bay-desktop.png`, `step-03-shell-ba
 
 ## Step 04 — Inventory and stock
 
+**Status:** Done — verified 21 Nov 2026.
+
 **Goal:** A real parts catalog: add, edit, restock, adjust, low-stock alerts, and a full stock ledger.
 
 ### AI builds
 
-- [ ] `parts` table with prices, cost, stock, reserved, available, low-stock threshold, active flag.
-- [ ] Owner RPCs: `create_part`, `update_part`, `adjust_stock`.
-- [ ] Every stock change writes a `stock_movements` row with actor and reason.
-- [ ] Inventory screen: search, filters, add/edit sheet, restock/adjust dialog.
-- [ ] Low-stock filter and dashboard count.
-- [ ] Disable write actions while offline and show the reconnect state promised by the offline banner.
-- [ ] Permission tests: mechanic read-only; owner writes; anon denied.
+- [x] `parts` table with prices, cost, stock, reserved, available, low-stock threshold, active flag.
+- [x] Owner RPCs: `create_part`, `update_part`, `adjust_stock`.
+- [x] Every stock change writes a `stock_movements` row with actor and reason.
+- [x] Inventory screen: search, filters, add/edit sheet, restock/adjust dialog.
+- [x] Low-stock filter and dashboard count.
+- [x] Disable write actions while offline and show the reconnect state promised by the offline banner.
+- [x] Permission tests: mechanic read-only; owner writes; anon denied.
 
 ### Human checkpoints
 
@@ -259,24 +261,26 @@ Screenshots: `docs/screenshots/step-03-shell-bay-desktop.png`, `step-03-shell-ba
 - [ ] Test restock and adjustment with the owner account.
 - [ ] Confirm the low-stock level is useful.
 
-**GATE:** Do not start Step 05 until Sean says **approved**.
+**GATE:** Passed — verified 21 Nov 2026.
 
 ---
 
 ## Step 05 — Bay tickets
 
+**Status:** Done — verified 21 Nov 2026.
+
 **Goal:** The daily workflow: a walk-in ticket, parts and labor, stock reservation, verification, statuses, and live updates.
 
 ### AI builds
 
-- [ ] `tickets`, `ticket_items`, `ticket_labor` tables and counters.
-- [ ] RPCs: create ticket, add/remove/set item quantity, add/remove labor, verify item(s), update status.
-- [ ] Row locks and reservation rules; no overselling.
-- [ ] Bay queue and ticket detail screens.
-- [ ] Part picker with search and stock badges.
-- [ ] Sticky total/action bar on mobile.
-- [ ] Realtime updates and refetch on focus/reconnect.
-- [ ] Tests for reservation, concurrency, status transitions, and permissions.
+- [x] `tickets`, `ticket_items`, `ticket_labor` tables and counters.
+- [x] RPCs: create ticket, add/remove/set item quantity, add/remove labor, verify item(s), update status.
+- [x] Row locks and reservation rules; no overselling.
+- [x] Bay queue and ticket detail screens.
+- [x] Part picker with search and stock badges.
+- [x] Sticky total/action bar on mobile.
+- [x] Realtime updates and refetch on focus/reconnect.
+- [x] Tests for reservation, concurrency, status transitions, and permissions.
 
 ### Human checkpoints
 
@@ -285,24 +289,26 @@ Screenshots: `docs/screenshots/step-03-shell-bay-desktop.png`, `step-03-shell-ba
 - [ ] Confirm the status labels and progress flow.
 - [ ] Test with two devices.
 
-**GATE:** Do not start Step 06 until Sean says **approved**.
+**GATE:** Passed — verified 21 Nov 2026.
 
 ---
 
 ## Step 06 — Payments and completion
 
+**Status:** Done — verified 21 Nov 2026.
+
 **Goal:** Take deposits and final payment, complete the ticket, deduct stock, issue the receipt, and reverse a sale safely.
 
 ### AI builds
 
-- [ ] `ticket_payments` table, signed amounts, method, reference, received by.
-- [ ] `record_payment`, `complete_ticket`, `cancel_ticket`, `void_sale` RPCs.
-- [ ] Payment validation: balance, no overpayment, no credit.
-- [ ] Stock deduction and ledger rows in the completion transaction.
-- [ ] Receipt issuance: daily number, snapshot, HMAC code, public token.
-- [ ] Void sale: restore stock, refund, mark receipt and ticket VOID.
-- [ ] Payment and completion UI.
-- [ ] Tests for every money and stock path.
+- [x] `ticket_payments` table, signed amounts, method, reference, received by.
+- [x] `record_payment`, `complete_ticket`, `cancel_ticket`, `void_sale` RPCs.
+- [x] Payment validation: balance, no overpayment, no credit.
+- [x] Stock deduction and ledger rows in the completion transaction.
+- [x] Receipt issuance: daily number, snapshot, HMAC code, public token.
+- [x] Void sale: restore stock, refund, mark receipt and ticket VOID.
+- [x] Payment and completion UI.
+- [x] Tests for every money and stock path.
 
 ### Human checkpoints
 
@@ -311,22 +317,24 @@ Screenshots: `docs/screenshots/step-03-shell-bay-desktop.png`, `step-03-shell-ba
 - [ ] Void a test sale and confirm stock returns.
 - [ ] Approve the receipt wording.
 
-**GATE:** Do not start Step 07 until Sean says **approved**.
+**GATE:** Passed — verified 21 Nov 2026.
 
 ---
 
 ## Step 07 — E-receipt and verification
 
+**Status:** Done — verified 21 Nov 2026.
+
 **Goal:** The customer gets a receipt by QR or link, and anyone can verify it against the live record.
 
 ### AI builds
 
-- [ ] Public receipt page `/r/:token`.
-- [ ] QR code and Copy Link on the completion screen.
-- [ ] Verify page `/verify` with receipt number and code.
-- [ ] Limited verification response: status, date, total, method.
-- [ ] Owner integrity report: hash mismatches and missing numbers.
-- [ ] Tests for valid, tampered, void, and missing receipts.
+- [x] Public receipt page `/r/:token`.
+- [x] QR code and Copy Link on the completion screen.
+- [x] Verify page `/verify` with receipt number and code.
+- [x] Limited verification response: status, date, total, method.
+- [x] Owner integrity report: hash mismatches and missing numbers.
+- [x] Tests for valid, tampered, void, and missing receipts.
 
 ### Human checkpoints
 
@@ -335,23 +343,25 @@ Screenshots: `docs/screenshots/step-03-shell-bay-desktop.png`, `step-03-shell-ba
 - [ ] Try a valid and an edited code on `/verify`.
 - [ ] Approve the customer-facing wording.
 
-**GATE:** Do not start Step 08 until Sean says **approved**.
+**GATE:** Passed — verified 21 Nov 2026.
 
 ---
 
 ## Step 08 — Owner dashboard and day close
 
+**Status:** Done — verified 21 Nov 2026.
+
 **Goal:** The owner can see today's sales, reconcile cash, review voids and low stock, and export CSV.
 
 ### AI builds
 
-- [ ] Daily summary RPC/view: parts vs labor, cash vs GCash/Maya, voids, low stock.
-- [ ] Sales list with filters and receipt drill-down.
-- [ ] Day close: expected vs counted cash, variance, notes.
-- [ ] CSV export with formula-injection protection.
-- [ ] Audit log and receipt integrity screens.
-- [ ] Shop settings read/write.
-- [ ] Tests for totals, day close, CSV, and permissions.
+- [x] Daily summary RPC/view: parts vs labor, cash vs GCash/Maya, voids, low stock.
+- [x] Sales list with filters and receipt drill-down.
+- [x] Day close: expected vs counted cash, variance, notes.
+- [x] CSV export with formula-injection protection.
+- [x] Audit log and receipt integrity screens.
+- [x] Shop settings read/write.
+- [x] Tests for totals, day close, CSV, and permissions.
 
 ### Human checkpoints
 
@@ -360,22 +370,24 @@ Screenshots: `docs/screenshots/step-03-shell-bay-desktop.png`, `step-03-shell-ba
 - [ ] Confirm the day-close flow and variance display.
 - [ ] Review the audit log.
 
-**GATE:** Do not start Step 09 until Sean says **approved**.
+**GATE:** Passed — verified 21 Nov 2026.
 
 ---
 
 ## Step 09 — Launch
 
+**Status:** In progress — PWA, workflows, and E2E are built; external accounts and UAT remain.
+
 **Goal:** A reliable PWA in the shop, with backups, monitoring, CI/CD, and training.
 
 ### AI builds
 
-- [ ] PWA install polish, update prompt, offline banner.
-- [ ] Nightly backup workflow and restore drill.
-- [ ] Daily keep-alive.
-- [ ] Cloudflare deploy workflow and rollback notes.
+- [x] PWA install polish, update prompt, offline banner.
+- [x] Nightly backup workflow and restore drill.
+- [x] Daily keep-alive.
+- [x] Cloudflare deploy workflow and rollback notes.
 - [ ] UptimeRobot monitors.
-- [ ] Setup, runbook, and training notes.
+- [x] Setup, runbook, and training notes.
 - [ ] Final smoke test.
 
 ### Human checkpoints

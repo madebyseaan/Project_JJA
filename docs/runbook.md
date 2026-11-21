@@ -44,6 +44,13 @@ npm run deploy
 
 Record why the normal path was bypassed.
 
+### PWA updates
+
+- The service worker uses `prompt`, not auto-update. Staff see **A new version is ready** and tap **Update now**.
+- Never force a reload while a ticket form is open.
+- The service worker is `NetworkOnly` for every `*.supabase.co` request. Do not add runtime caching for Supabase.
+- If a device is stuck on an old shell, close every app tab and reopen the PWA. As a last resort, clear site data for the app origin; this also clears the local PIN and requires a password sign-in.
+
 ---
 
 ## 3. Rollback
@@ -79,10 +86,23 @@ Rules:
 
 ### Automatic
 
-- GitHub Actions runs `pg_dump` nightly against production.
-- The dump is uploaded as a workflow artifact (90 days).
-- On the first day of each month, the dump is committed or uploaded to a private backup location.
+- `.github/workflows/backup.yml` runs `pg_dump` nightly at 16:00 UTC (midnight Manila).
+- The dump is uploaded as a workflow artifact and kept for 90 days.
+- Required secret: `SUPABASE_DB_URL` (the production Postgres connection string, including the password).
+- On the first day of each month, copy the latest artifact to the private backup location. GitHub artifacts expire.
 - The receipt HMAC secret is backed up separately in GitHub Actions secrets. Without it, old receipt codes cannot be verified.
+
+### Required deployment secrets
+
+| Secret | Used by | Purpose |
+|---|---|---|
+| `SUPABASE_DB_URL` | `backup.yml` | Production `pg_dump` |
+| `SUPABASE_URL` | `keepalive.yml` | Daily `ping()` endpoint |
+| `SUPABASE_ANON_KEY` | `keepalive.yml` | Public anon key for `ping()` |
+| `CLOUDFLARE_API_TOKEN` | `deploy.yml` | Deploy the static Worker |
+| `CLOUDFLARE_ACCOUNT_ID` | `deploy.yml` | Select the Cloudflare account |
+
+Never put the service-role key in a `VITE_*` variable or the browser. `SUPABASE_DB_URL` and the service-role key are CI-only.
 
 ### Manual backup before a risky change
 

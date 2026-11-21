@@ -19,41 +19,41 @@
 
 ### Task 1 — Database schema and RPCs
 
-- [ ] `supabase/migrations/20261121130000_bay_tickets.sql`: tickets, ticket_items, ticket_labor, counters, views, RLS, realtime.
-- [ ] RPCs: create_ticket, add/set/remove item, add/remove labor, verify item/all, update status.
-- [ ] `tests/db/tickets.test.ts`: reservation, merge, insufficient stock, verification, status transitions, permissions, direct-write denial.
-- [ ] CI database job validates the SQL.
+- [x] `supabase/migrations/20261121130000_bay_tickets.sql`: tickets, ticket_items, ticket_labor, counters, views, RLS, realtime.
+- [x] RPCs: create_ticket, add/set/remove item, add/remove labor, verify item/all, update status.
+- [x] `tests/db/tickets.test.ts`: reservation, merge, insufficient stock, verification, status transitions, permissions, direct-write denial.
+- [x] CI database job validates the SQL.
 
 ### Task 2 — Bay API and realtime
 
-- [ ] `src/features/bay/types.ts`, `api.ts`, `schemas.ts`, hooks.
-- [ ] `useTickets`, `useTicket`, mutations with cache invalidation.
-- [ ] Realtime subscription on `tickets`, `ticket_items`, `ticket_labor`; 60s poll fallback.
-- [ ] Unit tests for schemas, status transitions, money formatting in the queue.
+- [x] `src/features/bay/types.ts`, `api.ts`, `schemas.ts`, hooks.
+- [x] `useTickets`, `useTicket`, mutations with cache invalidation.
+- [x] Realtime subscription on `tickets`, `ticket_items`, `ticket_labor`; 60s poll fallback.
+- [x] Unit tests for schemas, status transitions, money formatting in the queue.
 
 ### Task 3 — Bay queue
 
-- [ ] `BayPage` queue with search, status, totals, age, empty/loading/error.
-- [ ] New ticket sheet: customer, bike, type, notes, parts with quantities, labor lines.
-- [ ] Owner and mechanic both work the bay.
-- [ ] Offline disables writes.
+- [x] `BayPage` queue with search, status, totals, age, empty/loading/error.
+- [x] New ticket sheet: customer, bike, type, notes, parts with quantities, labor lines.
+- [x] Owner and mechanic both work the bay.
+- [x] Offline disables writes.
 
 ### Task 4 — Ticket detail
 
-- [ ] Route `/bay/ticket/:id`.
-- [ ] Header with ticket no, status, customer/bike, created time.
-- [ ] Parts table with add, quantity, remove, verify, verified-at.
-- [ ] Labor list with add/remove.
-- [ ] Status actions with allowed transitions.
-- [ ] Sticky total/balance bar on mobile.
-- [ ] Cancel stays in Step 06 with payments.
-- [ ] Loading, empty, error, offline states.
+- [x] Route `/bay/ticket/:id`.
+- [x] Header with ticket no, status, customer/bike, created time.
+- [x] Parts table with add, quantity, remove, verify, verified-at.
+- [x] Labor list with add/remove.
+- [x] Status actions with allowed transitions.
+- [x] Sticky total/balance bar on mobile.
+- [x] Cancel stays in Step 06 with payments.
+- [x] Loading, empty, error, offline states.
 
 ### Task 5 — Docs and verification
 
-- [ ] Update roadmap Step 05.
-- [ ] `npm run check`; CI database job.
-- [ ] Commit and PR.
+- [x] Update roadmap Step 05.
+- [x] `npm run check`; CI database job.
+- [x] Commit and PR.
 
 ## Gate
 
