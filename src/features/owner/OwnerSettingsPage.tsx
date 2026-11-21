@@ -148,7 +148,7 @@ export function OwnerSettingsPage() {
         )}
       </div>
 
-      <Button variant="ghost" size="touch" render={<Link to="/owner" />}>
+      <Button variant="ghost" size="touch" nativeButton={false} render={<Link to="/owner" />}>
         <Settings aria-hidden="true" />
         Back to the owner dashboard
       </Button>

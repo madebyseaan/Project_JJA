@@ -1,0 +1,39 @@
+name: Backup
+
+on:
+  schedule:
+    # 16:00 UTC = midnight in Asia/Manila.
+    - cron: '0 16 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Dump the production database
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          if [ -z "$SUPABASE_DB_URL" ]; then
+            echo "SUPABASE_DB_URL secret is not configured." >&2
+            exit 1
+          fi
+          mkdir -p backups
+          stamp="$(date -u +%Y%m%d)"
+          pg_dump "$SUPABASE_DB_URL" \
+            --no-owner \
+            --no-privileges \
+            --format=custom \
+            --file="backups/jja-${stamp}.dump"
+          gzip -9 "backups/jja-${stamp}.dump"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: jja-backup-${{ github.run_id }}
+          path: backups/
+          retention-days: 90

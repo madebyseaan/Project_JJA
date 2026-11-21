@@ -37,6 +37,16 @@ npm run dev
 
 The app opens on the Vite URL, usually `http://localhost:5173`.
 
+Verification commands:
+
+```bash
+npm run check       # typecheck, lint, format, file size, unit tests, build
+npm run test:e2e    # Playwright; mocked auth and data, no Supabase needed
+npm run test:db     # real database; needs .env.test.local (never production)
+```
+
+The PWA is disabled in `npm run dev` so the service worker does not hide code changes. Test install and update behavior with `npm run build && npm run preview`.
+
 ---
 
 ## 2b. One-command setup (recommended)

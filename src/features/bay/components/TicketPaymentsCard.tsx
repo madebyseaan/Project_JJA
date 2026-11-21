@@ -144,6 +144,7 @@ export function TicketPaymentsCard({
             variant="outline"
             size="touch"
             className="mt-3"
+            nativeButton={false}
             render={<Link to={`/r/${receipt.publicToken}`} />}
           >
             <ReceiptText aria-hidden="true" />

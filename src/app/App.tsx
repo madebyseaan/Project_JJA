@@ -3,6 +3,7 @@ import { RouterProvider } from 'react-router';
 import { Toaster } from '@/components/ui/sonner';
 import { AuthProvider } from '@/features/auth/AuthProvider';
 import { SetupRequiredPage } from '@/features/auth/SetupRequiredPage';
+import { UpdatePrompt } from '@/features/pwa/UpdatePrompt';
 import { isSupabaseConfigured } from '@/lib/supabase';
 
 import { AppProviders } from './providers';
@@ -31,6 +32,7 @@ export function App() {
     <AppProviders>
       <AuthProvider>
         <RouterProvider router={router} />
+        <UpdatePrompt />
         <Toaster />
       </AuthProvider>
     </AppProviders>
