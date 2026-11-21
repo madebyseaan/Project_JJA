@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { expect, test } from 'vitest';
 
-import { RequireUnlocked } from '@/app/RequireUnlocked';
+import { RequireUnlocked } from '@/app/guards/RequireUnlocked';
 import type { AuthContextValue } from '@/features/auth/auth-context';
 import type { PinLockContextValue } from '@/features/auth/pin-lock-context';
 

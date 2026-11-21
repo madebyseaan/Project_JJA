@@ -965,3 +965,90 @@ Give Sean the demo script below. Do not mark Step 03 done, do not merge, and do 
 ## Gate
 
 Step 03 is **In review**. Sean must test at 360px and desktop and say **approved** before Step 04 begins.
+
+---
+
+## Session audit — 15 November 2026
+
+**Branch:** `feat/step-03-app-shell`, cut from `main` at `2066ca3`.
+**State:** built and verified; awaiting screenshots and Sean's review. The branch is local only — not pushed.
+
+**Starting state:** Steps 01 and 02 approved; login and PIN lock confirmed working. The Step 03 plan was committed but no shell code existed. Baseline `npm run check` passed with 56 tests.
+
+### What shipped
+
+| Commit | Change |
+|---|---|
+| `16398ec` | `PageHeader` and `EmptyState` (4 tests) |
+| `3a52856` | `useOnlineStatus`, `ConnectionStatus`, `OfflineBanner` (6 tests) |
+| `6d56c09` | `AppNav` rail and bottom tabs (3 tests) |
+| `7ad4df0` | `RequireStaff`, `RequireOwner`, `RequireUnlocked` (10 tests) |
+| `600eec2` | `StaffLayout`, `PublicLayout`, Bay/Stock/Owner pages, router (full suite 81) |
+| `ac3f46d` | `<output>` for live status; `.superpowers` excluded from Prettier |
+| `d3248c9` | `design.md` and `roadmap.md` updated to In review |
+
+### Verification
+
+- `npm run check` — PASS: typecheck, lint with no warnings, Prettier, file-size check, 81 unit tests in 23 files, production build.
+- Not run: `npm run test:db` (no database change in this step; Docker is unavailable locally) and `npm run test:e2e` (no end-to-end suite yet).
+- Every test file was watched fail before its implementation, except the pre-existing suite.
+
+### Decisions
+
+1. The database test fix stays a separate concern: `fix/db-permission-tests` (`ef969ce`) is pushed but unmerged. GitHub CLI is installed but not authenticated, so the PR is still to open:
+   https://github.com/madebyseaan/Project_JJA/compare/main...fix/db-permission-tests?expand=1
+2. `RequireAuth` was deleted and `router.tsx` rewired to `RequireStaff` inside Task 4, so every commit typechecks (the plan deleted it before Task 5 rewired the router).
+3. `routes.test.tsx` was written and watched fail against the old router before the router rewrite, preserving RED→GREEN (the plan listed the rewrite first).
+4. `role="status"` became `<output>`, whose implicit role is `status`, to clear two Oxlint accessibility warnings. Tests still query by role and pass.
+5. `.superpowers` was added to `.prettierignore`: the SDD ledger is scratch and must not fail `format:check`.
+6. A Windows CRLF flip in `docs/roadmap.md` was normalized back to LF, keeping the docs diff at 29 insertions and 13 deletions.
+
+### Left open
+
+- Screenshots not captured. The in-app browser window was not visible and the tab was signed out; screenshots need a signed-in tab in a visible window. The dev server ran at `http://localhost:5175` and was stopped at the end of the session.
+- A fresh-context review was dispatched; its findings were not applied before the pause.
+- The branch is not pushed and no PR exists yet.
+- Sean has not reviewed Step 03.
+
+### Next session
+
+1. Run `npm run dev`, open the app, sign in as `JJA-001`, and enter the PIN.
+2. Capture `docs/screenshots/step-03-shell-bay-desktop.png`, `step-03-shell-bay-mobile.png`, `step-03-shell-owner-desktop.png`, and `step-03-shell-mechanic-desktop.png` at 1440px and 360px.
+3. Apply any review findings test-first, then re-run `npm run check`. (Applied 16 Nov; see **Review findings** below.)
+4. Commit the screenshots, push `feat/step-03-app-shell`, and open the PR.
+5. Walk Sean through the demo script at 360px and desktop; stop for approval before Step 04.
+
+### Follow-up — 16 November 2026
+
+- **Loose end closed.** PR [#1](https://github.com/madebyseaan/Project_JJA/pull/1) (`fix/db-permission-tests`) was opened once `gh` was authenticated. `verify` and `database` both passed (the first database attempt failed on a `supabase/setup-cli` GitHub API rate limit and was rerun), then it was squash-merged to `main` as `5571840` and the branch was deleted.
+- **Review findings were not saved.** The fresh-context review from 15 Nov left no findings file, only `review-2066ca3..d3248c9.diff`, so the review is being redone rather than guessed at.
+
+### Review fixes — 16 November 2026
+
+- **Two-axis review re-run.** Standards and Spec both flagged contrast, icon size, target spacing, and the missing 360px evidence.
+- **Fixed:** 24px navigation icons (`design.md` §5), 8px rail gap (§8), active mobile tab now `safety-dark` (5.75:1 instead of 3.79:1), `PageHeader` description now `ink-soft` (8.9:1 on paper instead of 4.39:1), 6px connection dot (§5), `StaffLayout` renders `FullPageLoading` instead of an empty frame, `AppNav` imported through the `@/` alias, removed the unused SSR snapshot from `useOnlineStatus`, and added a tabs-variant navigation test.
+- **Tracked:** Step 04 now owns disabling write actions offline and the reconnect state. Screenshots remain the only Step 03 evidence outstanding.
+
+### Review findings — saved 16 November 2026
+
+The original fresh-context review was still available in the session, so it is recorded here rather than repeated. Range: `2066ca3..d3248c9`. No Critical findings; assessment was "ready to merge with fixes".
+
+| # | Severity | Finding | Disposition |
+|---|---|---|---|
+| I1 | Important | Mobile shell had no non-destructive sign-out; the unlock stage's only exit cleared the PIN, while the demo named "Sign in as someone else". | **Fixed.** `LockPage` now shows "Sign in as someone else" (calls `signOut`, keeps the PIN) and keeps "Forgot PIN? Sign in with password." for the destructive recovery. New lock-page test asserts `signOut` fires and `clearPinAndSignOut` stays untouched. |
+| I2 | Important | Active bottom tab used `text-safety` on white: 3.79:1, below AA 4.5:1. | **Fixed.** Active tab label and icon use `text-safety-dark` (5.75:1); the safety top border is unchanged. |
+| I3 | Important | Offline→online was not tested at the shell level. | **Fixed.** `staff-layout.test.tsx` renders online, dispatches `offline`, checks both status text and banner, then dispatches `online` and checks both recover. |
+| I4 | Important | The 360px long-name requirement was verified only by a `truncate` class. | **Mitigated.** Test renamed to "applies truncation classes"; the 360px screenshot remains a hard approval gate. A Playwright shell smoke belongs to Step 09. |
+| I5 | Important | The offline banner scrolled away; spec §15 requires it to persist. | **Fixed.** Header and banner share a `sticky top-0` wrapper, so the banner stays visible on mobile and desktop. |
+| M1 | Minor | `text-steel` on `paper` is 4.39:1 in `PageHeader` descriptions. | **Fixed.** `PageHeader` description uses `text-ink-soft`. |
+| M2 | Minor | Route tests assert the redirect target but not that the shell never rendered. | Deferred. |
+| M3 | Minor | The tabs nav variant has no test. | **Fixed.** `app-nav.test.tsx` now parameterises the variant and covers tab filtering and `aria-current`. |
+| M4 | Minor | The offline live region mounts already populated. | Deferred; the connection status text change announces the state. |
+| M5 | Minor | Stale `src/app/layouts/.gitkeep`. | Deferred. |
+| M6 | Minor | `design.md` said "connection dot" while the bar shows dot plus text. | **Fixed** in the same pass (documentation accuracy). |
+
+Reviewer items declined without action: screenshots and PWA behaviour, disabled writes while offline (no mutations yet), database enforcement, the pre-existing error boundary, PIN-setup behaviour, design spacing, and the `AppNav` location — all either out of Step 03 scope or pre-existing.
+
+The fix pass was committed as `c4b80bd` on 16 November. It also carried three polish changes beyond the findings: 24px navigation icons (design §5), an 8px rail gap (design §8), and a 6px connection dot. The client-only `useOnlineStatus` dropped its unused server snapshot.
+
+Verification after the fix pass: `npm run check` — typecheck, lint, Prettier, file-size, **85 unit tests in 23 files**, and the production build all pass. Screenshots remain the only open Step 03 item.

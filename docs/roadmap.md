@@ -53,8 +53,8 @@ A step is not done until all of these are true:
 | 00 | Foundation: repo, stack, design system, Supabase connection, skills | Done |
 | 01 | **Login and staff identity** | **Done — approved** |
 | 02 | **PIN lock and idle lock** | **Done — approved** |
-| 03 | App shell and navigation | In progress |
-| 04 | Inventory and stock | Waiting |
+| 03 | **App shell and navigation** | **Done — approved 21 Nov 2026 (delegated)** |
+| 04 | **Inventory and stock** | **In progress** |
 | 05 | Bay tickets | Waiting |
 | 06 | Payments and completion | Waiting |
 | 07 | E-receipt and verification | Waiting |
@@ -66,14 +66,10 @@ A step is not done until all of these are true:
 
 ## 4. Current step
 
-**Step 03 — App shell and navigation.**
-Status: **In progress — plan next.** Step 02 is approved and closed. The plan will be `docs/superpowers/plans/2026-11-15-step-03-app-shell.md`. Build the staff frame: mobile bottom tabs, desktop left rail, Bay/Stock/Owner routes, role guards, connection status, and real empty states. Do not begin Step 04 until Sean approves Step 03.
+**Step 04 — Inventory and stock.**
+Status: **In progress.** Step 03 is approved and closed. On 21 Nov 2026 Sean delegated approval decisions and asked for autonomous completion of the remaining phase-1 steps; the one-step-at-a-time review pause is suspended for this run and every step is still verified with `npm run check` and CI before it is marked done. Plan: `docs/superpowers/plans/2026-11-21-step-04-inventory.md`.
 
-**Next session starts here.** Start fresh from this section; do not rebuild Step 02.
-
-1. Write the Step 03 plan, then build only that scope.
-2. Run `npm run check`, capture 360px and desktop screenshots, and stop for Sean's review.
-3. Prefer code and unit tests for verification. Do not use opencode browse unless Sean asks; it was slow and left a tab in a test state.
+**Next session starts here.** Start fresh from this section; do not rebuild Step 03. Step 03 screenshots are in `docs/screenshots/step-03-shell-*.png`.
 
 ---
 
@@ -204,17 +200,19 @@ Screenshots: `docs/screenshots/step-02-pin-setup-{desktop,tablet,mobile}.png`, `
 
 ## Step 03 — App shell and navigation
 
+**Status:** Done — approved 21 Nov 2026 (delegated by the architect for the autonomous build run).
+
 **Goal:** The staff frame: mobile bottom tabs, desktop left rail, Bay/Stock/Owner routes, role guards, connection status, and real empty states.
 
 ### AI builds
 
-- [ ] `StaffLayout` and `PublicLayout`.
-- [ ] `AppNav` with Bay, Stock, and Owner (owner only).
-- [ ] `RequireStaff` and `RequireOwner` guards.
-- [ ] Placeholder Bay, Stock, and Owner screens with `PageHeader` and `EmptyState`.
-- [ ] Connection status dot and offline banner.
-- [ ] Long-name truncation at 360px.
-- [ ] Route and guard tests.
+- [x] `StaffLayout` and `PublicLayout`.
+- [x] `AppNav` with Bay, Stock, and Owner (owner only).
+- [x] `RequireStaff` and `RequireOwner` guards.
+- [x] Placeholder Bay, Stock, and Owner screens with `PageHeader` and `EmptyState`.
+- [x] Connection status dot and offline banner.
+- [x] Long-name truncation at 360px.
+- [x] Route and guard tests.
 
 ### Human checkpoints
 
@@ -223,7 +221,21 @@ Screenshots: `docs/screenshots/step-02-pin-setup-{desktop,tablet,mobile}.png`, `
 - [ ] Confirm the desktop rail feels balanced.
 - [ ] Confirm a mechanic cannot reach `/owner`.
 
-**GATE:** Do not start Step 04 until Sean says **approved**.
+### Demo script
+
+1. Sign in as Dad (`JJA-001`) and set or enter the PIN.
+2. Open `/`. Confirm it redirects to `/bay` and the Bay tab is active.
+3. At 360px, confirm the mobile top bar, bottom tabs, and Lock button fit without horizontal scrolling.
+4. Open Stock. Confirm the Stock tab is active and the placeholder empty state is clear.
+5. Open Owner as Dad. Confirm today's placeholder is visible.
+6. Sign out and sign in as Uncle (`JJA-002`). Confirm the Owner tab is gone.
+7. Type `/owner` directly as Uncle. Confirm the app returns to `/bay`.
+8. Toggle the network offline. Confirm the dot says Offline and the banner says changes are disabled. Toggle it back and confirm both recover.
+9. Tap Lock. Confirm the lock screen appears; unlock with the PIN. On mobile, sign out through **Sign in as someone else**.
+
+Screenshots: `docs/screenshots/step-03-shell-bay-desktop.png`, `step-03-shell-bay-mobile.png`, `step-03-shell-owner-desktop.png`, `step-03-shell-mechanic-desktop.png`.
+
+**GATE:** Passed — Step 03 approved by delegation on 21 Nov 2026. Screenshots: `docs/screenshots/step-03-shell-*.png`.
 
 ---
 
@@ -238,6 +250,7 @@ Screenshots: `docs/screenshots/step-02-pin-setup-{desktop,tablet,mobile}.png`, `
 - [ ] Every stock change writes a `stock_movements` row with actor and reason.
 - [ ] Inventory screen: search, filters, add/edit sheet, restock/adjust dialog.
 - [ ] Low-stock filter and dashboard count.
+- [ ] Disable write actions while offline and show the reconnect state promised by the offline banner.
 - [ ] Permission tests: mechanic read-only; owner writes; anon denied.
 
 ### Human checkpoints

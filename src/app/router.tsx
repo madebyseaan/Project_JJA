@@ -2,34 +2,66 @@ import type { RouteObject } from 'react-router';
 import { createBrowserRouter, Navigate } from 'react-router';
 
 import { LockPage } from '@/features/auth/LockPage';
-import { PinLockProvider } from '@/features/auth/PinLockProvider';
 import { LoginPage } from '@/features/auth/LoginPage';
+import { PinLockProvider } from '@/features/auth/PinLockProvider';
+import { BayPage } from '@/routes/BayPage';
+import { OwnerPage } from '@/routes/OwnerPage';
+import { StockPage } from '@/routes/StockPage';
 
-import { RequireAuth } from './RequireAuth';
-import { RequireUnlocked } from './RequireUnlocked';
-import { StaffHomePage } from './StaffHomePage';
+import { RequireOwner } from './guards/RequireOwner';
+import { RequireStaff } from './guards/RequireStaff';
+import { RequireUnlocked } from './guards/RequireUnlocked';
+import { PublicLayout } from './layouts/PublicLayout';
+import { StaffLayout } from './layouts/StaffLayout';
 
 export const routes: RouteObject[] = [
   {
     element: <PinLockProvider />,
     children: [
       {
-        path: '/login',
-        element: <LoginPage />,
+        element: <PublicLayout />,
+        children: [
+          {
+            path: '/login',
+            element: <LoginPage />,
+          },
+          {
+            path: '/lock',
+            element: <LockPage />,
+          },
+        ],
       },
       {
-        path: '/lock',
-        element: <LockPage />,
-      },
-      {
-        element: <RequireAuth />,
+        element: <RequireStaff />,
         children: [
           {
             element: <RequireUnlocked />,
             children: [
               {
-                path: '/',
-                element: <StaffHomePage />,
+                element: <StaffLayout />,
+                children: [
+                  {
+                    path: '/',
+                    element: <Navigate to="/bay" replace />,
+                  },
+                  {
+                    path: '/bay',
+                    element: <BayPage />,
+                  },
+                  {
+                    path: '/inventory',
+                    element: <StockPage />,
+                  },
+                  {
+                    element: <RequireOwner />,
+                    children: [
+                      {
+                        path: '/owner',
+                        element: <OwnerPage />,
+                      },
+                    ],
+                  },
+                ],
               },
             ],
           },

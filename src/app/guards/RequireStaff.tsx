@@ -3,7 +3,7 @@ import { Navigate, Outlet } from 'react-router';
 import { FullPageLoading } from '@/components/FullPageLoading';
 import { useAuth } from '@/features/auth/use-auth';
 
-export function RequireAuth() {
+export function RequireStaff() {
   const { status } = useAuth();
 
   if (status === 'loading') {
