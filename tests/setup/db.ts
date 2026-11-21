@@ -95,3 +95,17 @@ export async function deleteUser(id: string): Promise<void> {
     throw error;
   }
 }
+
+export async function signInAs(user: { email: string; password: string }): Promise<SupabaseClient> {
+  const client = getAnonClient();
+  const { error } = await client.auth.signInWithPassword({
+    email: user.email,
+    password: user.password,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  return client;
+}
