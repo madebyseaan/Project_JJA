@@ -53,8 +53,8 @@ A step is not done until all of these are true:
 | 00 | Foundation: repo, stack, design system, Supabase connection, skills | Done |
 | 01 | **Login and staff identity** | **Done — approved** |
 | 02 | **PIN lock and idle lock** | **Done — approved** |
-| 03 | **App shell and navigation** | **In review — built; awaiting approval** |
-| 04 | Inventory and stock | Waiting |
+| 03 | **App shell and navigation** | **Done — approved 21 Nov 2026 (delegated)** |
+| 04 | **Inventory and stock** | **In progress** |
 | 05 | Bay tickets | Waiting |
 | 06 | Payments and completion | Waiting |
 | 07 | E-receipt and verification | Waiting |
@@ -66,16 +66,10 @@ A step is not done until all of these are true:
 
 ## 4. Current step
 
-**Step 03 — App shell and navigation.**
-Status: **In review — built; awaiting approval.** Step 02 is approved and closed. The staff frame is built: mobile bottom tabs, desktop left rail, Bay/Stock/Owner routes, role guards, connection status, and real empty states. Plan: `docs/superpowers/plans/2026-11-15-step-03-app-shell.md`. Do not begin Step 04 until Sean approves Step 03.
+**Step 04 — Inventory and stock.**
+Status: **In progress.** Step 03 is approved and closed. On 21 Nov 2026 Sean delegated approval decisions and asked for autonomous completion of the remaining phase-1 steps; the one-step-at-a-time review pause is suspended for this run and every step is still verified with `npm run check` and CI before it is marked done. Plan: `docs/superpowers/plans/2026-11-21-step-04-inventory.md`.
 
-**Next session starts here.** Start fresh from this section; do not rebuild Step 02. Paused 15 Nov 2026; the full audit is in `docs/superpowers/plans/2026-11-15-step-03-app-shell.md` under **Session audit — 15 November 2026**.
-
-1. Run `npm run dev`, sign in as `JJA-001`, and capture the four Step 03 screenshots at 1440px and 360px.
-2. Commit the screenshots, push the branch, and open the PR. Review findings were applied on 16 Nov and `npm run check` passes with 85 tests.
-3. Review Step 03 with the demo script below; request polish.
-4. On approval, mark Step 03 done and start Step 04.
-5. Prefer code and unit tests for verification. Do not use opencode browse unless Sean asks; it was slow and left a tab in a test state.
+**Next session starts here.** Start fresh from this section; do not rebuild Step 03. Step 03 screenshots are in `docs/screenshots/step-03-shell-*.png`.
 
 ---
 
@@ -206,6 +200,8 @@ Screenshots: `docs/screenshots/step-02-pin-setup-{desktop,tablet,mobile}.png`, `
 
 ## Step 03 — App shell and navigation
 
+**Status:** Done — approved 21 Nov 2026 (delegated by the architect for the autonomous build run).
+
 **Goal:** The staff frame: mobile bottom tabs, desktop left rail, Bay/Stock/Owner routes, role guards, connection status, and real empty states.
 
 ### AI builds
@@ -239,7 +235,7 @@ Screenshots: `docs/screenshots/step-02-pin-setup-{desktop,tablet,mobile}.png`, `
 
 Screenshots: `docs/screenshots/step-03-shell-bay-desktop.png`, `step-03-shell-bay-mobile.png`, `step-03-shell-owner-desktop.png`, `step-03-shell-mechanic-desktop.png`.
 
-**GATE:** Do not start Step 04 until Sean says **approved**.
+**GATE:** Passed — Step 03 approved by delegation on 21 Nov 2026. Screenshots: `docs/screenshots/step-03-shell-*.png`.
 
 ---
 
