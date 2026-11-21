@@ -19,7 +19,7 @@ let owner: TestUser;
 let mechanic: TestUser;
 let ownerClient: SupabaseClient;
 let mechanicClient: SupabaseClient;
-let partId: string;
+const partIds: string[] = [];
 const ticketIds: string[] = [];
 
 async function createPart(stock = 10) {
@@ -36,6 +36,7 @@ async function createPart(stock = 10) {
 
   if (error) throw error;
   const row = data as { id: string };
+  partIds.push(row.id);
   return row.id;
 }
 
@@ -77,7 +78,6 @@ beforeAll(async () => {
 
   ownerClient = await signInAs(owner);
   mechanicClient = await signInAs(mechanic);
-  partId = await createPart(10);
 });
 
 afterAll(async () => {
@@ -90,15 +90,16 @@ afterAll(async () => {
     await service.from('tickets').delete().in('id', ticketIds);
   }
 
-  if (partId) {
-    await service.from('stock_movements').delete().eq('part_id', partId);
-    await service.from('audit_events').delete().eq('entity_id', partId);
-    await service.from('parts').delete().eq('id', partId);
+  if (partIds.length > 0) {
+    await service.from('stock_movements').delete().in('part_id', partIds);
+    await service.from('audit_events').delete().in('entity_id', partIds);
+    await service.from('parts').delete().in('id', partIds);
   }
 });
 
 describe('tickets', () => {
   it('creates a ticket, snapshots prices, and reserves stock', async () => {
+    const partId = await createPart();
     const ticket = await createTicket([{ part_id: partId, qty: 2 }]);
 
     expect(ticket.ticket_no).toMatch(/^TK-\d{8}-\d{4}$/);
@@ -129,6 +130,7 @@ describe('tickets', () => {
   });
 
   it('merges a repeated part and adjusts the reservation', async () => {
+    const partId = await createPart();
     const ticket = await createTicket([{ part_id: partId, qty: 1 }]);
 
     const { error } = await mechanicClient.rpc('add_ticket_item', {
@@ -148,6 +150,7 @@ describe('tickets', () => {
   });
 
   it('refuses to oversell', async () => {
+    const partId = await createPart();
     const ticket = await createTicket([{ part_id: partId, qty: 1 }], []);
 
     const { error } = await mechanicClient.rpc('add_ticket_item', {
@@ -160,6 +163,7 @@ describe('tickets', () => {
   });
 
   it('verifies parts and moves through the allowed statuses', async () => {
+    const partId = await createPart();
     const ticket = await createTicket([{ part_id: partId, qty: 1 }], []);
 
     const { error: verifyError } = await mechanicClient.rpc('verify_ticket_item', {
@@ -184,6 +188,7 @@ describe('tickets', () => {
   });
 
   it('rejects a skipped status transition', async () => {
+    const partId = await createPart();
     const ticket = await createTicket([{ part_id: partId, qty: 1 }], []);
 
     const { error } = await mechanicClient.rpc('update_ticket_status', {
@@ -195,6 +200,7 @@ describe('tickets', () => {
   });
 
   it('releases the reservation when an item or labor line is removed', async () => {
+    const partId = await createPart();
     const ticket = await createTicket([{ part_id: partId, qty: 3 }]);
 
     const { error: removeError } = await mechanicClient.rpc('remove_ticket_item', {
