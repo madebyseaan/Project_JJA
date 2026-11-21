@@ -67,7 +67,7 @@ A step is not done until all of these are true:
 ## 4. Current step
 
 **Step 09 — Launch.**
-Status: **In progress.** Steps 03–08 are built, unit-tested, and database-verified in CI. The PWA shell, install manifest, update prompt, deploy workflow, nightly backup workflow, keep-alive workflow, and Playwright smoke suite are in place. Remaining before launch: staging/production secrets, a real-device UAT day, a restore drill, UptimeRobot monitors, and the final screenshots. Plan: `docs/superpowers/plans/2026-11-21-step-09-launch.md`.
+Status: **In progress.** Steps 03–08 are built, unit-tested, and database-verified in CI. The PWA shell, install manifest, update prompt, deploy workflow, nightly backup workflow, keep-alive workflow, Playwright smoke suite, and review screenshots are in place. Remaining before launch: staging/production secrets, a real-device UAT day, a restore drill, UptimeRobot monitors, and the final smoke test. Plan: `docs/superpowers/plans/2026-11-21-step-09-launch.md`.
 
 **Next session starts here.** Read the Step 09 plan and the runbook. Do not rebuild Steps 03–08.
 
