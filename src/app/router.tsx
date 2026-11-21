@@ -5,7 +5,10 @@ import { LockPage } from '@/features/auth/LockPage';
 import { LoginPage } from '@/features/auth/LoginPage';
 import { PinLockProvider } from '@/features/auth/PinLockProvider';
 import { BayPage } from '@/routes/BayPage';
+import { OwnerAuditPage } from '@/routes/OwnerAuditPage';
 import { OwnerPage } from '@/routes/OwnerPage';
+import { OwnerSalesPage } from '@/routes/OwnerSalesPage';
+import { OwnerSettingsPage } from '@/routes/OwnerSettingsPage';
 import { ReceiptPage } from '@/routes/ReceiptPage';
 import { StockPage } from '@/routes/StockPage';
 import { TicketPage } from '@/routes/TicketPage';
@@ -73,6 +76,18 @@ export const routes: RouteObject[] = [
                       {
                         path: '/owner',
                         element: <OwnerPage />,
+                      },
+                      {
+                        path: '/owner/sales',
+                        element: <OwnerSalesPage />,
+                      },
+                      {
+                        path: '/owner/audit',
+                        element: <OwnerAuditPage />,
+                      },
+                      {
+                        path: '/owner/settings',
+                        element: <OwnerSettingsPage />,
                       },
                     ],
                   },
