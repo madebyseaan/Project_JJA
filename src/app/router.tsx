@@ -7,6 +7,7 @@ import { PinLockProvider } from '@/features/auth/PinLockProvider';
 import { BayPage } from '@/routes/BayPage';
 import { OwnerPage } from '@/routes/OwnerPage';
 import { StockPage } from '@/routes/StockPage';
+import { TicketPage } from '@/routes/TicketPage';
 
 import { RequireOwner } from './guards/RequireOwner';
 import { RequireStaff } from './guards/RequireStaff';
@@ -47,6 +48,10 @@ export const routes: RouteObject[] = [
                   {
                     path: '/bay',
                     element: <BayPage />,
+                  },
+                  {
+                    path: '/bay/ticket/:id',
+                    element: <TicketPage />,
                   },
                   {
                     path: '/inventory',
