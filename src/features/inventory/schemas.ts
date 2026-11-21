@@ -9,7 +9,10 @@ function pesoString(label: string) {
     .string()
     .trim()
     .min(1, `Enter ${label}.`)
-    .refine((value) => parsePesoToCentavos(value) !== null, 'Enter a valid peso amount.');
+    .refine((value) => {
+      const centavos = parsePesoToCentavos(value);
+      return centavos !== null && centavos >= 0;
+    }, 'Enter a valid peso amount.');
 }
 
 function wholeNumberString(label: string, max = MAX_STOCK) {

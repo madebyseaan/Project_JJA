@@ -34,6 +34,9 @@ describe('part form schema', () => {
     const badMoney = partFormSchema.safeParse({ ...validForm, unitPrice: '1.234' });
     expect(badMoney.success).toBe(false);
 
+    const negativePrice = partFormSchema.safeParse({ ...validForm, unitPrice: '-1' });
+    expect(negativePrice.success).toBe(false);
+
     const badStock = partFormSchema.safeParse({ ...validForm, stockOnHand: '-1' });
     expect(badStock.success).toBe(false);
   });

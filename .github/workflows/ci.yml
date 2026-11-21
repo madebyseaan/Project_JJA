@@ -26,11 +26,8 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      - uses: supabase/setup-cli@v1
-        with:
-          version: latest
-      - run: supabase start
-      - run: supabase db reset
+      - run: npx supabase start
+      - run: npx supabase db reset
       - name: Export test environment
         run: |
           eval "$(supabase status -o env | sed 's/^/export /')"
