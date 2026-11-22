@@ -1,3 +1,5 @@
+import { Download } from 'lucide-react';
+import { useState } from 'react';
 import { Outlet } from 'react-router';
 
 import { AppNav } from '@/app/AppNav';
@@ -8,12 +10,16 @@ import { OfflineBanner } from '@/components/OfflineBanner';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/features/auth/use-auth';
 import { usePinLock } from '@/features/auth/use-pin-lock';
+import { InstallAppDialog } from '@/features/pwa/InstallAppDialog';
+import { useInstallPrompt } from '@/features/pwa/use-install-prompt';
 import { useOnlineStatus } from '@/hooks/use-online-status';
 
 export function StaffLayout() {
   const auth = useAuth();
   const { lock } = usePinLock();
   const online = useOnlineStatus();
+  const install = useInstallPrompt();
+  const [installOpen, setInstallOpen] = useState(false);
 
   // RequireStaff owns redirects; this is a defensive frame, never a blank screen.
   if (auth.status !== 'signed-in') {
@@ -55,6 +61,17 @@ export function StaffLayout() {
               Sign out
             </Button>
           </div>
+          {!install.installed ? (
+            <Button
+              variant="outline"
+              size="touch"
+              className="mt-2 w-full"
+              onClick={() => setInstallOpen(true)}
+            >
+              <Download aria-hidden="true" />
+              Install app
+            </Button>
+          ) : null}
         </div>
       </aside>
 
@@ -70,6 +87,17 @@ export function StaffLayout() {
                 </p>
               </div>
               <ConnectionStatus online={online} className="shrink-0" />
+              {!install.installed ? (
+                <Button
+                  variant="outline"
+                  size="touch"
+                  className="w-12 shrink-0 px-0"
+                  aria-label="Install app"
+                  onClick={() => setInstallOpen(true)}
+                >
+                  <Download className="size-5" aria-hidden="true" />
+                </Button>
+              ) : null}
               <Button variant="outline" size="touch" className="shrink-0" onClick={lock}>
                 Lock
               </Button>
@@ -85,6 +113,16 @@ export function StaffLayout() {
 
         <AppNav role={profile.role} variant="tabs" className="md:hidden" />
       </div>
+
+      <InstallAppDialog
+        open={installOpen}
+        onOpenChange={setInstallOpen}
+        canPrompt={install.canPrompt}
+        installed={install.installed}
+        isIos={install.isIos}
+        isAndroid={install.isAndroid}
+        onInstall={install.promptInstall}
+      />
     </div>
   );
 }
