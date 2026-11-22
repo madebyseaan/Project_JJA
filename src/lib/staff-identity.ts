@@ -1,7 +1,16 @@
 const STAFF_EMAIL_DOMAIN = 'staff.jja.internal';
 
 export function normalizeEmployeeId(value: string): string {
-  return value.trim().toUpperCase();
+  const normalized = value.trim().toUpperCase();
+  const match = normalized.match(/^([A-Z]+)-?(\d{1,3})$/);
+
+  if (match) {
+    const prefix = match[1] ?? '';
+    const digits = match[2] ?? '';
+    return `${prefix}-${digits.padStart(3, '0')}`;
+  }
+
+  return normalized;
 }
 
 /**

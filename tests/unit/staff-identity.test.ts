@@ -9,6 +9,9 @@ import {
 
 test('normalizes an employee ID', () => {
   expect(normalizeEmployeeId('  jja-001 ')).toBe('JJA-001');
+  expect(normalizeEmployeeId('jja-01')).toBe('JJA-001');
+  expect(normalizeEmployeeId('jja1')).toBe('JJA-001');
+  expect(normalizeEmployeeId('JJA-0001')).toBe('JJA-0001');
 });
 
 test('formats employee IDs while typing', () => {

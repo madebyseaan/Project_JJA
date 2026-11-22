@@ -125,3 +125,24 @@ test('uppercases and inserts the hyphen while typing an employee ID', async () =
     expect(signIn).toHaveBeenCalledWith('JJA-001', 'secret');
   });
 });
+
+test('pads a short employee number on blur', async () => {
+  const user = userEvent.setup();
+  const signIn = vi.fn(async () => {});
+  const value = signedOutValue();
+  value.signIn = signIn;
+
+  renderLogin(value);
+
+  const employeeId = screen.getByLabelText('Employee ID');
+  await user.type(employeeId, 'jja01');
+  await user.type(screen.getByLabelText('Password'), 'secret');
+
+  expect(employeeId).toHaveValue('JJA-001');
+
+  await user.click(screen.getByRole('button', { name: 'Sign in' }));
+
+  await waitFor(() => {
+    expect(signIn).toHaveBeenCalledWith('JJA-001', 'secret');
+  });
+});

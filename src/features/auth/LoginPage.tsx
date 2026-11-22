@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useManilaClock } from '@/hooks/use-manila-clock';
 import { AppError } from '@/lib/errors';
-import { formatEmployeeIdInput } from '@/lib/staff-identity';
+import { formatEmployeeIdInput, normalizeEmployeeId } from '@/lib/staff-identity';
 
 import { BrandPanel } from './BrandPanel';
 import { MobileBrandHeader } from './MobileBrandHeader';
@@ -128,6 +128,10 @@ export function LoginPage() {
                     onChange={(event) => {
                       event.target.value = formatEmployeeIdInput(event.target.value);
                       void employeeIdField.onChange(event);
+                    }}
+                    onBlur={(event) => {
+                      event.target.value = normalizeEmployeeId(event.target.value);
+                      void employeeIdField.onBlur?.(event);
                     }}
                   />
                 </div>
