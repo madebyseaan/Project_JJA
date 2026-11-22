@@ -4,17 +4,16 @@ import { createBrowserRouter, Navigate } from 'react-router';
 import { LockPage } from '@/features/auth/LockPage';
 import { LoginPage } from '@/features/auth/LoginPage';
 import { PinLockProvider } from '@/features/auth/PinLockProvider';
-import { BayPage } from '@/routes/BayPage';
-import { OwnerAuditPage } from '@/routes/OwnerAuditPage';
-import { OwnerPage } from '@/routes/OwnerPage';
-import { OwnerSalesPage } from '@/routes/OwnerSalesPage';
-import { OwnerSettingsPage } from '@/routes/OwnerSettingsPage';
+import { GcashPage } from '@/routes/GcashPage';
+import { ItemsPage } from '@/routes/ItemsPage';
+import { OrderFormPage } from '@/routes/OrderFormPage';
+import { OrdersPage } from '@/routes/OrdersPage';
 import { ReceiptPage } from '@/routes/ReceiptPage';
-import { StockPage } from '@/routes/StockPage';
-import { TicketPage } from '@/routes/TicketPage';
+import { ReportsPage } from '@/routes/ReportsPage';
+import { SalesReceiptPage } from '@/routes/SalesReceiptPage';
+import { SettingsPage } from '@/routes/SettingsPage';
 import { VerifyPage } from '@/routes/VerifyPage';
 
-import { RequireOwner } from './guards/RequireOwner';
 import { RequireStaff } from './guards/RequireStaff';
 import { RequireUnlocked } from './guards/RequireUnlocked';
 import { PublicLayout } from './layouts/PublicLayout';
@@ -36,6 +35,12 @@ export const routes: RouteObject[] = [
             element: <LockPage />,
           },
           {
+            // New sales-log digital receipt.
+            path: '/s/:token',
+            element: <SalesReceiptPage />,
+          },
+          {
+            // Legacy receipt links stay available while old data is retained.
             path: '/r/:token',
             element: <ReceiptPage />,
           },
@@ -56,44 +61,35 @@ export const routes: RouteObject[] = [
                 children: [
                   {
                     path: '/',
-                    element: <Navigate to="/bay" replace />,
+                    element: <Navigate to="/orders" replace />,
                   },
                   {
-                    path: '/bay',
-                    element: <BayPage />,
+                    path: '/orders',
+                    element: <OrdersPage />,
                   },
                   {
-                    path: '/bay/ticket/:id',
-                    element: <TicketPage />,
+                    path: '/orders/new',
+                    element: <OrderFormPage />,
                   },
                   {
-                    path: '/inventory',
-                    element: <StockPage />,
+                    path: '/orders/:id',
+                    element: <OrderFormPage />,
                   },
                   {
-                    path: '/sales',
-                    element: <OwnerSalesPage />,
+                    path: '/items',
+                    element: <ItemsPage />,
                   },
                   {
-                    element: <RequireOwner />,
-                    children: [
-                      {
-                        path: '/owner',
-                        element: <OwnerPage />,
-                      },
-                      {
-                        path: '/owner/sales',
-                        element: <Navigate to="/sales" replace />,
-                      },
-                      {
-                        path: '/owner/audit',
-                        element: <OwnerAuditPage />,
-                      },
-                      {
-                        path: '/owner/settings',
-                        element: <OwnerSettingsPage />,
-                      },
-                    ],
+                    path: '/reports',
+                    element: <ReportsPage />,
+                  },
+                  {
+                    path: '/reports/gcash',
+                    element: <GcashPage />,
+                  },
+                  {
+                    path: '/settings',
+                    element: <SettingsPage />,
                   },
                 ],
               },

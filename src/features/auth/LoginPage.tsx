@@ -69,15 +69,15 @@ export function LoginPage() {
         eyebrow="Staff access"
         title={
           <>
-            <span className="bg-safety text-ink inline-block px-2 py-0.5">The bay,</span>
+            <span className="bg-safety text-ink inline-block px-2 py-0.5">The day,</span>
             <br />
             in order.
           </>
         }
         description={
           <>
-            Tickets, stock, and receipts for the shop.{' '}
-            <span className="xl:block">One ledger, no loose ends.</span>
+            Orders, labor, and receipts for the shop.{' '}
+            <span className="xl:block">One log, no loose ends.</span>
           </>
         }
       />

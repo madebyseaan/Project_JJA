@@ -1,5 +1,7 @@
 # Sales Log Core Implementation Plan
 
+> **Status (22 Nov 2026):** Implemented on `feat/sales-log-core`. The database schema is split across four migrations, the sales UI and catalog import are live, unit/database/E2E suites cover the new flow, and the old inventory/bay/owner routes are retired from navigation. QuickBooks export, month lock, and reconciliation remain excluded until the morning answers.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Replace the inventory/repair-ticket app with a daily sales log: orders, items, labor splits, extras, cash/GCash payments, GCash held, reports, and optional digital receipts.

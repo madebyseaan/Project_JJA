@@ -5,10 +5,20 @@ import { createStaffUser, getAnonClient, getServiceClient, signInAs } from '../s
 
 const password = 'test-password-123';
 
+function manilaToday(): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Manila',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
+}
+
 type TestUser = { id: string; employeeId: string; email: string; password: string };
 type Order = {
   id: string;
   order_no: string;
+  business_date: string;
   parts_total_centavos: number;
   labor_total_centavos: number;
   total_centavos: number;
@@ -35,7 +45,7 @@ async function saveOrder(
     mainUserId: string;
     helperUserId?: string | null;
     items: {
-      catalog_item_id: string;
+      catalog_item_id: string | null;
       qty: number;
       unit_price_centavos: number;
       is_custom: boolean;
@@ -50,7 +60,7 @@ async function saveOrder(
 ) {
   const { data, error } = await client.rpc('save_sales_order', {
     p_order_id: input.orderId ?? null,
-    p_business_date: input.date ?? new Date().toISOString().slice(0, 10),
+    p_business_date: input.date ?? manilaToday(),
     p_customer_name: 'Test Customer',
     p_bike_model: 'Honda Click',
     p_main_user_id: input.mainUserId,
@@ -219,7 +229,7 @@ describe('sales orders', () => {
   it('rejects a helper share larger than total labor', async () => {
     const { error } = await uncleClient.rpc('save_sales_order', {
       p_order_id: null,
-      p_business_date: new Date().toISOString().slice(0, 10),
+      p_business_date: manilaToday(),
       p_customer_name: null,
       p_bike_model: null,
       p_main_user_id: uncle.id,
@@ -240,7 +250,7 @@ describe('sales orders', () => {
   it('rejects a payment mismatch', async () => {
     const { error } = await uncleClient.rpc('save_sales_order', {
       p_order_id: null,
-      p_business_date: new Date().toISOString().slice(0, 10),
+      p_business_date: manilaToday(),
       p_customer_name: null,
       p_bike_model: null,
       p_main_user_id: uncle.id,
@@ -256,6 +266,32 @@ describe('sales orders', () => {
     });
 
     expect(error?.message).toBe('PAYMENT_MISMATCH');
+  });
+
+  it('rejects GCash change from someone who did not receive GCash', async () => {
+    const { error } = await uncleClient.rpc('save_sales_order', {
+      p_order_id: null,
+      p_business_date: manilaToday(),
+      p_customer_name: null,
+      p_bike_model: null,
+      p_main_user_id: uncle.id,
+      p_helper_user_id: dad.id,
+      p_items: [
+        {
+          catalog_item_id: catalogIds[0],
+          qty: 1,
+          unit_price_centavos: 15000,
+          is_custom: false,
+        },
+      ],
+      p_labor_total_centavos: 0,
+      p_helper_labor_centavos: 0,
+      p_extras: [],
+      p_payments: [{ method: 'GCASH', amount_centavos: 16000, gcash_recipient_id: dad.id }],
+      p_changes: [{ method: 'GCASH', amount_centavos: 1000, gcash_recipient_id: uncle.id }],
+    });
+
+    expect(error?.message).toBe('CHANGE_TOO_LARGE');
   });
 
   it('edits an order and replaces its child rows', async () => {
@@ -336,6 +372,16 @@ describe('sales orders', () => {
     const after = await uncleClient.rpc('get_gcash_balances');
     const afterRows = after.data as { user_id: string; shop_held_centavos: number }[];
     expect(afterRows.find((row) => row.user_id === dad.id)?.shop_held_centavos).toBe(0);
+
+    const { error: overdrawError } = await uncleClient.rpc('record_gcash_transfer', {
+      p_user_id: dad.id,
+      p_amount_centavos: 1,
+      p_destination: 'SHOP_BANK',
+      p_counterparty_user_id: null,
+      p_reference: null,
+      p_note: null,
+    });
+    expect(overdrawError?.message).toBe('INSUFFICIENT_GCASH');
   });
 
   it('serves a public digital receipt by token', async () => {
@@ -350,14 +396,158 @@ describe('sales orders', () => {
         },
       ],
       labor: 2000,
-      payments: [{ method: 'CASH', amount_centavos: 17000 }],
+      extras: [{ user_id: uncle.id, amount_centavos: 500 }],
+      payments: [{ method: 'CASH', amount_centavos: 18500 }],
+      changes: [{ method: 'CASH', amount_centavos: 1000 }],
     });
 
     const anon = getAnonClient();
     const { data, error } = await anon.rpc('get_sales_receipt', { p_token: order.public_token });
     expect(error).toBeNull();
-    expect(data).toMatchObject({ order_no: order.order_no, labor_total_centavos: 2000 });
+    expect(data).toMatchObject({
+      order_no: order.order_no,
+      labor_total_centavos: 2000,
+      total_centavos: 17000,
+      extras_total_centavos: 500,
+      changes: [{ method: 'CASH', amount_centavos: 1000 }],
+    });
     expect(data).not.toHaveProperty('labor');
+  });
+
+  it('snapshots catalog and custom item names and prices', async () => {
+    const order = await saveOrder(uncleClient, {
+      mainUserId: uncle.id,
+      items: [
+        {
+          catalog_item_id: catalogIds[0] as string,
+          qty: 1,
+          unit_price_centavos: 12000,
+          is_custom: false,
+        },
+        {
+          catalog_item_id: null,
+          qty: 2,
+          unit_price_centavos: 5000,
+          is_custom: true,
+        },
+      ],
+      labor: 0,
+      payments: [{ method: 'CASH', amount_centavos: 22000 }],
+    });
+
+    expect(order.parts_total_centavos).toBe(22000);
+
+    const { data: items } = await uncleClient
+      .from('sales_order_items')
+      .select('item_name_at_time,qty,unit_price_at_time_centavos,line_total_centavos,is_custom')
+      .eq('order_id', order.id)
+      .order('is_custom', { ascending: true });
+
+    expect(items).toEqual([
+      {
+        item_name_at_time: expect.stringMatching(/^Brake pad /),
+        qty: 1,
+        unit_price_at_time_centavos: 12000,
+        line_total_centavos: 12000,
+        is_custom: false,
+      },
+      {
+        item_name_at_time: 'Custom chain',
+        qty: 2,
+        unit_price_at_time_centavos: 5000,
+        line_total_centavos: 10000,
+        is_custom: true,
+      },
+    ]);
+
+    const { data: catalogRow } = await uncleClient
+      .from('catalog_items')
+      .select('base_price_centavos')
+      .eq('id', catalogIds[0] as string)
+      .single();
+
+    expect(catalogRow?.base_price_centavos).toBe(15000);
+  });
+
+  it('numbers and reports an order on a past business date', async () => {
+    const past = new Date(`${manilaToday()}T00:00:00Z`);
+    past.setUTCDate(past.getUTCDate() - 30);
+    const pastDate = past.toISOString().slice(0, 10);
+
+    const order = await saveOrder(uncleClient, {
+      mainUserId: uncle.id,
+      date: pastDate,
+      items: [
+        {
+          catalog_item_id: catalogIds[0] as string,
+          qty: 1,
+          unit_price_centavos: 15000,
+          is_custom: false,
+        },
+      ],
+      labor: 3000,
+      payments: [{ method: 'CASH', amount_centavos: 18000 }],
+    });
+
+    expect(order.business_date).toBe(pastDate);
+    expect(order.order_no).toMatch(new RegExp(`^SL-${pastDate.replaceAll('-', '')}-\\d{4}$`));
+
+    const { data: daily } = await uncleClient
+      .from('v_sales_daily')
+      .select('business_date,order_count,parts_total_centavos,labor_total_centavos,total_centavos')
+      .eq('business_date', pastDate)
+      .single();
+
+    expect(daily).toEqual({
+      business_date: pastDate,
+      order_count: 1,
+      parts_total_centavos: 15000,
+      labor_total_centavos: 3000,
+      total_centavos: 18000,
+    });
+  });
+
+  it('renumbers an order when its business date changes', async () => {
+    const order = await saveOrder(uncleClient, {
+      mainUserId: uncle.id,
+      items: [
+        {
+          catalog_item_id: catalogIds[0] as string,
+          qty: 1,
+          unit_price_centavos: 15000,
+          is_custom: false,
+        },
+      ],
+      labor: 0,
+      payments: [{ method: 'CASH', amount_centavos: 15000 }],
+    });
+
+    const movedDate = new Date(`${manilaToday()}T00:00:00Z`);
+    movedDate.setUTCDate(movedDate.getUTCDate() - 45);
+    const movedBusinessDate = movedDate.toISOString().slice(0, 10);
+
+    const moved = await saveOrder(uncleClient, {
+      orderId: order.id,
+      mainUserId: uncle.id,
+      date: movedBusinessDate,
+      items: [
+        {
+          catalog_item_id: catalogIds[0] as string,
+          qty: 1,
+          unit_price_centavos: 15000,
+          is_custom: false,
+        },
+      ],
+      labor: 0,
+      payments: [{ method: 'CASH', amount_centavos: 15000 }],
+    });
+
+    expect(moved.id).toBe(order.id);
+    expect(moved.business_date).toBe(movedBusinessDate);
+    expect(moved.order_no).toMatch(
+      new RegExp(`^SL-${movedBusinessDate.replaceAll('-', '')}-\\d{4}$`),
+    );
+    expect(moved.order_no).not.toBe(order.order_no);
   });
 
   it('denies anon reads and direct writes', async () => {
@@ -366,7 +556,7 @@ describe('sales orders', () => {
 
     const { error: insertError } = await dadClient.from('sales_orders').insert({
       order_no: 'HACK',
-      business_date: new Date().toISOString().slice(0, 10),
+      business_date: manilaToday(),
       main_user_id: dad.id,
       created_by: dad.id,
     });

@@ -1,1015 +1,607 @@
-# Motorcycle Parts & Repair Shop POS — Specification
+# J.J.A Sales Log — Specification
 
-**Status:** Draft for review
-**Date:** 2026-11-15
-**Owner:** Sean
-**Scope:** One shop, phase 1
-**Budget:** ₱0 per month
-**Locale:** Philippines — ₱ (PHP), Asia/Manila
+**Status:** Current source of truth.
+**Updated:** 22 November 2026.
+**Supersedes:** the inventory and bay-ticket specification of 15–21 November 2026.
+
+The shop is **J.J.A Motor Accessories and Motorcycle Repair Shop** (Est. 2023), one motorcycle parts and repair shop in the Philippines. This document describes the daily sales log that replaces the old inventory/repair-ticket app. The old inventory, bay, day-close, and receipt tables remain in the database until a later cleanup, but their screens are no longer part of the product.
+
+The approved design note is `docs/superpowers/specs/2026-11-22-sales-log-design.md`. If this file and that note disagree, this file wins.
 
 ---
 
 ## 1. Summary
 
-A phone-friendly web app for **J.J.A Motor Accessories and Motorcycle Repair Shop** (Est. 2023), one motorcycle parts and repair shop in the Philippines.
+Dad and Uncle record each customer order in a phone-friendly sales log:
 
-The mechanic creates a walk-in ticket at the counter, adds parts and labor, verifies the parts physically, takes payment, and the system issues a tamper-evident e-receipt. The owner manages inventory, sees the day's sales, reconciles cash, and exports daily sales to CSV for QuickBooks Desktop.
+- date, optional customer name, optional motorcycle;
+- parts from the QuickBooks item list, with quantity and a per-order price;
+- custom lines for parts missing from QuickBooks;
+- total labor, an optional helper, and the helper’s share;
+- extras (keep-the-change tips) assigned to one of the two workers;
+- one or more cash/GCash payments, with the GCash recipient;
+- change, as cash or GCash.
 
-The app is a static React application hosted free on Cloudflare. Supabase provides staff accounts, PostgreSQL, live updates, and storage. There is no custom server, no server-side rendering, and no monthly bill.
+The app reports daily and monthly sales, labor per person, cash, GCash, and the shop’s GCash held in personal accounts. It can share an optional public digital receipt. There is **no stock tracking**: QuickBooks remains the official stock and accounting record.
+
+QuickBooks Desktop Enterprise 13.0 Retail Edition is used for accounting and stock. A later step exports **parts only** as IIF sales receipts, one per day per payment method, and locks the month. Labor is never exported.
 
 ---
 
 ## 2. Goals
 
-1. A walk-in ticket takes under one minute from the bay screen.
-2. Stock is always accurate: no overselling, no silent adjustments, no negative counts.
-3. Every peso is traceable: who took it, how it was paid, and which receipt it belongs to.
-4. Every receipt is tamper-evident: a customer or the owner can verify it against the live system.
-5. The owner can close the day and export sales without retyping anything.
-6. The app works on ordinary Android and iPhone browsers, and installs as a PWA.
-7. The monthly hosting and database bill stays at ₱0.
-8. One person can maintain the codebase without a framework treadmill.
+1. Replace the paper daily record book with a fast phone-friendly log.
+2. Show daily and monthly sales, labor per person, cash, and GCash clearly.
+3. Never lose track of who earned labor or who is holding shop GCash.
+4. Keep both workers on equal footing with the same access.
+5. Fit a 360px phone and a desktop browser with large, high-contrast controls.
+6. Keep monthly QuickBooks export possible without retyping sales (a later step).
+7. Host at ₱0/month on Cloudflare Workers static assets and Supabase’s free tier.
+
+## 3. Non-goals (current phase)
+
+- Stock quantities, reservations, stock ledgers, or low-stock alerts.
+- Supplier, purchase-order, or receiving workflows.
+- Multi-shop or multi-tenant support.
+- Customer accounts or a storefront.
+- Online cart, delivery, or shipping.
+- Partial returns or exchanges.
+- Payroll, commissions, or government deductions.
+- BIR Official Receipts or sales-invoice compliance features.
+- Camera scanners, part photos, or SMS/email delivery.
+- Offline sales. The app is offline-tolerant for viewing but never queues a sale.
+- Importing historical sales.
+- QuickBooks live API integration. QuickBooks Desktop uses file export/import.
 
 ---
 
-## 3. Non-goals (phase 1)
+## 4. Users and access
 
-- Multi-shop or multi-tenant support. This is one shop.
-- Customer accounts, a public storefront, or online ordering.
-- Offline sales or offline queueing.
-- SMS or email delivery of receipts.
-- BIR-registered "Official Receipts" or tax computation.
-- Payroll, full accounting, purchase orders, suppliers, or loyalty points.
-- Part photos and image uploads.
-- Returns, partial refunds, or warranty workflows. Phase 1 supports whole-sale voids only.
-- Barcode scanning. Phase 2 may add a camera scanner.
-- A custom API server, Next.js, Prisma, Fastify, or any always-on backend.
+Two staff accounts, both with the same access:
 
----
-
-## 4. Constraints and key decisions
-
-| Decision | Choice | Reason |
+| Staff | Employee ID | Display name |
 |---|---|---|
-| Hosting | Cloudflare Workers static assets | Free, commercial use allowed, HTTPS included, no server CPU limit |
-| Front end | React + Vite + TypeScript | Fully static SPA; no server rendering needed |
-| Backend | Supabase Free | PostgreSQL, Auth, Realtime, Storage in one free tier |
-| Writes | PostgreSQL functions only | The browser cannot forge prices, stock, payments, or receipts |
-| Money | Integer centavos | No floating-point rounding errors |
-| Dates | `timestamptz`, business date in `Asia/Manila` | "Today" means the shop's today, not UTC |
-| Receipts | Immutable snapshot + HMAC verification code | Edits are detectable; history cannot be rewritten |
-| Printer | None at launch; e-receipt primary | No hardware dependency; print/PDF can be added later |
-| Package manager | npm | Already installed; no extra tooling |
-| Local database | Supabase staging project; CI uses local Supabase in Docker | Docker is not installed on the development laptop |
-| CI/CD | GitHub Actions | Free minutes; the repository is already on GitHub |
+| Dad | `JJA-001` | Dad |
+| Uncle | `JJA-002` | Uncle |
+
+- Login is Supabase Auth with a hidden internal email derived from the employee ID: `jja-001@staff.jja.internal`. Staff type only the employee ID and password.
+- `profiles.role` remains `owner` or `mechanic` for compatibility with legacy tables, but the sales log **does not use it**. No screen in the sales log is owner-only.
+- Both staff can create, view, edit, and share orders; add extras; record payments and change; import items; record GCash transfers; and view reports and settings.
+- The old owner/mechanic navigation split is retired.
+- The local PIN lock remains a screen lock. It is not identity and never goes to the server.
 
 ---
 
-## 5. Users and roles
+## 5. Daily flow
 
-| Role | Person | Can do |
-|---|---|---|
-| **Owner** | Uncle | Everything: bay, inventory, prices, stock adjustments, payments, void sales, day close, audit log, settings |
-| **Mechanic** | Dad | Create tickets, add catalog parts and labor, verify parts, record payments, complete tickets, view inventory, view sales and export CSV |
-| **Customer** | Walk-in | No account. Receives an e-receipt link or QR. Can open and verify a receipt. |
+1. Open **Orders**. Today’s Manila business date is selected.
+2. Tap **New order**.
+3. Optionally enter the customer and motorcycle.
+4. Add items:
+   - search the QuickBooks catalog by name, SKU, or description;
+   - add an item; the price fills from the catalog;
+   - change the quantity;
+   - change the price for this order only;
+   - remove a line.
+5. If the item is not in QuickBooks, add a **custom line**: name, quantity, price. It is marked “not in QuickBooks”.
+6. Enter **total labor**. If someone helped, choose the helper and enter the helper’s share. The main worker receives `total labor − helper share`.
+7. Add optional **extras** (tips/keep-the-change). The recipient defaults to the main worker; the helper can be chosen. Extras go to labor, not to shop sales.
+8. Record payment:
+   - one or more payments;
+   - each is Cash or GCash;
+   - each GCash payment records who received it;
+   - change can be cash or GCash and records its own recipient.
+9. Review the order: items, labor split, extras, payments, change, totals, balance.
+10. Save. The order appears in the daily log and reports.
+11. Optionally share the digital receipt link or QR code.
 
-Rules:
-
-- The owner account can also work the bay. There is no separate "owner mode" toggle; permissions follow the signed-in account.
-- A mechanic cannot void a sale, edit a price, adjust stock, close the day, or read the audit log. A mechanic can view the sales list and export CSV for QuickBooks.
-- The PIN is a local screen lock, not an identity. The Supabase session decides the role.
-- Each person should use their own device or sign out when switching. A shared device logged in as the owner gives the next user owner powers.
-
----
-
-## 6. Core flows
-
-### 6.1 Walk-in ticket (primary flow)
-
-1. Mechanic opens **Bay → New Ticket**.
-2. Optionally enters the customer name and bike model.
-3. Searches the catalog and adds parts. The database reserves each part immediately.
-4. Adds labor lines with a description and amount.
-5. Saves. The ticket gets a daily number, e.g. `TK-20261115-0001`.
-6. The ticket appears in the bay queue and on other staff devices in real time.
-
-### 6.2 Repair and verification
-
-1. Mechanic moves the ticket through `PENDING → VERIFYING → IN_PROGRESS → READY`.
-2. Each part line has a **Verified** checkbox. The mechanic ticks it after physically pulling the part.
-3. A ticket with parts cannot be completed until every part is verified.
-4. Mid-repair additions use the same add-part and add-labor actions. Stock is reserved immediately.
-
-### 6.3 Payment and completion
-
-1. On **Complete**, the app shows the total, the payments already recorded, and the balance.
-2. The mechanic records the final payment (cash or GCash/Maya) and confirms.
-3. The database, in one transaction:
-   - checks that the payment balance is zero,
-   - deducts `stock_on_hand` and `reserved_qty` for every part,
-   - writes a `SALE` row to the stock ledger,
-   - issues the receipt with a daily number, immutable snapshot, verification code, and public token,
-   - marks the ticket `COMPLETED`.
-4. If any step fails, nothing is committed.
-
-### 6.4 E-receipt delivery
-
-1. The completion screen shows a QR code and a **Copy Link** button.
-2. The customer scans the QR with their phone camera and opens the receipt page.
-3. The receipt page shows the shop details, receipt number, items, labor, total, payments, verification code, and a "Verified" badge.
-4. The customer can save the page as a PDF or screenshot it. The verification code is what makes a screenshot checkable.
-5. If the customer has no phone, the staff shows the receipt on the shop device and writes the receipt number on the customer's slip. The owner can look it up later.
-
-### 6.5 Receipt verification
-
-1. Anyone opens `/verify` on the shop's official URL.
-2. Enters the receipt number and verification code.
-3. The system recomputes the code from the stored snapshot and returns:
-   - `Valid` with date, total, and payment method, or
-   - `Void` with the void reason, or
-   - `No match`.
-4. The verification response never includes the customer's name or the full item list.
-
-### 6.6 Day close
-
-1. Owner opens **Owner → Day Close**.
-2. The screen shows:
-   - sales issued today (parts vs labor),
-   - payments received today by method,
-   - expected cash in the drawer,
-   - voided sales today.
-3. Owner enters the counted cash and notes.
-4. The system stores the close and shows the variance.
-5. The close is a snapshot; it does not lock the day or prevent later sales.
-
-### 6.7 Void sale (owner only)
-
-A completed sale can be voided in full when it was a genuine mistake or a full refund is given.
-
-1. Owner opens the receipt and chooses **Void Sale**, enters a reason and refund method.
-2. The database, in one transaction:
-   - restores `stock_on_hand` for every item and writes `RETURN` ledger rows,
-   - records a negative payment for the net amount paid (the refund),
-   - marks the receipt `VOID` with the reason,
-   - marks the ticket `VOIDED`,
-   - writes audit events.
-3. The receipt page and verification page show **VOID**. A new ticket is created for a corrected sale.
-4. Partial returns and exchanges are phase 2.
-
-### 6.8 Inventory
-
-1. Owner adds a part with name, category, compatible models, price, cost, initial stock, and low-stock level.
-2. Owner restocks or adjusts stock. Every change writes a ledger row with reason and actor.
-3. Price changes are audited. Open tickets keep the price snapshot taken when the part was added.
-4. Low-stock items appear on the owner dashboard and in the inventory filter.
+Orders stay editable while the month is open. Changing an order’s business date assigns a new order number for that date. Once QuickBooks export and month lock exist, an exported month is read-only and corrections happen in QuickBooks.
 
 ---
 
-## 7. Screens and routes
+## 6. Screens and routes
 
-| Route | Access | Purpose |
-|---|---|---|
-| `/login` | Public | Staff employee ID/password sign-in |
-| `/lock` | Staff | PIN screen lock; unlock or sign out |
-| `/bay` | Staff | Live queue, new ticket, ticket search |
-| `/bay/ticket/:id` | Staff | Ticket detail: items, labor, payments, verification, status, complete |
-| `/inventory` | Staff (read), owner (write) | Parts table, add/edit, restock, adjust, low-stock filter |
-| `/sales` | Staff | Receipt/sales list, filters, CSV export |
-| `/owner` | Owner | Today's sales, payment split, low stock, day close summary |
-| `/sales` | Staff | Receipt/sales list, filters, CSV export |
-| `/owner/audit` | Owner | Audit log and receipt integrity report |
-| `/owner/settings` | Owner | Shop details, receipt footer, defaults |
-| `/r/:token` | Public (unguessable token) | Customer e-receipt |
-| `/verify` | Public | Receipt number + code verification |
-
-Layout rules:
-
-- The bay and inventory screens are mobile-first with 48px minimum touch targets.
-- The owner screens work on a phone and a laptop.
-- Every data screen has loading, empty, and error states.
-- Owner-only navigation is hidden from mechanics, but the database enforces the permission.
-
----
-
-## 8. Technology stack
-
-| Layer | Choice |
+| Route | Purpose |
 |---|---|
-| Language | TypeScript, strict mode |
-| UI | React 19, Vite, Tailwind CSS v4, shadcn/ui, lucide-react |
-| Routing | React Router |
-| Server state | TanStack Query |
-| Forms | React Hook Form + zod |
-| Validation | zod on the client; PostgreSQL checks and function validation on the server |
-| Backend | Supabase (PostgreSQL, Auth, Realtime, Storage in phase 2) |
-| Database access | `@supabase/supabase-js`; reads via PostgREST with RLS, writes via RPC |
-| PWA | `vite-plugin-pwa` (Workbox) |
-| Tables | TanStack Table |
-| Toasts | Sonner |
-| QR generation | `qrcode.react` |
-| CSV | papaparse |
-| Image compression (phase 2) | `browser-image-compression` |
-| Unit tests | Vitest + Testing Library |
-| End-to-end tests | Playwright |
-| Hosting | Cloudflare Workers static assets |
-| CI/CD | GitHub Actions |
-| Package manager | npm |
+| `/orders` | Daily list, date picker, daily totals, labor per person, order links |
+| `/orders/new` | Create an order |
+| `/orders/:id` | View/edit an order, share its receipt |
+| `/items` | Search the catalog; import the QuickBooks item list |
+| `/reports` | Monthly report with daily rows, totals, and labor breakdown |
+| `/reports/gcash` | GCash held per person, transfers, recent history |
+| `/settings` | Read-only shop details and QuickBooks-related guidance |
+| `/s/:token` | Public digital receipt |
 
-No Next.js, no OpenNext, no Serwist, no `jose`, no Prisma, no Fastify.
+Navigation has four items for both staff: **Orders**, **Items**, **Reports**, **Settings**.
+
+Legacy routes `/r/:token` (old receipt), `/verify` (old verification), `/login`, and `/lock` remain available. Old `/bay`, `/inventory`, `/sales`, and `/owner` routes are removed. Unknown paths redirect to `/orders`.
+
+The root path `/` redirects to `/orders`.
 
 ---
 
-## 9. Architecture
+## 7. Data model
 
-```
-┌──────────────────────────────┐
-│  Phone / tablet / laptop     │
-│  React SPA (static files)    │
-│  - TanStack Query            │
-│  - Supabase JS client        │
-│  - PIN lock (local)          │
-└──────────────┬───────────────┘
-               │ HTTPS
-               ▼
-┌──────────────────────────────┐
-│  Supabase Free               │
-│  - Auth (employee ID)        │
-│  - PostgREST + RLS           │
-│  - PostgreSQL functions      │
-│  - Realtime (staff)          │
-│  - Storage (phase 2)         │
-└──────────────────────────────┘
+All money is integer **centavos**. All business dates use `Asia/Manila`; timestamps are `timestamptz`. Writes go through database functions.
 
-Static files: Cloudflare Workers static assets
-```
+### 7.1 `catalog_items`
 
-### 9.1 Data flow
+The QuickBooks item list. No stock.
 
-- **Reads:** the browser queries tables or views with the staff JWT. RLS decides which rows are visible.
-- **Writes:** the browser calls a PostgreSQL function. The function checks the caller's role, validates inputs, locks rows, writes the change and the audit record in one transaction.
-- **Realtime:** the bay subscribes to ticket changes. The UI invalidates TanStack Query caches on events, on window focus, and on reconnect. A 60-second poll is a fallback.
-- **Public pages:** the receipt page and verification page call two narrowly scoped functions granted to the `anon` role. They never read tables directly.
+| Column | Type | Notes |
+|---|---|---|
+| `id` | uuid PK | |
+| `name` | text | Unique case-insensitively, 1–120 characters |
+| `description` | text | Up to 300 characters |
+| `sku` | text nullable | QuickBooks MPN; not unique |
+| `base_price_centavos` | integer | ≥ 0 |
+| `item_type` | text | Usually `Inventory Part` |
+| `income_account` | text | QuickBooks income account |
+| `cogs_account` | text | QuickBooks COGS account |
+| `asset_account` | text | QuickBooks asset account |
+| `preferred_vendor` | text | QuickBooks preferred vendor |
+| `is_active` | boolean | Only active items are shown |
+| `source` | text | `quickbooks` or `manual` |
+| `imported_at`, `updated_at` | timestamptz | |
 
-### 9.2 Why no server
+Imports are idempotent by item name. Inactive and non-inventory rows are skipped. No stock quantity is stored.
 
-- Cloudflare Workers Free allows only 10ms of CPU per request. A server-rendered Next.js app regularly exceeds that, especially on cold starts at low traffic.
-- Almost every screen is interactive client-side work: catalog search, cart, queue, tables. Server rendering adds no value.
-- Removing the server removes an entire deployment target, adapter, and auth layer.
+### 7.2 `sales_orders`
 
-### 9.3 Hosting
+| Column | Type | Notes |
+|---|---|---|
+| `id` | uuid PK | |
+| `order_no` | text unique | `SL-YYYYMMDD-0001`, using the business date |
+| `business_date` | date | Manila business date |
+| `customer_name` | text nullable | Up to 120 characters |
+| `bike_model` | text nullable | Up to 120 characters |
+| `main_user_id` | uuid | Worker who gets the labor remainder |
+| `helper_user_id` | uuid nullable | Must differ from the main user |
+| `parts_total_centavos` | integer | Sum of line totals; computed by the RPC |
+| `labor_total_centavos` | integer | Total labor entered by staff |
+| `total_centavos` | integer generated | `parts + labor` |
+| `status` | text | `OPEN` or `EXPORTED` (export is a later step) |
+| `created_by` | uuid | |
+| `created_at`, `updated_at` | timestamptz | |
+| `reviewed_by`, `reviewed_at` | uuid, timestamptz | Set on save |
+| `public_token` | text unique | 128-bit random hex token for the digital receipt |
 
-- The built `dist/` directory is deployed as a static Worker with SPA fallback.
-- HTTPS is automatic, which the PWA and (phase 2) camera require.
-- A custom domain is optional. The free `*.workers.dev` URL works; changing it later breaks old receipt QR codes, so choose the final URL before launch.
+### 7.3 `sales_order_items`
 
-### 9.4 PWA
+| Column | Type | Notes |
+|---|---|---|
+| `id` | uuid PK | |
+| `order_id` | uuid | Cascade delete with the order |
+| `catalog_item_id` | uuid nullable | Null for custom lines |
+| `item_name_at_time` | text | Snapshot |
+| `qty` | integer | > 0 |
+| `unit_price_at_time_centavos` | integer | ≥ 0; snapshot |
+| `line_total_centavos` | integer generated | `qty × unit price` |
+| `is_custom` | boolean | True when not in QuickBooks |
 
-- Installable with 192px, 512px, and maskable icons.
-- The app shell is precached. Supabase requests are **NetworkOnly** and never cached, to avoid leaking stale prices or one user's data to another.
-- Updates use a prompt; the app never reloads in the middle of a ticket.
-- Offline shows a clear banner and disables all writes. There is no offline selling.
+A custom line must have no catalog item. A catalog line must have one. Repeated catalog items are merged into one line and the quantity is increased. Custom lines are always separate.
+
+### 7.4 `sales_labor`
+
+One row per worker per order.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | uuid PK | |
+| `order_id` | uuid | |
+| `user_id` | uuid | |
+| `amount_centavos` | integer | ≥ 0 |
+| `is_main` | boolean | Exactly one main row per order |
+
+The main row is always written, even when its amount is zero. Rows sum to `sales_orders.labor_total_centavos`.
+
+### 7.5 `sales_extras`
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | uuid PK | |
+| `order_id` | uuid | |
+| `user_id` | uuid | Main or helper for this order |
+| `amount_centavos` | integer | > 0 |
+| `note` | text nullable | Up to 120 characters |
+| `created_by`, `created_at` | | |
+
+Extras are part of labor payout, not part of customer sales.
+
+### 7.6 `sales_payments`
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | uuid PK | |
+| `order_id` | uuid | |
+| `method` | text | `CASH` or `GCASH` |
+| `amount_centavos` | integer | > 0 |
+| `gcash_recipient_id` | uuid nullable | Required for GCash; null for cash |
+| `received_by` | uuid | Staff who recorded it |
+| `received_at` | timestamptz | |
+
+### 7.7 `sales_changes`
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | uuid PK | |
+| `order_id` | uuid | |
+| `method` | text | `CASH` or `GCASH` |
+| `amount_centavos` | integer | > 0 |
+| `gcash_recipient_id` | uuid nullable | Required for GCash change |
+| `created_by`, `created_at` | | |
+
+For each method, change cannot exceed payments. For GCash, change must come from a recipient who received a GCash payment, and cannot exceed that recipient’s own GCash payment. Across the order:
+
+`payments = parts + labor + extras + change`
+
+and the review screen must show a zero balance before save.
+
+### 7.8 `sales_gcash_allocations`
+
+One row per order and GCash recipient.
+
+| Column | Type | Notes |
+|---|---|---|
+| `order_id`, `recipient_id` | uuid | Unique together |
+| `net_gcash_centavos` | integer | GCash payments − GCash change for this recipient |
+| `shop_share_centavos` | integer | Parts share of the net GCash |
+| `labor_share_centavos` | integer | Labor and extras share |
+| check | | Shares sum to net GCash |
+
+The split is proportional to parts versus labor+extras for the order. Rounding is deterministic so the parts share plus the labor share always equals the net exactly.
+
+### 7.9 `gcash_transfers`
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | uuid PK | |
+| `user_id` | uuid | Whose personal GCash held the money |
+| `amount_centavos` | integer | > 0 |
+| `destination` | text | `SHOP_BANK` or `USER` |
+| `counterparty_user_id` | uuid nullable | Required for `USER`, different from sender |
+| `reference` | text nullable | Up to 120 characters |
+| `note` | text nullable | Up to 300 characters |
+| `created_by`, `created_at` | | |
+
+A transfer cannot exceed the shop or labor balance held by that person. `INSUFFICIENT_GCASH` is returned otherwise.
+
+### 7.10 Legacy tables
+
+`parts`, `stock_movements`, `tickets`, `ticket_items`, `ticket_labor`, `ticket_payments`, `receipts`, `day_closes`, `reconciliations`, and `shop_settings` remain in the database for now. The sales log uses only `shop_settings` (shop name, address, contact, receipt footer) and `profiles`. The old tables are not written by the new module and may be dropped only after a backup and an explicit cleanup migration.
+
+### 7.11 Counters
+
+`private.sales_order_counters(day date primary key, next_no integer)` issues `SL-YYYYMMDD-0001`. Numbers are sequential per business date with no normal gaps.
 
 ---
 
-## 10. Data model
+## 8. Money and labor rules
 
-### 10.1 Conventions
-
-- All primary keys are `uuid` unless noted.
-- All timestamps are `timestamptz`.
-- All money is integer centavos (`integer`, max ₱21,474,836.47 per value — far above any ticket).
-- Business dates are derived with `(now() at time zone 'Asia/Manila')::date`.
-- Every table has RLS enabled.
-- Transactional tables have no direct write grants to `authenticated`; functions own the writes.
-- Completed and voided records are immutable.
-- `stock_movements` and `audit_events` are append-only.
-- The `public` schema is exposed by Supabase. Secrets and counters live in the `private` schema.
-
-### 10.2 `public.profiles`
-
-| Column | Type | Notes |
-|---|---|---|
-| `id` | `uuid` PK | References `auth.users(id)` on delete cascade |
-| `employee_id` | `text` unique not null | Login ID, e.g. `JJA-001`; derived from the auth email prefix |
-| `display_name` | `text` not null | Shown in the UI and audit log |
-| `role` | `text` not null | `owner` or `mechanic` |
-| `created_at` | `timestamptz` not null | |
-| `updated_at` | `timestamptz` not null | |
-
-A trigger creates a profile when an auth user is created. It sets `employee_id` from the part of the auth email before `@` (uppercased) and takes the display name from user metadata. The default role is `mechanic`; the owner role is assigned deliberately.
-
-### 10.3 `public.parts`
-
-| Column | Type | Notes |
-|---|---|---|
-| `id` | `uuid` PK | |
-| `name` | `text` not null | |
-| `sku` | `text` unique | Nullable |
-| `category` | `text` not null default `'General'` | Free text with UI suggestions |
-| `compatible_models` | `text[]` not null default `'{}'` | e.g. `{Honda Click 125, Yamaha Mio}` |
-| `unit_price_centavos` | `integer` not null | `>= 0` |
-| `cost_price_centavos` | `integer` not null default 0 | `>= 0` |
-| `stock_on_hand` | `integer` not null default 0 | `>= 0` |
-| `reserved_qty` | `integer` not null default 0 | `>= 0` and `<= stock_on_hand` |
-| `available_qty` | `integer` generated | `stock_on_hand - reserved_qty` |
-| `low_stock_threshold` | `integer` not null default 3 | `>= 0` |
-| `is_active` | `boolean` not null default true | Soft delete |
-| `image_path` | `text` | Reserved for phase 2 |
-| `created_by` | `uuid` | References `profiles` |
-| `updated_by` | `uuid` | References `profiles` |
-| `created_at` | `timestamptz` not null | |
-| `updated_at` | `timestamptz` not null | |
-
-Indexes: `lower(name)`, `sku`, `category`, GIN on `compatible_models`, `is_active`.
-
-### 10.4 `public.tickets`
-
-| Column | Type | Notes |
-|---|---|---|
-| `id` | `uuid` PK | |
-| `ticket_no` | `text` unique not null | `TK-YYYYMMDD-0001` |
-| `type` | `text` not null | `REPAIR` or `SALE` |
-| `status` | `text` not null default `'PENDING'` | See transitions |
-| `customer_name` | `text` | Optional |
-| `bike_model` | `text` | Optional |
-| `notes` | `text` | Optional |
-| `parts_total_centavos` | `integer` not null default 0 | `>= 0` |
-| `labor_total_centavos` | `integer` not null default 0 | `>= 0` |
-| `total_centavos` | `integer` generated | `parts + labor` |
-| `created_by` | `uuid` not null | References `profiles` |
-| `created_at` | `timestamptz` not null | |
-| `updated_at` | `timestamptz` not null | |
-| `completed_at` | `timestamptz` | |
-| `cancelled_at` | `timestamptz` | |
-| `cancel_reason` | `text` | |
-| `voided_at` | `timestamptz` | |
-| `void_reason` | `text` | |
-
-Statuses: `PENDING`, `VERIFYING`, `IN_PROGRESS`, `READY`, `COMPLETED`, `CANCELLED`, `VOIDED`.
-
-The item and labor functions recalculate `parts_total_centavos` and `labor_total_centavos` in the same transaction. The client never supplies totals.
-
-Allowed transitions:
-
-| From | To | Who |
-|---|---|---|
-| `PENDING` | `VERIFYING`, `IN_PROGRESS`, `CANCELLED` | Staff |
-| `VERIFYING` | `IN_PROGRESS`, `CANCELLED` | Staff |
-| `IN_PROGRESS` | `READY`, `CANCELLED` | Staff |
-| `READY` | `IN_PROGRESS` (rework), `CANCELLED` | Staff |
-| Any open status | `COMPLETED` | Only through `complete_ticket` |
-| `COMPLETED` | `VOIDED` | Only through `void_sale`, owner |
-| `COMPLETED`, `CANCELLED`, `VOIDED` | — | Terminal |
-
-### 10.5 `public.ticket_items`
-
-| Column | Type | Notes |
-|---|---|---|
-| `id` | `uuid` PK | |
-| `ticket_id` | `uuid` not null | References `tickets` |
-| `part_id` | `uuid` not null | References `parts` |
-| `part_name_at_time` | `text` not null | Snapshot |
-| `qty` | `integer` not null | `> 0` |
-| `unit_price_at_time_centavos` | `integer` not null | Snapshot |
-| `unit_cost_at_time_centavos` | `integer` not null | Snapshot for margin |
-| `line_total_centavos` | `integer` generated | `qty * unit_price` |
-| `verified_at` | `timestamptz` | Set by the mechanic |
-| `verified_by` | `uuid` | References `profiles` |
-| `created_at` | `timestamptz` not null | |
-
-Unique constraint: `(ticket_id, part_id)`. Adding the same part again increases the quantity at the existing snapshot price.
-
-### 10.6 `public.ticket_labor`
-
-| Column | Type | Notes |
-|---|---|---|
-| `id` | `uuid` PK | |
-| `ticket_id` | `uuid` not null | References `tickets` |
-| `description` | `text` not null | e.g. "Replace brake pads" |
-| `amount_centavos` | `integer` not null | `>= 0` |
-| `created_by` | `uuid` not null | References `profiles` |
-| `created_at` | `timestamptz` not null | |
-
-### 10.7 `public.ticket_payments`
-
-| Column | Type | Notes |
-|---|---|---|
-| `id` | `uuid` PK | |
-| `ticket_id` | `uuid` not null | References `tickets` |
-| `method` | `text` not null | `CASH`, `GCASH`, `MAYA`, `OTHER` |
-| `amount_centavos` | `integer` not null | Signed; `<> 0`; negative = refund |
-| `reference_no` | `text` | GCash/Maya reference |
-| `received_by` | `uuid` not null | References `profiles` |
-| `received_at` | `timestamptz` not null | Default `now()`; Manila day derived |
-| `note` | `text` | |
-
-Deposits are positive payments on an open ticket. `record_payment` rejects a payment that would exceed the outstanding balance, and rejects payments on completed, cancelled, or voided tickets. Completion requires the sum of payments to equal the ticket total. No credit sales in phase 1.
-
-### 10.8 `public.receipts`
-
-| Column | Type | Notes |
-|---|---|---|
-| `id` | `uuid` PK | |
-| `receipt_no` | `text` unique not null | `YYYYMMDD-0001` |
-| `ticket_id` | `uuid` not null | References `tickets` |
-| `status` | `text` not null default `'ISSUED'` | `ISSUED` or `VOID` |
-| `issued_at` | `timestamptz` not null | |
-| `issued_by` | `uuid` not null | References `profiles` |
-| `snapshot` | `jsonb` not null | Immutable receipt data |
-| `total_centavos` | `integer` not null | Copied from the snapshot |
-| `verification_hash` | `text` not null | Full HMAC-SHA256 hex |
-| `verification_code` | `text` not null | 16 hex chars, grouped `XXXX-XXXX-XXXX-XXXX` |
-| `public_token` | `text` unique not null | 128-bit random hex |
-| `voided_at` | `timestamptz` | |
-| `voided_by` | `uuid` | References `profiles` |
-| `void_reason` | `text` | |
-| `created_at` | `timestamptz` not null | |
-
-Partial unique index: one `ISSUED` receipt per ticket.
-
-The receipt snapshot contains:
-
-```json
-{
-  "shop": { "name": "", "address": "", "contact": "", "footer": "" },
-  "ticket": {
-    "no": "TK-20261115-0001",
-    "type": "REPAIR",
-    "customer_name": "",
-    "bike_model": "",
-    "created_at": "2026-11-15T08:00:00Z"
-  },
-  "items": [
-    { "name": "Brake pad", "qty": 2, "unit_price_centavos": 15000, "line_total_centavos": 30000 }
-  ],
-  "labor": [
-    { "description": "Install brake pads", "amount_centavos": 20000 }
-  ],
-  "totals": { "parts_centavos": 30000, "labor_centavos": 20000, "total_centavos": 50000 },
-  "payments": [
-    { "method": "CASH", "amount_centavos": 50000, "received_by": "Dad" }
-  ],
-  "receipt_no": "20261115-0001",
-  "issued_at": "2026-11-15T08:30:00Z"
-}
-```
-
-The snapshot contains no cost prices and no customer phone number.
-
-### 10.9 `public.stock_movements`
-
-| Column | Type | Notes |
-|---|---|---|
-| `id` | `bigserial` PK | |
-| `part_id` | `uuid` not null | References `parts` |
-| `delta` | `integer` not null | `<> 0` |
-| `reason` | `text` not null | `INITIAL`, `RESTOCK`, `ADJUSTMENT`, `SALE`, `RETURN` |
-| `ticket_id` | `uuid` | References `tickets` |
-| `receipt_id` | `uuid` | References `receipts` |
-| `actor_id` | `uuid` not null | References `profiles` |
-| `note` | `text` | |
-| `created_at` | `timestamptz` not null | |
-
-Append-only. No update or delete grants. The ledger is the source of truth for how a count changed.
-
-### 10.10 `public.audit_events`
-
-| Column | Type | Notes |
-|---|---|---|
-| `id` | `bigserial` PK | |
-| `actor_id` | `uuid` | References `profiles`; null for system |
-| `action` | `text` not null | e.g. `ticket.created`, `part.price_changed` |
-| `entity_type` | `text` not null | |
-| `entity_id` | `uuid` | |
-| `before` | `jsonb` | |
-| `after` | `jsonb` | |
-| `created_at` | `timestamptz` not null | |
-
-Append-only. Owner-only read.
-
-### 10.11 `public.day_closes`
-
-| Column | Type | Notes |
-|---|---|---|
-| `id` | `uuid` PK | |
-| `business_date` | `date` unique not null | Manila date |
-| `expected_cash_centavos` | `integer` not null | From payments |
-| `counted_cash_centavos` | `integer` not null | Owner input |
-| `variance_centavos` | `integer` generated | Counted minus expected |
-| `expected_gcash_centavos` | `integer` not null default 0 | |
-| `expected_maya_centavos` | `integer` not null default 0 | |
-| `expected_other_centavos` | `integer` not null default 0 | |
-| `notes` | `text` | |
-| `closed_by` | `uuid` not null | References `profiles` |
-| `closed_at` | `timestamptz` not null | |
-
-One close per business date. The owner may update the counted amount and notes; the change is audited.
-
-### 10.12 `public.shop_settings`
-
-Single row (`id = 1`): `shop_name`, `address`, `contact`, `receipt_footer`, `low_stock_default`, `timezone` (`Asia/Manila`), `currency` (`PHP`), `updated_at`, `updated_by`.
-
-### 10.13 Private schema
-
-- `private.ticket_counters(day date PK, next_no integer)`.
-- `private.receipt_counters(day date PK, next_no integer)`.
-- `private.app_secrets(key text PK, value text)` — holds `receipt_hmac_key`.
-- `private.is_staff()`, `private.is_owner()` — security-definer helpers used by RLS.
-- `private.next_ticket_no()`, `private.next_receipt_no()` — daily numbering.
-- `private.receipt_hmac(...)` — computes the receipt code.
-
-No grants to `anon` or `authenticated` on the `private` schema. Only security-definer functions may access it.
-
-### 10.14 Views
-
-- `v_open_tickets` — open tickets with totals and paid balance.
-- `v_low_stock` — active parts where `available_qty <= low_stock_threshold`.
-- `v_ticket_balances` — ticket total, paid, and balance.
-
-Views use `security_invoker = true` so RLS applies to the caller.
+- Money is integer centavos. Never use floats for arithmetic.
+- The database computes line totals, parts totals, order totals, and GCash allocations. The client never sends a total.
+- Prices are snapshotted at save time. Editing the catalog later does not change old orders. Costs stay in QuickBooks and are not stored on the order.
+- Per-order price overrides are allowed and do not update the catalog.
+- Helper share cannot exceed total labor. The main share is `total − helper share` and is never negative.
+- A helper must be a different staff account from the main worker.
+- An extra must go to the main or helper on that order. The default is the main worker.
+- Payments and changes must balance exactly; a mismatch is rejected by the database.
+- Cash and GCash change cannot exceed the payments for that method.
+- Daily net by method is `payments − change` for that method.
+- Reported parts and labor are allocated across methods for later export using the net method amounts. The preview will allow an override in the export step; the default allocation must always sum exactly.
 
 ---
 
-## 11. Database functions (RPCs)
+## 9. GCash held and settlement
 
-All functions are `security definer` with `search_path = ''` and fully qualified object names. Execute is revoked from `public` and granted explicitly.
-
-| Function | Caller | Purpose |
-|---|---|---|
-| `create_ticket(p_type, p_customer_name, p_bike_model, p_notes, p_items, p_labor)` | Staff | Create a ticket, reserve stock, snapshot prices |
-| `add_ticket_item(p_ticket_id, p_part_id, p_qty)` | Staff | Reserve more stock; merge with an existing line |
-| `set_ticket_item_qty(p_ticket_id, p_part_id, p_qty)` | Staff | Adjust a line and its reservation |
-| `remove_ticket_item(p_ticket_id, p_part_id)` | Staff | Release the reservation and remove the line |
-| `add_ticket_labor(p_ticket_id, p_description, p_amount_centavos)` | Staff | Add a labor line |
-| `remove_ticket_labor(p_labor_id)` | Staff | Remove a labor line |
-| `verify_ticket_item(p_ticket_id, p_part_id)` | Staff | Mark a part physically verified |
-| `verify_all_ticket_items(p_ticket_id)` | Staff | Mark every part verified |
-| `update_ticket_status(p_ticket_id, p_status)` | Staff | Move through non-terminal statuses |
-| `record_payment(p_ticket_id, p_method, p_amount_centavos, p_reference_no, p_note)` | Staff | Record a deposit or partial payment |
-| `complete_ticket(p_ticket_id, p_payments)` | Staff | Take the final payment, deduct stock, issue the receipt; requires all parts verified |
-| `cancel_ticket(p_ticket_id, p_reason)` | Staff (no payments); owner (with deposits) | Release reservations; the owner branch records refunds |
-| `void_sale(p_receipt_id, p_reason, p_refund_method)` | Owner | Reverse a completed sale in full |
-| `create_part(...)` | Owner | Add a catalog part |
-| `update_part(...)` | Owner | Edit part details and price |
-| `adjust_stock(p_part_id, p_delta, p_reason, p_note)` | Owner | Restock or adjust stock with a ledger row |
-| `update_shop_settings(...)` | Owner | Edit shop details |
-| `close_day(p_business_date, p_counted_cash, p_notes)` | Owner | Store the daily close |
-| `get_daily_summary(p_business_date)` | Owner | Sales, payments, voids, low stock |
-| `get_receipt_integrity()` | Owner | Recompute receipt hashes and find number gaps |
-| `get_receipt(p_token)` | Anon + staff | Public receipt by token |
-| `verify_receipt(p_receipt_no, p_code)` | Anon + staff | Public verification |
-| `ping()` | Anon | `select 1` for keep-alive |
-
-Function rules:
-
-- Validate every input: quantity > 0, amount >= 0, valid enum values, trimmed strings with length limits.
-- Lock part rows with `FOR UPDATE` in a deterministic order (sorted by `part_id`) to avoid deadlocks.
-- Raise errors with stable codes: `INSUFFICIENT_STOCK`, `PAYMENT_MISMATCH`, `TICKET_NOT_OPEN`, `NOT_VERIFIED`, `FORBIDDEN`, `RECEIPT_NOT_ISSUED`.
-- Write `audit_events` in the same transaction as the change.
-- `complete_ticket` and `void_sale` are the only functions that touch both stock and receipts.
-- `cancel_ticket` releases reservations but writes no stock movement because stock was never deducted.
-- `void_sale` restores stock and writes `RETURN` movements.
+- GCash payments land in a personal GCash account. The app records whose account.
+- Each payment’s net is split into a shop share (parts) and a labor share (labor and extras).
+- The recipient holds the shop share until it is transferred to the shop bank.
+- A user-to-user transfer moves held labor money from one person to the other.
+- `get_gcash_balances()` shows, per person:
+  - shop share received;
+  - shop transfers to the bank;
+  - shop GCash held;
+  - labor share received;
+  - labor transfers out;
+  - labor GCash held (including transfers received);
+  - labor earned all-time.
+- A transfer never makes a balance negative.
+- Month close in the later export step must require shop GCash held to be zero, unless a deliberate carry-forward reason is recorded.
 
 ---
 
-## 12. Business rules
+## 10. Reports
 
-### 12.1 Stock
+### Daily
 
-- `available = stock_on_hand - reserved_qty`.
-- Adding a part reserves it (`reserved_qty += qty`) in the same transaction.
-- Completing a ticket deducts it (`stock_on_hand -= qty`, `reserved_qty -= qty`) and writes a `SALE` ledger row.
-- Cancelling releases it (`reserved_qty -= qty`) and writes no ledger row.
-- Voiding a sale restores it (`stock_on_hand += qty`) and writes a `RETURN` ledger row.
-- Adjustments cannot push `stock_on_hand` below `reserved_qty`.
-- The database refuses negative stock.
-- No automatic reservation expiry in phase 1: tickets are created by staff, and a repair may wait days for parts. The bay highlights tickets older than 48 hours; the owner can cancel them.
-- Part deletions are soft (`is_active = false`). Historical ticket lines use snapshots and remain readable.
+- Date picker defaults to today; past dates allowed; future dates disabled.
+- Summary: parts, labor, cash net, GCash net, order count.
+- Labor per person for the date.
+- Every order for the date, with order number, customer/bike, workers, status, and total.
+- Empty, loading, and error states.
 
-### 12.2 Money
+### Monthly
 
-- All amounts are integer centavos. No floats.
-- The browser sends quantities and IDs, never totals.
-- Ticket totals are computed by the database from line items.
-- Payments are signed: positive received, negative refunded.
-- Completion requires the sum of payments to equal the total.
-- Cash tendered and change are display calculations only; the recorded payment is the amount applied to the ticket.
-- No credit sales, installments, or split-price discounts in phase 1.
-- Receipts are the customer-facing proof of payment.
+- Month picker defaults to the current Manila month; future months disabled.
+- Summary: sales, parts, labor, cash net, GCash net, extras, order count.
+- Daily table: date, orders, parts, labor, cash, GCash, sales, month total.
+- Tapping a date opens that day’s orders.
+- Full breakdown: labor by person for the month (base labor, extras, payout).
+- Empty, loading, and error states.
 
-### 12.3 Tickets
+### GCash
 
-- A ticket is editable only while open.
-- Parts must be verified before completion.
-- A ticket with no parts is allowed (labor-only).
-- A ticket with no parts and no labor is rejected.
-- Cancelling an open ticket releases stock. A mechanic may cancel only a ticket with no payments. If a deposit exists, only the owner may cancel; the cancellation function records the refund as a negative payment.
-- A completed ticket cannot be edited. Only `void_sale` can reverse it, in full.
-- A voided ticket is terminal. A corrected sale is a new ticket.
-
-### 12.4 Receipts
-
-- Issued exactly once per completed ticket (one active receipt).
-- The receipt number is a daily sequence with no normal gaps. A missing number is visible in the integrity report.
-- The receipt snapshot is immutable. It includes items, labor, totals, payments, customer name/bike, shop details, and timestamps.
-- The verification code is an HMAC-SHA256 over `receipt_no | issued_at | total | sha256(snapshot)`.
-- The full hash is stored; the displayed code is the first 16 hex characters, grouped.
-- The public token is 128 bits of randomness.
-- A voided receipt keeps its number and snapshot; status becomes `VOID`.
-- The public receipt page shows the original data with a clear VOID banner.
-- Screenshots can be edited; the verification page is what exposes the edit. This is stated to the owner in the UI help.
-- BIR note: this is a sales receipt, not a BIR "Official Receipt," unless the shop registers it. The owner must confirm with their accountant.
-
-### 12.5 Day close and reporting
-
-- **Sales issued today:** sum of `ISSUED` receipts with `issued_at` on the Manila business date.
-- **Parts vs labor:** from the receipt snapshot.
-- **Payments received today:** sum of signed `ticket_payments` with `received_at` on the Manila business date, grouped by method.
-- **Expected cash:** cash payments minus cash refunds for the business date.
-- **Variance:** counted cash minus expected cash.
-- **Voids today:** receipts voided on the business date, with the original number and total.
-- The day close is a snapshot; it does not block later activity.
-- The owner can update the counted amount or notes. The change is audited; the expected amounts are recomputed and stored.
-
-### 12.6 Audit
-
-Logged actions include:
-
-- ticket created, status changed, item added/removed/qty changed, labor added/removed, part verified;
-- payment recorded;
-- receipt issued, sale voided;
-- part created, price changed, stock adjusted;
-- shop settings changed;
-- day closed or corrected;
-- staff role changed.
-
-Each entry stores actor, action, entity, before/after, and timestamp. The audit log and stock ledger cannot be edited or deleted through the app.
+- Total shop GCash still held.
+- Each person’s shop and labor balances.
+- “Record transfer” with from, amount, destination (shop bank or other person), reference, and note.
+- Recent transfers.
+- Empty, loading, and error states.
 
 ---
 
-## 13. Auth, roles, and security
+## 11. Catalog import
 
-### 13.1 Staff accounts
-
-- Staff log in with an **employee ID** and password, e.g. `JJA-001`.
-- Supabase Auth uses a hidden internal email derived from the ID: `JJA-001` → `jja-001@staff.jja.internal`. The staff never see or type the email; the internal address never receives mail.
-- Public sign-ups disabled. Two accounts created manually, auto-confirmed.
-- A trigger creates a `profiles` row with `employee_id`, display name, and the default `mechanic` role. The owner role is assigned deliberately.
-- Password resets are done by the owner in the Supabase dashboard. There is no self-service email reset because the internal address is not a mailbox.
-
-### 13.2 PIN lock
-
-- After first login, each user sets a 4-digit PIN.
-- The PIN is stored locally as salted SHA-256 via Web Crypto. It never reaches the server.
-- The app locks after 5 minutes of idle time (configurable 1–30 minutes) or when the user taps Lock.
-- Five wrong attempts force a full sign-out. The PIN stays saved; the next password sign-in asks for it again with a fresh set of attempts. **Forgot PIN** clears it.
-- The PIN is a convenience lock, not the security boundary. The session and database roles are the boundary.
-- A lost device: change the password and revoke sessions from the Supabase dashboard. Runbook step.
-
-### 13.3 RLS and grants
-
-- RLS enabled on every table; default deny.
-- `anon` has no table access and may execute only `ping`, `get_receipt`, and `verify_receipt`.
-- `authenticated` may select staff-readable tables and execute staff functions.
-- No direct insert/update/delete on `tickets`, `ticket_items`, `ticket_labor`, `ticket_payments`, `receipts`, `stock_movements`, `audit_events`, or `day_closes`.
-- `parts` and `shop_settings` writes go through owner functions.
-- Security-definer functions set `search_path = ''` and fully qualify every object.
-- Revoke `execute` from `public`; grant explicitly to `authenticated` or `anon`.
-
-### 13.4 Secrets
-
-- Only `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` ship to the browser. They are public by design.
-- The Supabase service-role key is never in `src/` or any client bundle. It is used only in CI and admin scripts.
-- The receipt HMAC secret lives in `private.app_secrets`, readable only by definer functions. A copy is stored in GitHub Actions secrets for disaster recovery.
-- `.env.local` is gitignored. `.env.example` documents the variables.
-- No secrets in logs, screenshots, issues, or commits.
-
-### 13.5 Public endpoints
-
-- `get_receipt(token)` returns one receipt snapshot for an unguessable token. It returns no other rows.
-- `verify_receipt(receipt_no, code)` returns only status, date, total, and payment method. A wrong code returns `valid: false`.
-- The verification code is 64 bits, so online guessing is impractical. If abuse appears, add per-IP throttling.
-- Receipt and verify pages use the shop's official URL. The UI warns that a look-alike site is not the shop's system.
-
-### 13.6 Input validation and errors
-
-- Client: zod for UX.
-- Server: PostgreSQL constraints plus function validation. The server is the source of truth.
-- Strings trimmed and length-limited; names max 120 chars, notes max 500.
-- No `dangerouslySetInnerHTML`.
-- CSV exports escape formula injection (`=`, `+`, `-`, `@`, tab, CR).
-- The client maps database error codes to friendly messages; it never displays raw SQL errors.
-- Unexpected errors are logged; optional Sentry free tier in production.
+- Source: QuickBooks Desktop Item List exported as CSV.
+- Required columns: `Item`, `Type`, `Price`.
+- Imported columns: name, description, `MPN` as SKU, price, type, income account, COGS account, asset account, preferred vendor, active status.
+- Only `Inventory Part` rows with `Active Status = Active` are imported.
+- No stock quantity is imported.
+- Missing prices are reported as row errors; valid rows still import in batches.
+- The import is idempotent by item name. Re-import updates descriptions, prices, accounts, vendor, and active status.
+- Permanent item changes happen in QuickBooks first and are re-imported.
+- The private QuickBooks export file is never committed.
 
 ---
 
-## 14. E-receipt and verification
+## 12. Digital receipt
 
-### 14.1 Receipt number
+- Optional per order.
+- Public URL `/s/:token` with a 128-bit random token.
+- Shows shop details, order number, business date, optional customer and motorcycle, item names and quantities, parts total, labor total, optional extra/tip, total charged, payments received, change returned, and net paid.
+- Never shows the internal labor split, costs, notes, customer contact details, or transfer data.
+- Includes a QR code and copy-link button; printing/saving as PDF uses the browser.
+- Returns “Receipt not found” for an unknown token and never leaks whether an order exists.
+- The old `/r/:token` receipt route remains for legacy links.
 
-- Format: `YYYYMMDD-0001`, based on the Manila business date.
-- The counter lives in `private.receipt_counters` and increments inside the completion transaction.
-- A rolled-back transaction rolls back the counter, so normal operation has no gaps.
-- Deleted or missing numbers are visible in the owner's integrity report.
+---
 
-### 14.2 Verification code
+## 13. Security
 
-- Input: `receipt_no | issued_at (UTC canonical) | total_centavos | sha256(snapshot::text)`.
-- Key: 32 random bytes in `private.app_secrets`.
-- Full HMAC-SHA256 stored in `verification_hash`.
-- Displayed code: first 16 hex characters, uppercase, grouped `XXXX-XXXX-XXXX-XXXX`.
-- Any change to the amount, date, items, labor, payments, or customer details in the snapshot changes the hash, so the displayed code no longer matches.
+- Supabase Auth only. Public sign-ups disabled.
+- RLS is enabled on every new table; default deny.
+- `authenticated` gets select only. No direct insert/update/delete grants on transactional tables.
+- All writes are `security definer` functions with `search_path = ''` and fully qualified names.
+- `REVOKE ALL` from `PUBLIC`, then explicit grants.
+- `private.is_staff()` gates staff reads and functions. `anon` cannot read sales tables or views.
+- `anon` may execute only the public receipt function and legacy public verification functions. The new public receipt function accepts only the token and a valid 32-hex format.
+- CSV formula injection must be escaped on any future export.
+- No service-role key, HMAC secret, password, PIN, JWT, or customer data in the browser bundle or logs.
+- No analytics or third-party scripts.
 
-### 14.3 Public receipt page
+---
 
-- Route: `/r/:token`.
-- Calls `get_receipt(token)`.
-- Shows shop details, receipt number, date/time, customer/bike (if entered), items, labor, totals, payments, verification code, and status.
-- A VOID receipt shows a red VOID banner and the reason.
-- A "Save as PDF" button uses browser print. No printer is required.
-- A "Copy Link" button copies the same URL.
+## 14. Validation and errors
 
-### 14.4 Verify page
+The database validates all arguments, strings are trimmed and length-limited, and quantities are positive.
 
-- Route: `/verify`.
-- Fields: receipt number and code.
-- On success: `Valid`, date/time, total, payment method, and status.
-- On a voided receipt: `Void`, original total, and reason.
-- On mismatch: `No match`.
-- No customer name, no item list, no phone number.
+Stable error codes:
 
-### 14.5 QR delivery
+- `INVALID_DATE` — date missing, before 2000, or in the future.
+- `INVALID_MAIN_USER`, `INVALID_HELPER` — bad staff account.
+- `INVALID_LABOR`, `INVALID_LABOR_SPLIT` — negative or helper share over total.
+- `INVALID_EXTRA`, `INVALID_EXTRA_USER` — bad extra amount or recipient.
+- `INVALID_QTY`, `INVALID_PRICE`, `INVALID_ITEM`, `INVALID_ITEM_NAME` — bad line.
+- `INVALID_METHOD`, `INVALID_AMOUNT` — bad payment or change.
+- `INVALID_GCASH_RECIPIENT`, `INVALID_CASH_RECIPIENT` — recipient does not match method.
+- `INVALID_GCASH_RECIPIENT` also covers a missing recipient.
+- `CHANGE_TOO_LARGE` — change exceeds the method payment.
+- `PAYMENT_MISMATCH` — payments do not balance.
+- `EMPTY_ORDER` — no items, labor, or extras.
+- `ITEM_NOT_FOUND` — catalog item missing or inactive.
+- `INSUFFICIENT_GCASH` — transfer exceeds the held balance.
+- `INVALID_DESTINATION`, `INVALID_COUNTERPARTY`, `INVALID_REFERENCE`, `INVALID_NOTE` — bad transfer.
+- `ORDER_NOT_FOUND`, `ORDER_LOCKED` — edit target missing or exported.
+- `FORBIDDEN` — not staff.
+- `PAYMENT_MISMATCH`, `INVALID_GCASH_RECIPIENT`, and `CHANGE_TOO_LARGE` are mapped to human messages in the UI.
 
-- The completion screen renders a QR for the receipt URL using `qrcode.react`.
-- The customer scans it with the phone camera.
-- If the customer cannot scan, staff taps Copy Link and sends it through Messenger or SMS manually.
-- No email or SMS integration in phase 1.
-
-### 14.6 Integrity report
-
-- Owner-only.
-- Recomputes every receipt hash and compares it to the stored hash.
-- Lists mismatches.
-- Lists missing receipt numbers per business date.
-- Lists voided receipts.
-- This is the "no loopholes" check: even a database-level edit is visible.
+Raw SQL errors never reach the UI. Forms show a human message and keep the entered values.
 
 ---
 
 ## 15. Offline and PWA behavior
 
-- The app is installable and loads its shell offline.
-- Supabase requests are never cached. No prices, tickets, or PII are stored by the service worker.
-- Offline: a persistent banner, disabled write actions, and a "Reconnect" state. The app never claims a sale succeeded offline.
-- A 60-second poll plus refetch on focus/reconnect keeps the bay queue fresh if the websocket drops.
-- Updates prompt the user; the app does not reload while a ticket form is open.
-- Phase 2 camera scanning requires HTTPS and user permission. Test on the actual Android and iPhone devices before promising it.
+- The app is an installable PWA with an offline shell.
+- Supabase responses are **NetworkOnly** and never cached by the service worker.
+- Viewing a cached shell while offline is allowed; saving an order is disabled until connectivity returns.
+- The app shows online/offline status and an offline banner.
+- PWA updates prompt; they never force-reload while a form is open.
+- Audio alerts require a user gesture; the sales log has no mandatory audio alert.
+- Print styles target A4; a thermal receipt layout is not required.
+- The installed app must fit a 360px phone with no horizontal scrolling and no bottom safe-area gap.
 
 ---
 
-## 16. Error handling
+## 16. Technology and architecture
 
-| Code | User message |
+| Layer | Choice |
 |---|---|
-| `INSUFFICIENT_STOCK` | "Only N left of [part]. Reduce the quantity or restock." |
-| `PAYMENT_MISMATCH` | "Payments do not match the total. Balance: ₱X." |
-| `TICKET_NOT_OPEN` | "This ticket is already closed." |
-| `NOT_VERIFIED` | "Verify all parts before completing the ticket." |
-| `FORBIDDEN` | "Only the owner can do this." |
-| `RECEIPT_NOT_ISSUED` | "This sale has no active receipt." |
-| `ALREADY_COMPLETED` | "This ticket is already completed." |
-| `NETWORK` | "No connection. Nothing was saved." |
-| `UNKNOWN` | "Something went wrong. Try again; if it persists, contact Sean." |
+| Language | TypeScript strict |
+| UI | React, Vite, Tailwind CSS v4, shadcn/ui, lucide-react |
+| Routing | React Router |
+| Server state | TanStack Query |
+| Forms | React Hook Form + zod where forms are complex |
+| Backend | Supabase (PostgreSQL, Auth, Realtime) |
+| Database access | `@supabase/supabase-js`; reads with RLS; writes via RPC |
+| PWA | `vite-plugin-pwa` |
+| CSV | papaparse |
+| QR | `qrcode.react` |
+| Tables | TanStack Table |
+| Lint/format | Oxlint + Prettier |
+| Unit tests | Vitest + Testing Library |
+| E2E | Playwright |
+| Hosting | Cloudflare Workers static assets |
+| CI/CD | GitHub Actions |
+| Package manager | npm |
 
-- Mutations show a pending state and disable the button.
-- No optimistic updates for stock, payments, or receipts.
-- Every screen has loading, empty, and error states.
-- A React error boundary prevents a blank screen.
-- Optional Sentry free tier for unexpected errors; the DSN is public and safe.
-
----
-
-## 17. Testing
-
-### 17.1 Unit (Vitest)
-
-- Money parsing and formatting (centavos, commas, invalid input).
-- Manila date boundaries and display.
-- CSV escaping and formula-injection protection.
-- Error-code mapping.
-- PIN hashing and attempt logic.
-- Form schemas.
-
-### 17.2 Database integration (Vitest + local Supabase)
-
-- Create ticket reserves stock; over-reservation fails.
-- Concurrent adds cannot oversell (two sessions).
-- Complete deducts stock, writes ledger rows, issues one receipt.
-- Payment mismatch blocks completion.
-- Unverified parts block completion.
-- Cancel releases reservations and refunds deposits.
-- Void sale restores stock, records a refund, marks receipt/ticket VOID.
-- Receipt snapshot and HMAC verify; a changed snapshot fails.
-- Receipt numbers are sequential per day; no normal gaps.
-- Completed tickets, items, payments, receipts, ledger, and audit rows are immutable.
-- RLS: anon cannot read tickets; mechanic cannot void or adjust stock; owner can; mechanic can read parts.
-- Direct table writes are denied.
-- Daily close expected cash matches payments.
-- Integrity report detects a tampered hash and a missing number.
-
-### 17.3 End-to-end (Playwright)
-
-1. Mechanic logs in, creates a ticket, adds a part and labor, verifies, completes with cash.
-2. Receipt page opens from the QR/link; verify page returns Valid.
-3. Stock decreased by the quantity; ledger row exists.
-4. Owner logs in, sees the sale, closes the day with counted cash, exports CSV.
-5. Mechanic cannot open owner routes or call owner actions.
-6. PWA manifest and service worker register; offline banner appears when the network is blocked.
-
-### 17.4 CI
-
-- Typecheck, lint, format check, unit tests, build.
-- Database tests with `supabase start` (Docker is available on GitHub's Ubuntu runners).
-- E2E on pull requests and `main`.
-- Generated database types are current: regenerate and fail if the file changed.
-- No test touches production.
+There is no custom server. The browser talks to Supabase directly. The app is a static SPA.
 
 ---
 
-## 18. Deployment and operations
+## 17. Database functions
 
-### 18.1 Supabase
+- `private.next_sales_order_no(p_day date) returns text` — daily order number.
+- `public.save_sales_order(...) returns sales_orders` — create or replace an open order and all child rows in one transaction.
+- `public.import_catalog_items(p_items jsonb) returns jsonb` — idempotent catalog upsert.
+- `public.get_gcash_balances() returns jsonb` — per-person shop and labor balances.
+- `public.record_gcash_transfer(...) returns gcash_transfers` — validated transfer.
+- `public.get_sales_receipt(p_token text) returns jsonb` — public receipt payload.
 
-- Two projects: `staging` and `production`.
-- Migrations live in `supabase/migrations`; applied with the Supabase CLI.
-- No schema changes in the dashboard. Emergency manual changes must be captured as a migration immediately.
-- Types generated with `supabase gen types typescript` and committed.
-- Free-tier limits: 500MB database, 1GB storage, 5GB egress, 2 active projects. The shop is far below these.
-- A daily keep-alive calls `ping()` so the project never pauses.
-- Nightly `pg_dump` backup from GitHub Actions; 90-day artifacts plus a monthly archive in a private repository.
-- Quarterly restore drill into staging; the runbook records the steps.
-- If the project pauses: restore from the Supabase dashboard within one year; then investigate why the keep-alive failed.
-- If the free tier becomes unacceptable, the upgrade is Supabase Pro at $25/month. The data remains portable PostgreSQL.
+Reads use RLS-protected tables and `security_invoker` views:
 
-### 18.2 Cloudflare
+- `v_sales_daily`
+- `v_sales_labor_daily`
+- `v_sales_payments_daily`
 
-- `wrangler.jsonc` serves `dist/` as static assets with SPA fallback.
-- Deploy from `main` after CI passes.
-- Rollback by redeploying the previous commit or `wrangler rollback`.
-- Optional custom domain. The final URL must be chosen before launch because receipt QR codes point to it.
-- No Workers functions, no server code, no paid image optimization. Images are client-compressed in phase 2.
-
-### 18.3 GitHub Actions
-
-- `ci.yml`: verify on every PR and push to `main`.
-- `deploy.yml`: deploy to Cloudflare on `main` after verification.
-- `backup.yml`: nightly database dump; monthly archive.
-- `keepalive.yml`: daily `ping()`.
-- Secrets: Supabase access token, database password, project refs, production DB URL, Cloudflare API token and account ID, receipt HMAC backup.
-- Dependabot monthly for npm and GitHub Actions.
-
-### 18.4 Monitoring
-
-- UptimeRobot free tier: monitor the app URL and the Supabase `ping()` endpoint every 5 minutes; alert by email.
-- Optional Sentry free tier for frontend errors.
-- Cloudflare analytics is optional and privacy-friendly.
-- No customer analytics or trackers in phase 1.
-
-### 18.5 Runbook
-
-`docs/runbook.md` covers deploy, rollback, migrations, backup, restore, paused database, lost device, key rotation, adding staff, closing the day, and the integrity check.
+Every write and every money-relevant change writes an `audit_events` row in the same transaction. The append-only audit table remains owner-only for legacy reasons; the sales functions write through security-definer functions.
 
 ---
 
-## 19. Repository structure
+## 18. Testing
+
+### Unit
+
+- Money parsing and formatting, including invalid and maximum values.
+- Order money: parts, extras, payments, change, balance, net per method.
+- Main labor remainder and helper-share edge cases.
+- Month range, monthly rows, monthly totals, labor by person.
+- Catalog CSV mapping: required columns, active/inventory filtering, missing price, blank MPN.
+- Error-code to human-message mapping.
+- Component states: orders, items, reports, GCash, receipt.
+
+### Database
+
+- Create an order with items, labor split, extras, mixed payments, and change.
+- Reject helper share over total.
+- Reject payment mismatch and too much change.
+- Edit replaces child rows and recalculates totals.
+- Custom and catalog line snapshots.
+- Past-dated order appears in the correct daily report and order number.
+- GCash balances and over-transfer rejection.
+- Public receipt by token; altered or missing token returns null.
+- Staff can read; anon cannot; direct writes are denied.
+- Catalog import inserted/updated counts and idempotency.
+
+### E2E
+
+- Login as Dad; create an order with an item, helper split, extra, mixed payment, and change.
+- See it in the daily list and monthly report.
+- Open the edit form and see saved values.
+- Open GCash balances and the public receipt.
+- The mechanic sees the same navigation and access.
+- The shell fits 360px without horizontal scrolling.
+
+Tests are deterministic and never run against production. CI runs local Supabase in Docker.
+
+---
+
+## 19. Deployment and operations
+
+- `main` is protected and always deployable. Work on feature branches and open a PR.
+- CI must pass: typecheck, lint, format, file-size check, unit tests, build, database tests, and E2E.
+- Database changes are migrations only. Never edit an applied migration and never change the schema from the dashboard.
+- Generated types must be regenerated after migrations. Do not hand-edit `src/types/database.types.ts`.
+- Deploy from `main` through GitHub Actions to Cloudflare Workers static assets.
+- Nightly backups and a daily keep-alive are retained from the launch step.
+- The service-role key is CI-only. The receipt secret stays in the database.
+- Rollback: redeploy the previous successful build; never roll back a migration by editing it.
+
+---
+
+## 20. Repository structure
 
 ```text
-.
-├── src/
-│   ├── app/                 # providers, router, layout
-│   ├── components/ui/       # shadcn primitives only
-│   ├── features/
-│   │   ├── auth/
-│   │   ├── bay/
-│   │   ├── inventory/
-│   │   ├── owner/
-│   │   ├── receipts/
-│   │   └── settings/
-│   ├── hooks/
-│   ├── lib/                 # supabase, money, dates, csv, errors, print, pin
-│   ├── routes/              # thin page components
-│   ├── styles/
-│   └── types/               # database.types.ts (generated) + domain types
-├── supabase/
-│   ├── migrations/
-│   ├── seed.sql
-│   └── config.toml
-├── tests/
-│   ├── unit/
-│   ├── db/
-│   └── e2e/
-├── docs/
-│   ├── spec.md
-│   ├── runbook.md
-│   └── decisions/
-├── public/
-├── .github/
-│   ├── workflows/
-│   └── pull_request_template.md
-├── AGENTS.md
-├── README.md
-├── .env.example
-├── .editorconfig
-├── .gitignore
-├── eslint.config.js
-├── .prettierrc
-├── index.html
-├── package.json
-├── tsconfig.json
-├── vite.config.ts
-└── wrangler.jsonc
+src/
+  app/            router, nav, guards, layouts, providers
+  components/     shared components and ui primitives
+  features/
+    auth/         login, PIN lock
+    sales/        orders, items, reports, GCash, receipt, hooks, APIs
+    receipts/     legacy public receipt
+    pwa/          install/update/offline
+  hooks/          cross-feature hooks
+  lib/            supabase, money, dates, errors, PIN, CSV helpers
+  routes/         thin page wrappers
+  styles/
+  types/          generated database types and domain types
+supabase/migrations/
+tests/unit/
+tests/db/
+tests/e2e/
+docs/
+scripts/
 ```
 
-Feature folders contain their own `components/`, `hooks/`, `api.ts`, and `schemas.ts`. Cross-feature code goes in `src/lib` or `src/hooks` only when it genuinely serves more than one feature.
+No file over 1,000 lines. No new Markdown at the repository root. Feature code stays in `src/features/<feature>/`.
 
 ---
 
-## 20. Phase plan
+## 21. Phase plan
 
-### Phase 0 — Foundation
+1. **Sales log core** — done: catalog, orders, labor, extras, payments, change, GCash, reports, receipt, navigation.
+2. **QuickBooks export, month close, reconciliation** — blocked on the decisions in section 22.
+3. **Sales-log UAT and production cutover** — after the export is approved.
+4. **Later** — storefront, QR pass, camera scanner, photos, returns, payroll. Not scheduled.
 
-- Repository, tooling, CI, docs, Supabase projects, migrations baseline, app shell, auth, layout.
-
-### Phase 1a — Inventory
-
-- Parts table, search, add/edit, restock/adjust, ledger, low stock, owner permissions.
-
-### Phase 1b — Bay
-
-- Ticket creation, part search and add, labor, reservation, statuses, verification, realtime queue.
-
-### Phase 1c — Money and receipts
-
-- Deposits, completion, payment validation, stock deduction, receipt snapshot, HMAC, public receipt, verify page, void sale.
-
-### Phase 1d — Owner
-
-- Dashboard, sales list, day close, CSV export, audit log, integrity report, settings.
-
-### Phase 1e — Launch
-
-- PWA polish, backups, keep-alive, UptimeRobot, UAT with Dad and Uncle, training notes, production deploy.
-
-### Phase 2 — Growth
-
-- Customer storefront, cart, QR ticket pass, scanner, part photos, partial returns, bulk CSV import, optional email delivery.
-
----
-
-## 21. Risks and mitigations
-
-| Risk | Mitigation |
-|---|---|
-| Supabase free project pauses or has an outage | Daily keep-alive, nightly backups, runbook, exportable PostgreSQL |
-| Free-tier limits reached | The shop is far below 500MB/1GB; monitor monthly |
-| Staff make pricing or entry mistakes | Snapshots, confirmation before completion, audit, whole-sale void |
-| A receipt screenshot is edited | Verification code + live verify page + integrity report |
-| Receipt HMAC secret lost | Copy in GitHub Actions secrets; restore procedure in the runbook |
-| Lost or shared device | PIN lock, short idle lock, password change, session revocation |
-| Staff resist a new workflow | Bay-first design, 48px targets, under-one-minute ticket, training with Dad and Uncle |
-| QuickBooks Desktop cannot import the CSV directly | The export is a report; use a third-party importer or manual entry; clarify with the accountant |
-| BIR receipt requirements | Call it a sales receipt; confirm with the accountant before claiming official-receipt status |
-| No printer at launch | E-receipt is primary; print/PDF is a fallback; 58mm support later |
-| One-person maintenance | Small scope, no framework treadmill, ADRs, runbook, CI |
-| Camera/scanner issues in phase 2 | Test on the actual phones; manual ticket-number fallback |
+A step ends with `npm run check`, database and E2E tests, a demo script, screenshots, and the architect’s **approved**.
 
 ---
 
 ## 22. Open decisions
 
-1. Final shop name, address, contact, and receipt footer.
-2. Final app URL: free `*.workers.dev` or a custom domain the family already owns.
-3. Whether Maya is actually used, or only cash and GCash.
-4. Whether the shop takes downpayments regularly (supported) or always pays at completion.
-5. Whether partial returns or exchanges are needed at launch (currently phase 2).
-6. BIR status and whether a separate official receipt is required.
-7. Whether the family wants a thermal printer later (58mm/80mm) or A4 only.
-8. Optional Sentry and UptimeRobot accounts.
+1. QuickBooks account names for cash and GCash.
+2. Sales tax code: VAT or non-VAT.
+3. Exact IIF header format for QuickBooks Desktop Enterprise 13.0 Retail Edition.
+4. Whether custom items block export or are carried with a note.
+5. Whether inactive QuickBooks items are ever imported (recommended: no).
+6. Digital receipt verification: link only or also a verification code.
+7. Weekly or monthly GCash settlement reminder.
+
+No export code ships until these are answered.
 
 ---
 
 ## 23. Glossary
 
-- **Ticket** — a job or over-the-counter sale. It holds parts, labor, payments, and a status.
-- **Receipt** — the immutable proof of a completed sale, with a number and verification code.
-- **Reserved** — stock set aside for an open ticket but not yet sold.
-- **Available** — stock on hand minus reserved.
-- **Snapshot** — a frozen copy of a price or receipt at a point in time.
-- **Void sale** — a full reversal of a completed sale, owner-only.
-- **Day close** — the owner's snapshot of sales, payments, expected cash, counted cash, and variance.
+- **Order** — one customer sale, with items, labor, extras, payments, and change.
+- **Catalog** — the QuickBooks item and price list. No stock.
+- **Custom line** — an item not in QuickBooks, flagged on the order.
+- **Main worker** — the person who receives the labor remainder.
+- **Helper** — the second worker, with a fixed share.
+- **Extra** — a keep-the-change tip assigned to a worker.
+- **Net GCash** — GCash payments minus GCash change.
+- **Shop GCash held** — the parts share of GCash still in a personal account.
+- **Labor GCash held** — the labor/extras share of GCash still in a personal account.
+- **Transfer** — moving GCash to the shop bank or to the other worker.
+- **Month close** — settle GCash, export parts sales, and lock the month (later step).
+- **IIF** — the QuickBooks Desktop import file format.
+- **RLS** — Row Level Security; the database rules for which rows a user can see or change.
 - **RPC** — a PostgreSQL function called from the browser; the only way to write transactional data.
-- **RLS** — Row Level Security; PostgreSQL rules that decide which rows a user can see or change.
+- **Snapshot** — a frozen item name and price stored on the order.
 - **PWA** — an installable web app with an offline shell.
-- **HMAC** — a keyed hash that only the database can produce; it makes receipt edits detectable.
-- **Anon key** — the public Supabase key used by the browser. It is safe only because RLS and functions restrict it.
-- **Service role key** — the secret Supabase key that bypasses RLS. It never ships to the browser.
+
+---
+
+## 24. Acceptance criteria for the current step
+
+- Both staff can create an order with multiple items, labor, a helper split, extras, mixed payments, and change.
+- Parts money, labor money, and extras are reported separately.
+- Daily and monthly reports match the orders.
+- GCash held per person is visible; transfers reduce it and cannot overdraw.
+- Editing an order replaces its lines without duplicates and recalculates totals.
+- Custom lines are clearly flagged.
+- The catalog import skips inactive and non-inventory rows and never imports stock.
+- The public receipt opens by link and never shows the internal split.
+- Both staff accounts have identical access.
+- No stock screens or stock tracking are present.
+- `npm run check`, database tests, and E2E pass.

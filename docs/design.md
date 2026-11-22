@@ -1,4 +1,4 @@
-# Design System — Service Bay Ledger
+# Design System — Service Ledger
 
 **Status:** Approved direction for phase 1
 **Applies to:** every screen in the shop app
@@ -13,11 +13,11 @@ The app should feel like the tools on a mechanic's bench: durable, legible, quic
 
 Three ideas drive every screen:
 
-1. **The bay is a dispatch board.** The queue is a list of jobs, not a grid of cards.
-2. **Money and stock are the hero numbers.** They are large, tabular, and easy to scan.
+1. **The day is a ledger.** Orders are rows on a dated sheet, not a grid of cards.
+2. **Money, labor, and GCash are the hero numbers.** They are large, tabular, and easy to scan.
 3. **One accent, used with intent.** Safety orange marks the action, the focus, and the thing that needs attention. Everything else is paper, ink, and steel.
 
-**Brand:** J.J.A Motor Accessories and Motorcycle Repair Shop (Est. 2023). The logo is the circular gear badge in `public/brand/jja-logo.jpg`. The app keeps the Service Bay Ledger palette; the logo's red, blue, and gold appear only as small identifiers — the capability icons, the blueprint-grid tint, and the footer stripe. They never become action colors.
+**Brand:** J.J.A Motor Accessories and Motorcycle Repair Shop (Est. 2023). The logo is the circular gear badge in `public/brand/jja-logo.jpg`. The app keeps the Service Ledger palette; the logo's red, blue, and gold appear only as small identifiers — the capability icons, the blueprint-grid tint, and the footer stripe. They never become action colors.
 
 ---
 
@@ -38,9 +38,9 @@ Three ideas drive every screen:
 | `ok` | `#2E7D4F` | Ready, success |
 | `warn` | `#A66A00` | Verifying, warning |
 | `danger` | `#B3261E` | Errors, void, cancel |
-| `brand-red` | `#E21B1B` | Logo hint: Bay icon and footer stripe only |
-| `brand-blue` | `#2647C9` | Logo hint: Stock icon, blueprint-grid tint |
-| `brand-gold` | `#F5B301` | Logo hint: Receipts icon, footer stripe |
+| `brand-red` | `#E21B1B` | Logo hint: Orders icon and footer stripe only |
+| `brand-blue` | `#2647C9` | Logo hint: Items icon, blueprint-grid tint |
+| `brand-gold` | `#F5B301` | Logo hint: Reports icon, footer stripe |
 
 Rules:
 
@@ -55,9 +55,9 @@ Rules:
 
 | Role | Family | Weights |
 |---|---|---|
-| Display, headings, ticket numbers | **Barlow Condensed** | 600, 700 |
+| Display, headings, order numbers | **Barlow Condensed** | 600, 700 |
 | UI, body, labels | **Barlow** | 400, 500, 600, 700 |
-| Receipt numbers and verification codes | **IBM Plex Mono** | 500 |
+| Receipt and order numbers | **IBM Plex Mono** | 500 |
 
 Rules:
 
@@ -65,7 +65,7 @@ Rules:
 - Base body: 16px / 1.55.
 - Display: 1.0–1.1 line height, slight negative tracking (−0.01em to −0.02em).
 - Scale: 12, 14, 16, 18, 20, 24, 28, 36, 48.
-- Sentence case everywhere except codes and ticket numbers. No all-caps eyebrows.
+- Sentence case everywhere except codes and order numbers. No all-caps eyebrows.
 - Avoid accenting a single word in a headline with italic, bold, or color.
 - Maximum body line length: 70 characters.
 
@@ -80,24 +80,24 @@ Rules:
 │ SHOP NAME        ● online 🔒│  top bar
 ├─────────────────────────────┤
 │                             │
-│  #TK-…   Jose       ₱600    │  job rows
-│  Honda Click   In progress  │
+│  SL-…   Jose        ₱600    │  order rows
+│  Honda Click    Open        │
 │                             │
-│  #TK-…   Walk-in    ₱1,250  │
-│  Yamaha Mio    Pending      │
+│  SL-…   Walk-in     ₱1,250  │
+│  Yamaha Mio     Open        │
 │                             │
 ├─────────────────────────────┤
-│  [   + New ticket   ]       │  primary action
+│  [   + New order   ]        │  primary action
 ├─────────────────────────────┤
-│  Bay      Stock     Owner   │  bottom tabs
+│ Orders   Items  Reports  ⚙  │  bottom tabs
 └─────────────────────────────┘
 ```
 
 - Top bar: shop name, signed-in staff name (truncated), connection status, install, lock.
-- Bottom tabs: Bay, Stock, Sales, Owner (owner only).
+- Bottom tabs: Orders, Items, Reports, Settings.
 - Primary actions are 56px tall; other targets are at least 48px.
-- The queue is a vertical list of job rows with a 4px status stripe on the left.
-- The ticket detail uses a sticky bottom bar: total on the left, action on the right.
+- The daily orders screen shows summary numbers first, then the dated order list.
+- The order form uses full-height sections: Customer, Items, Labor, Extras, Payment, Totals.
 - The phone shell is a `100dvh` flex column: safe-area top, fixed header, one scrollable main area, bottom tabs as the last flex child. The tabs are not a fixed overlay, so browser chrome changes cannot leave a gap or make them jump.
 - Safe areas: header padding uses `env(safe-area-inset-top)`; the tab bar fills `env(safe-area-inset-bottom)` with its own background.
 - Mobile form controls render at 16px to stop iOS focus zoom. Pinch zoom is never disabled.
@@ -107,19 +107,21 @@ Rules:
 
 - Left rail: brand mark, nav, staff name, connection status, lock, sign out. Width 220px.
 - Content max-width 1280px.
-- Bay: 380px queue on the left, ticket work-order sheet on the right.
-- Inventory: a dense ledger table with filters above.
-- Owner: a single-column ledger with rules and large numbers, not a card grid.
+- Orders: summary strip, labor per person, then a single dated ledger of orders.
+- Order form: two-column sections at `lg`, with the totals visible near the action.
+- Reports: summary strip, daily table, and an optional labor breakdown.
+- GCash: a two-up balance board on desktop, stacked cards on mobile.
 
 ### Key screens
 
-- **Bay queue:** ticket number in condensed type, customer/bike, status label, total, elapsed time. The selected row gets a safety-orange left bar.
-- **Ticket:** work-order sheet. Header with ticket number and status; parts and labor tables; notes; sticky summary.
-- **Inventory:** right-aligned prices and stock, tabular numerals, low-stock row marker. Edit in a sheet, never inline.
-- **Owner:** date header, revenue split (parts/labor), payment split (cash/GCash/Maya), low stock, day close. Horizontal rules separate sections.
-- **Receipt:** white sheet, shop header, receipt number, items, totals, payment, verification code in mono, QR, and a stamped VERIFIED mark.
-- **Verify:** two large inputs and a result panel. Valid is `ok`; void is `danger`; no match is neutral.
-- **Login:** split at 768px. Left: the J.J.A badge at the top; a faint blue-tinted blueprint grid behind the panel; an intentional safety-orange block behind “The bay,”; the headline scales with `clamp(3.25rem, 6vw, 7rem)`; the subtitle is at most 26rem wide; a capability row (Bay, Stock, Receipts) uses the logo's red, blue, and gold icons; the footer has a tri-color stripe, `J.J.A · Est. 2023`, and a live Manila clock. Right: a bordered staff sign-in sheet, centered, max-w-md and max-w-lg at `xl`; a lock header (“Staff portal”), a 48px employee ID field with a user icon, a password field with a lock icon and an eye toggle, a 56px primary button with a spinner state, an error row with an alert icon, and a “Need access?” footer. Below 768px: a compact brand header with the badge, the shop name, and the clock, then the same sheet in one column.
+- **Orders:** date picker, four summary tiles, labor per person, order rows. Order number in condensed type, customer/bike, workers, status, total. The selected row gets a safety-orange left bar.
+- **Order form:** customer/date block; searchable items with per-order price; custom line dialog; labor split; extras; mixed payments and change; live totals and balance; review dialog before save.
+- **Items:** searchable catalog, right-aligned prices, no stock. Import dialog with a preview and skipped-row count.
+- **Reports:** month picker, six summary tiles, daily table with a month total, and a full-breakdown labor panel.
+- **GCash:** shop-held banner, per-person balances, transfer dialog, recent history.
+- **Digital receipt:** white sheet, shop header, order number, items, labor, optional tip, total charged, payments, change, net paid, QR. No internal split.
+- **Legacy receipt and verify:** retained for old links only.
+- **Login:** split at 768px. Left: the J.J.A badge at the top; a faint blue-tinted blueprint grid behind the panel; an intentional safety-orange block behind “The day,”; the headline scales with `clamp(3.25rem, 6vw, 7rem)`; the subtitle is at most 26rem wide; a capability row (Orders, Items, Reports) uses the logo's red, blue, and gold icons; the footer has a tri-color stripe, `J.J.A · Est. 2023`, and a live Manila clock. Right: a bordered staff sign-in sheet, centered, max-w-md and max-w-lg at `xl`; a lock header (“Staff portal”), a 48px employee ID field with a user icon, a password field with a lock icon and an eye toggle, a 56px primary button with a spinner state, an error row with an alert icon, and a “Need access?” footer. Below 768px: a compact brand header with the badge, the shop name, and the clock, then the same sheet in one column.
 - **Lock:** large PIN pad, 64px keys, staff name, Manila time.
 
 ---
@@ -131,7 +133,7 @@ Rules:
 - **Primary button:** `safety` background, `ink` text, 48px minimum (56px for the main action).
 - **Secondary button:** `surface` background, 1px `line`, `ink` text.
 - **Destructive action:** `danger` text/border; confirm through an alert dialog.
-- **Status badge:** small 4px radius, 1px border, 6px dot, sentence-case label. Pending steel, verifying warn, in progress blueprint, ready ok, completed ink, cancelled danger, voided danger outline.
+- **Status badge:** small 4px radius, 1px border, 6px dot, sentence-case label. Open steel, exported ok, warning/difference danger outline.
 - **Inputs:** 48px tall, 1px `line`, 4px radius. Focus: 2px `safety` ring, 2px offset.
 - **Tables:** 1px rules, no zebra stripes. Header 13px medium steel. Money right-aligned, tabular.
 - **Sheets/dialogs:** white surface, 8px radius, 1px border, no backdrop blur.
@@ -145,7 +147,7 @@ Rules:
 ## 6. Motion
 
 - One orchestrated moment per screen at most.
-- Queue rows slide/fade in at 120ms when a new ticket arrives.
+- Order rows and report rows slide/fade in at 120ms when the date changes.
 - Status changes animate the progress rule, not the whole page.
 - Primary buttons press down 2px and drop their hard shadow.
 - Respect `prefers-reduced-motion`; disable transforms and transitions.
@@ -155,10 +157,10 @@ Rules:
 
 ## 7. Copy
 
-- Verbs, sentence case: “New ticket”, “Add part”, “Add labor”, “Verify part”, “Take payment”, “Complete ticket”, “Void sale”, “Day close”.
-- A button and its result use the same verb: “Complete ticket” → “Ticket completed”.
-- Errors say what happened and what to do: “Only 2 left of Brake pad. Reduce the quantity or restock.”
-- Empty states invite action: “No tickets in the bay. Start a new ticket.”
+- Verbs, sentence case: “New order”, “Add item”, “Custom line”, “Add payment”, “Add change”, “Record transfer”, “Review order”, “Save order”, “Import item list”.
+- A button and its result use the same verb: “Save order” → “Order saved.”, “Import item list” → “Item list imported.”
+- Errors say what happened and what to do: “Payment is not balanced. Difference: ₱20.00.”, “GCash change must come from someone who received a GCash payment.”
+- Empty states invite action: “No orders on this date. Start a new order.”
 - No “Submit”, “OK”, “An error occurred”, or exclamation marks.
 - Receipt language: “Sales receipt”, not “Official Receipt”, unless the BIR registration exists.
 
@@ -182,7 +184,7 @@ Rules:
 - The layout is a dispatch board and a work-order sheet, not a grid of identical rounded cards.
 - The type is condensed industrial signage, not a high-contrast serif or a generic SaaS sans.
 - There are no all-caps eyebrow labels, no meta strings joined by middle dots, no monospace labels, and no arrow appended to every link.
-- The receipt is a trust artifact with a perforation rule and a verification stamp, not a decorative card.
+- The receipt is a trust artifact with a perforation rule and a clear “not a BIR Official Receipt” line, not a decorative card.
 - The one bold element is the safety-orange action; everything around it stays quiet.
 
 ---
@@ -193,6 +195,6 @@ Rules:
 - Fonts are self-hosted through `@fontsource/barlow`, `@fontsource/barlow-condensed`, and `@fontsource/ibm-plex-mono`.
 - shadcn/ui primitives live in `src/components/ui`; do not hand-roll buttons, dialogs, sheets, or inputs.
 - The `Button` primitive has a `size="touch"` variant (48px).
-- `StatusBadge` is the only place that maps ticket status to a label and color.
+- `StatusBadge` is the only place that maps order status to a label and color.
 - `BrandMark` is the only brand illustration.
 - Never use hardcoded hex values in a component; use the CSS variables.

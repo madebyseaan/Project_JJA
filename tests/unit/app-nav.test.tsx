@@ -3,53 +3,41 @@ import { createMemoryRouter, RouterProvider } from 'react-router';
 import { expect, test } from 'vitest';
 
 import { AppNav } from '@/app/AppNav';
-import type { Role } from '@/types/domain';
 
-function renderNav(role: Role, initialEntries = ['/bay'], variant: 'rail' | 'tabs' = 'rail') {
-  const router = createMemoryRouter(
-    [{ path: '*', element: <AppNav role={role} variant={variant} /> }],
-    { initialEntries },
-  );
+function renderNav(initialEntries = ['/orders'], variant: 'rail' | 'tabs' = 'rail') {
+  const router = createMemoryRouter([{ path: '*', element: <AppNav variant={variant} /> }], {
+    initialEntries,
+  });
 
   render(<RouterProvider router={router} />);
 }
 
-test('owner sees Bay, Stock, Sales, and Owner', () => {
-  renderNav('owner');
+test('shows every staff link with the same access', () => {
+  renderNav();
 
-  expect(screen.getByRole('link', { name: 'Bay' })).toBeInTheDocument();
-  expect(screen.getByRole('link', { name: 'Stock' })).toBeInTheDocument();
-  expect(screen.getByRole('link', { name: 'Sales' })).toBeInTheDocument();
-  expect(screen.getByRole('link', { name: 'Owner' })).toBeInTheDocument();
-});
-
-test('mechanic sees Sales but does not see the Owner link', () => {
-  renderNav('mechanic');
-
-  expect(screen.getByRole('link', { name: 'Bay' })).toBeInTheDocument();
-  expect(screen.getByRole('link', { name: 'Stock' })).toBeInTheDocument();
-  expect(screen.getByRole('link', { name: 'Sales' })).toBeInTheDocument();
-  expect(screen.queryByRole('link', { name: 'Owner' })).not.toBeInTheDocument();
+  expect(screen.getByRole('link', { name: 'Orders' })).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: 'Items' })).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: 'Reports' })).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: 'Settings' })).toBeInTheDocument();
 });
 
 test('marks the current route', () => {
-  renderNav('owner', ['/inventory']);
+  renderNav(['/items']);
 
-  expect(screen.getByRole('link', { name: 'Stock' })).toHaveAttribute('aria-current', 'page');
-  expect(screen.getByRole('link', { name: 'Bay' })).not.toHaveAttribute('aria-current');
+  expect(screen.getByRole('link', { name: 'Items' })).toHaveAttribute('aria-current', 'page');
+  expect(screen.getByRole('link', { name: 'Orders' })).not.toHaveAttribute('aria-current');
 });
 
-test('marks Sales as current for staff', () => {
-  renderNav('mechanic', ['/sales']);
+test('keeps Orders active on an order detail route', () => {
+  renderNav(['/orders/abc']);
 
-  expect(screen.getByRole('link', { name: 'Sales' })).toHaveAttribute('aria-current', 'page');
+  expect(screen.getByRole('link', { name: 'Orders' })).toHaveAttribute('aria-current', 'page');
 });
 
-test('renders the bottom tabs with the same filtering and active state', () => {
-  renderNav('mechanic', ['/bay'], 'tabs');
+test('renders the bottom tabs with the same links and active state', () => {
+  renderNav(['/reports'], 'tabs');
 
-  expect(screen.getByRole('link', { name: 'Bay' })).toHaveAttribute('aria-current', 'page');
-  expect(screen.getByRole('link', { name: 'Stock' })).not.toHaveAttribute('aria-current');
-  expect(screen.getByRole('link', { name: 'Sales' })).toBeInTheDocument();
-  expect(screen.queryByRole('link', { name: 'Owner' })).not.toBeInTheDocument();
+  expect(screen.getByRole('link', { name: 'Reports' })).toHaveAttribute('aria-current', 'page');
+  expect(screen.getByRole('link', { name: 'Orders' })).not.toHaveAttribute('aria-current');
+  expect(screen.getByRole('link', { name: 'Settings' })).toBeInTheDocument();
 });

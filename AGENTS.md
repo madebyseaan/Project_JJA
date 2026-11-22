@@ -14,11 +14,14 @@ This file is the engineering contract for anyone — human or AI — working in 
 
 ## 1. What this project is
 
-A web app for **J.J.A Motor Accessories and Motorcycle Repair Shop** (Est. 2023), one motorcycle parts and repair shop in the Philippines.
+A web app that is a **daily sales log** for **J.J.A Motor Accessories and Motorcycle Repair Shop** (Est. 2023), one motorcycle parts and repair shop in the Philippines.
 
-- The mechanic creates a walk-in ticket at the counter, adds parts and labor, verifies the parts, takes payment, and issues an e-receipt.
-- The owner manages inventory, sees daily sales, reconciles cash, and exports CSV for QuickBooks Desktop.
-- Customers receive an e-receipt by QR or link. No customer accounts.
+- Dad and Uncle record each walk-in order: date, optional customer and motorcycle, parts, labor, helper share, extras, and cash/GCash payments.
+- The item list and prices come from QuickBooks. The app does **not** track stock; QuickBooks remains the stock and accounting record.
+- Both staff have the **same access**. There is no owner/mechanic split in the sales log.
+- The app shows daily and monthly sales, labor per person, cash, GCash, and shop GCash held in personal accounts.
+- An optional public digital receipt can be shared by link or QR.
+- A later step exports the month’s **parts only** to QuickBooks as IIF, locks the month, and reconciles.
 - Hosting and database must stay at **₱0/month**.
 - The full product and technical design is in [`docs/spec.md`](docs/spec.md). That file is the source of truth.
 
@@ -45,17 +48,17 @@ If a change alters behavior, update the spec in the same pull request. A change 
 ## 3. Non-negotiables
 
 1. **No server.** The app is a static React SPA. It talks directly to Supabase. Do not add Next.js, OpenNext, a custom API, Workers functions, Prisma, Fastify, or an always-on backend.
-2. **No direct writes.** Mutations to tickets, ticket items, labor, payments, receipts, stock, day closes, and audit data go through PostgreSQL functions (`supabase.rpc(...)`). Never use `.insert()`, `.update()`, or `.delete()` on those tables from the client.
+2. **No direct writes.** Mutations to the catalog, orders, order items, labor, extras, payments, changes, GCash allocations, GCash transfers, receipts, and audit data go through PostgreSQL functions (`supabase.rpc(...)`). Never use `.insert()`, `.update()`, or `.delete()` on those tables from the client.
 3. **Money is integer centavos.** No floats, no `parseFloat` arithmetic for money, no client-supplied totals. The database computes totals.
-4. **Philippine business dates.** Use `Asia/Manila` for "today," daily numbers, day close, and reports. Store timestamps as `timestamptz`.
-5. **Snapshots.** `ticket_items` freeze the part name, unit price, and unit cost when added. `receipts` store a complete immutable snapshot.
-6. **Every stock change writes a ledger row.** `stock_movements` is append-only and written in the same transaction as the change. No silent stock updates.
-7. **Completed records are immutable.** Completed tickets, their items, payments, and receipts cannot be edited. A completed sale is reversed only by `void_sale` (owner-only), which restores stock, records a refund, and marks the receipt VOID.
-8. **Roles are enforced in the database.** Hiding a button is not security. RLS policies and function checks decide what a mechanic or owner can do.
+4. **Philippine business dates.** Use `Asia/Manila` for "today," order numbers, reports, and month selection. Store timestamps as `timestamptz`.
+5. **Snapshots.** `sales_order_items` freeze the item name, quantity, and unit price when the order is saved. The catalog base price is never used to rewrite an old order.
+6. **No stock tracking.** QuickBooks owns stock. Do not add quantities on hand, reservations, stock ledgers, or low-stock screens to this app. The old inventory tables are retained only until a cleanup migration.
+7. **Orders are editable until a month is exported.** There is no completed-ticket immutability in the sales log. Changing an order's business date assigns a new order number for that date. After QuickBooks export exists, a locked month is read-only in the app and corrections happen in QuickBooks. Never silently rewrite an exported order.
+8. **Both staff have equal access.** The database enforces staff-only access; it does not use the legacy owner/mechanic split in the sales log. Hiding a button is not security.
 9. **RLS on every table.** Default deny. No table ships without policies and tests.
 10. **No secrets in the browser.** Only `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are public. The service-role key never appears in `src/`, the bundle, logs, or screenshots.
 11. **Migrations only.** Never change the schema from the Supabase dashboard. Every change is a migration in `supabase/migrations`.
-12. **No scope creep.** Phase 1 only. No multi-shop code, customer accounts, storefront, photos, offline sales, SMS/email, partial returns, or BIR official-receipt features unless the spec is updated and approved.
+12. **No scope creep.** Current phase is the sales log and the approved QuickBooks follow-up. No multi-shop code, customer accounts, storefront, photos, offline sales, SMS/email, partial returns, payroll, or BIR official-receipt features unless the spec is updated and approved.
 13. **One dependency at a time.** Do not add a package because it is convenient. The spec lists the stack; justify anything new in the PR.
 14. **Every bug gets a regression test.** Every database function change gets a database test.
 15. **`npm run check` must pass before you claim anything is done.**
@@ -105,12 +108,12 @@ src/
     ...                shared components (BrandMark, StatusBadge, etc.)
   features/
     auth/              login, PIN lock, session hooks
-    bay/               queue, ticket detail, part picker, labor, payment
-    inventory/         parts table, part form, stock actions
-    owner/             dashboard, sales, day close, audit, settings
+    sales/             orders, items, reports, GCash, receipt, hooks, APIs
     pwa/               install, update, offline UI
-    receipts/          receipt page, verify page, QR, print
-    settings/          shop settings
+    receipts/          legacy receipt page and verify page
+    bay/               legacy ticket screens (not routed)
+    inventory/         legacy stock screens (not routed)
+    owner/             legacy owner screens (not routed)
   hooks/               cross-feature hooks only
   lib/                 supabase, money, dates, csv, errors, print, pin
   routes/              thin page components; no business logic
@@ -149,6 +152,7 @@ Every new file has a home in this tree. Do not create a new top-level folder wit
 Rules:
 
 - Feature code belongs in `src/features/<feature>/`. Do not create a second `components/` or `utils/` dumping ground.
+- `src/features/sales/` is the current product. Legacy `bay/`, `inventory/`, and `owner/` code is not routed and must not gain new features.
 - A feature folder may contain `components/`, `hooks/`, `api.ts`, `schemas.ts`, and `types.ts`.
 - `src/lib` is for genuinely cross-cutting code. If only one feature uses it, keep it in that feature.
 - `src/routes` contains thin page components that compose feature components. No business rules there.
@@ -207,7 +211,7 @@ VITE_SUPABASE_ANON_KEY=
 - `.env.local` is for local development and is gitignored.
 - `VITE_*` values are embedded in the public bundle. Never put a secret behind a `VITE_` prefix.
 - The service-role key is used only by CI/admin scripts and stored in GitHub Actions secrets.
-- The receipt HMAC secret lives in `private.app_secrets`. A backup copy lives in GitHub Actions secrets. Never print it.
+- The legacy receipt HMAC secret lives in `private.app_secrets`. A backup copy lives in GitHub Actions secrets. Never print it. New orders use the digital receipt token, not HMAC verification.
 - If a secret is committed: remove it, rotate it, and note the incident. Do not just delete the commit.
 - Do not log tokens, JWTs, passwords, PINs, or customer data.
 
@@ -239,19 +243,19 @@ VITE_SUPABASE_ANON_KEY=
 
 - Function components only. No class components. No `React.FC`.
 - Components in `PascalCase.tsx`; hooks in `use-kebab-case.ts`; utilities in `kebab-case.ts`.
-- Mobile-first. The bay and inventory screens must work at 360px width.
+- Mobile-first. The orders, order form, items, reports, and GCash screens must work at 360px width.
 - Minimum touch target: **48 × 48px**. High contrast. Large text for the garage.
 - Use shadcn/ui primitives from `src/components/ui`. Do not hand-roll buttons, dialogs, drawers, inputs, or badges.
 - Use Tailwind tokens and CSS variables. No hardcoded hex colors in components.
 - Every data screen has **loading, empty, and error** states. Empty states offer the next action.
 - Mutations show a pending state and disable the trigger. No double-submit.
-- **No optimistic updates for stock, payments, or receipts.** The database is the truth.
+- **No optimistic updates for orders, payments, or GCash balances.** The database is the truth.
 - Forms use React Hook Form + zod. The same rules are enforced again in PostgreSQL.
 - Use `aria-live` for toasts and status changes. Every input has a label. Focus states are visible.
 - Status is never conveyed by color alone; use text plus color.
 - No `dangerouslySetInnerHTML`.
 - Respect `prefers-reduced-motion`.
-- The PIN lock and owner guard are UX; the database remains authoritative.
+- The PIN lock and staff guard are UX; the database remains authoritative.
 - The service worker must **never cache Supabase responses**. `NetworkOnly` for `*.supabase.co`.
 - PWA updates use a prompt. Never force-reload while a form is open.
 - Audio alerts require a user gesture. Provide an explicit "Enable alerts" button.
@@ -266,19 +270,19 @@ VITE_SUPABASE_ANON_KEY=
 - Enable RLS on every table. Default deny.
 - No direct `INSERT`/`UPDATE`/`DELETE` grants on transactional tables to `authenticated`. Functions own the writes.
 - Reads use explicit columns. Do not `select *` in application code.
-- All functions are `security definer` with `search_path = ''` and fully qualified names (`public.tickets`, `private.receipt_counters`).
+- All functions are `security definer` with `search_path = ''` and fully qualified names (`public.sales_orders`, `private.sales_order_counters`).
 - `REVOKE ALL ON FUNCTION ... FROM PUBLIC;` then grant execution explicitly.
 - Validate every argument: positive quantities, non-negative amounts, valid enums, trimmed/length-limited strings.
-- Lock part rows with `SELECT ... FOR UPDATE` in a deterministic order (sorted by `part_id`) before checking availability.
+- Lock catalog rows with `SELECT ... FOR UPDATE` when importing so concurrent imports cannot create duplicate names.
 - Write the business change and its `audit_events` row in the same transaction.
-- Use stable error codes: `INSUFFICIENT_STOCK`, `PAYMENT_MISMATCH`, `TICKET_NOT_OPEN`, `NOT_VERIFIED`, `FORBIDDEN`, `RECEIPT_NOT_ISSUED`, `ALREADY_COMPLETED`.
+- Use stable error codes: `INVALID_DATE`, `INVALID_LABOR_SPLIT`, `PAYMENT_MISMATCH`, `CHANGE_TOO_LARGE`, `EMPTY_ORDER`, `ITEM_NOT_FOUND`, `INSUFFICIENT_GCASH`, `ORDER_NOT_FOUND`, `ORDER_LOCKED`, `FORBIDDEN`.
 - Use `timestamptz`. Business date: `(now() at time zone 'Asia/Manila')::date`.
 - Money columns end in `_centavos` and are integers. No `numeric` money, no floats.
-- Use generated columns for line totals, ticket totals, available quantity, and variance where possible.
+- Use generated columns for line totals, order totals, and GCash share sums where possible.
 - Use `security_invoker = true` on views.
-- Use triggers only for timestamps, profile creation, and immutability. Business logic belongs in functions.
-- Soft-delete parts with `is_active`. Do not hard-delete catalog rows that tickets reference.
-- Append-only tables (`stock_movements`, `audit_events`) have no update or delete grants.
+- Use triggers only for timestamps and profile creation. Business logic belongs in functions.
+- Mark catalog rows inactive with `is_active`. Do not hard-delete catalog rows that orders reference.
+- Append-only tables (`audit_events`) have no update or delete grants.
 - After any migration: `npm run db:types`, commit the generated file, and run `npm run db:types:check` in CI.
 - Never change the schema from the Supabase dashboard. If it happens in an emergency, capture it as a migration immediately.
 
@@ -286,68 +290,74 @@ VITE_SUPABASE_ANON_KEY=
 
 ## 11. Auth, roles, and security
 
-- Supabase Auth with a hidden internal email derived from the employee ID (`JJA-001` → `jja-001@staff.jja.internal`). Staff log in with the employee ID + password; they never see or type the email. Public sign-ups disabled. Two accounts: owner and mechanic.
-- `profiles.role` is `owner` or `mechanic`. `private.is_staff()` and `private.is_owner()` are security-definer helpers used by RLS.
+- Supabase Auth with a hidden internal email derived from the employee ID (`JJA-001` → `jja-001@staff.jja.internal`). Staff log in with the employee ID + password; they never see or type the email. Public sign-ups disabled. Two accounts: Dad and Uncle.
+- `profiles.role` remains `owner` or `mechanic` for legacy tables, but the sales log does not branch on it. Both staff have the same access to orders, items, reports, GCash, and settings.
+- `private.is_staff()` is the security-definer helper used by RLS. Do not add owner-only checks to sales-log functions.
 - The PIN is local, hashed with salted SHA-256 in `localStorage`. It is a screen lock, not identity. Never send it to the server.
 - Lock after 5 minutes idle; five bad attempts force a full sign-out.
-- Owner-only: void sale, price edits, stock adjustments, day close, audit, settings, staff roles.
-- Mechanic: create tickets, add catalog parts and labor, verify, record payments, complete tickets, view inventory.
-- `anon` may execute only `ping()`, `get_receipt(token)`, and `verify_receipt(no, code)`.
-- Public receipt/verify responses are limited to shop, receipt number, date, total, payment method, and status. No customer name, no item list, no phone.
-- Public tokens are 128-bit random. Verification codes are 64-bit HMAC prefixes. If abuse appears, add per-IP throttling.
+- `anon` may execute `ping()`, `get_sales_receipt(token)`, and the legacy `get_receipt(token)` / `verify_receipt(no, code)`.
+- The new public receipt may show shop details, order number, date, optional customer/bike, item names and quantities, labor total, total, and payment methods. It never shows the internal labor split, costs, notes, or contact details.
+- Public tokens are 128-bit random. If abuse appears, add per-IP throttling.
 - Escape CSV formula injection on export.
 - Do not add analytics, trackers, or third-party scripts without approval.
 - Dependency policy: keep the tree small, commit the lockfile, review Dependabot PRs, and do not add abandoned packages.
 
 ---
 
-## 12. Money, stock, and receipt rules
+## 12. Money, labor, GCash, and receipt rules
 
 These are the highest-risk paths. Change them only with tests.
 
-### Money
+### Money and labor
 
 - Integer centavos everywhere. Parse peso input with a string parser, not `parseFloat`.
-- The database computes line totals, ticket totals, and receipt totals. The client never sends a total.
-- Payments are signed. Positive received, negative refunded. Completion requires the sum to equal the total.
-- Cash tendered/change is display-only; the recorded payment is the amount applied.
+- The database computes line totals, parts totals, order totals, and GCash allocations. The client never sends a total.
+- Payments and change balance exactly: `payments = parts + labor + extras + change`.
+- Change by method cannot exceed payments by that method.
+- GCash change must come from someone who received a GCash payment, and cannot exceed that person's own payment.
+- Helper share cannot exceed total labor; the main share is the remainder and is never negative.
+- A helper must differ from the main worker.
+- An extra goes to the main or helper on that order; the default is the main worker.
+- Item names and prices are snapshotted on the order. A later catalog change never rewrites an old order.
 
 ### Stock
 
-- `available = stock_on_hand - reserved_qty`.
-- Add part → reserve. Complete → deduct and ledger `SALE`. Cancel → release. Void sale → restore and ledger `RETURN`.
-- Never allow negative stock. Never adjust stock below `reserved_qty`.
-- Every change writes `stock_movements` in the same transaction.
-- Price and cost snapshots are taken when the part is added to the ticket.
+- The app does not track stock. Do not add quantities, reservations, or stock ledgers.
+- QuickBooks owns stock and accounting. The old inventory tables are legacy and must not be used by new code.
+- Catalog rows are marked inactive, never hard-deleted while orders reference them.
 
-### Receipts
+### GCash
 
-- Issued exactly once per completed ticket, in the completion transaction.
-- Daily number `YYYYMMDD-0001` from `private.receipt_counters`; no normal gaps.
-- Immutable snapshot plus `verification_hash` and a 16-hex-character `verification_code`.
-- Public token 128-bit random.
-- A voided sale keeps the receipt and snapshot; status becomes `VOID`; stock is restored and a refund payment is recorded.
-- Never edit a snapshot or a completed ticket. A correction is a new ticket.
-- Any change to receipt code, snapshot shape, or verification must include:
-  - a database test that a valid receipt verifies,
-  - a test that an altered snapshot fails,
-  - a test that the integrity report flags a mismatch and a missing number.
+- Every GCash payment records a recipient.
+- Net GCash is split into a shop share (parts) and a labor share (labor plus extras). The split must sum exactly to net.
+- Shop GCash held is the shop share minus transfers to the shop bank.
+- Labor GCash held is the labor share plus transfers received minus transfers sent.
+- A transfer cannot exceed the held balance; return `INSUFFICIENT_GCASH`.
+- Month close (later step) requires shop GCash held to be zero unless a written carry-forward reason is recorded.
+
+### Digital receipt
+
+- Optional per order. Public token is 128-bit random.
+- Shows order, date, optional customer/bike, items, labor total, optional extra/tip, total charged, payments received, and change returned.
+- Never shows the internal labor split, costs, notes, or transfer data.
+- A change to the receipt payload or public function must include a database test that a valid token returns the expected shape and an unknown or malformed token returns null.
+- The legacy receipt and verification functions remain for old links but are not used by new orders.
 
 ---
 
 ## 13. Testing
 
-- Unit tests: money, dates, CSV, error mapping, PIN, zod schemas.
+- Unit tests: money, dates, monthly report math, order balance math, CSV import mapping, error mapping, PIN, zod schemas.
 - Database tests: every function and RLS policy. At minimum:
-  - reservation and oversell prevention (including concurrent adds),
-  - completion, payment mismatch, unverified parts,
-  - cancellation and deposit refund,
-  - void sale and stock restoration,
-  - receipt snapshot, HMAC, sequence, immutability,
-  - role permissions (anon, mechanic, owner),
-  - direct table writes denied,
-  - day close totals.
-- E2E: login → ticket → part → labor → verify → pay → receipt → stock down → owner sale → day close → CSV.
+  - order create/edit with items, labor split, extras, payments, and change,
+  - helper share over total and payment mismatch rejection,
+  - custom and catalog line snapshots,
+  - past-dated order numbering and daily report,
+  - GCash allocation, held balances, and over-transfer rejection,
+  - public receipt by token, missing token, and no internal split,
+  - staff-only reads; anon denied; direct table writes denied,
+  - catalog import counts and idempotency.
+- E2E: login → order → item → helper split → extra → mixed payment → change → save → daily list → edit → monthly report → GCash → digital receipt. Both staff see the same navigation.
 - Every bug fix gets a regression test.
 - Tests are deterministic. Reset the database between runs. Never test against production.
 - CI runs local Supabase in Docker. Locally, Docker is optional; `test:db` may be skipped only if documented.
@@ -419,7 +429,7 @@ A task is done only when:
 - [ ] The flow works on a 360px phone and on a laptop.
 - [ ] Loading, empty, and error states exist.
 - [ ] Permissions are enforced in the database and tested.
-- [ ] Money, stock, or receipt changes have database tests.
+- [ ] Money, labor, GCash, or receipt changes have database tests.
 - [ ] `npm run check` passes.
 - [ ] Database tests and E2E pass in CI.
 - [ ] `database.types.ts` is regenerated and current.
@@ -431,11 +441,11 @@ A task is done only when:
 
 ---
 
-## 18. Scope and non-goals (phase 1)
+## 18. Scope and non-goals (current phase)
 
-**In scope:** staff auth and PIN lock, bay queue, ticket creation, parts and labor, stock reservation and ledger, verification, payments, completion, receipts, e-receipt page, verification page, void sale, inventory, owner dashboard, sales list, CSV export, day close, audit, integrity report, settings, PWA shell, backups, keep-alive, CI.
+**In scope:** staff auth and PIN lock, sales-log navigation, QuickBooks catalog import, order create/edit, items and per-order prices, custom lines, labor and helper split, extras, cash/GCash payments, change, GCash held and transfers, daily and monthly reports, optional digital receipt, PWA shell, backups, keep-alive, CI. The approved follow-up is QuickBooks export, month lock, and reconciliation.
 
-**Out of scope:** multi-shop, customer accounts, public storefront, online cart, QR ticket pass, camera scanner, part photos, partial returns, exchanges, bulk CSV import, email/SMS delivery, BIR official receipts, payroll, suppliers, purchase orders, loyalty points, offline sales.
+**Out of scope:** stock tracking, multi-shop, customer accounts, public storefront, online cart, QR ticket pass, camera scanner, part photos, partial returns, exchanges, email/SMS delivery, BIR official receipts, payroll, suppliers, purchase orders, loyalty points, offline sales, historical sales import.
 
 If a request belongs to the out-of-scope list, say so and propose updating the spec and phase plan first.
 
@@ -443,16 +453,21 @@ If a request belongs to the out-of-scope list, say so and propose updating the s
 
 ## 19. Glossary
 
-- **Ticket** — a job or over-the-counter sale, with parts, labor, payments, and a status.
-- **Receipt** — the immutable proof of a completed sale, with a number and verification code.
-- **Reserved** — stock set aside for an open ticket but not yet sold.
-- **Available** — stock on hand minus reserved.
-- **Snapshot** — a frozen copy of a price or receipt at a point in time.
-- **Void sale** — a full reversal of a completed sale, owner-only.
-- **Day close** — the owner's snapshot of sales, payments, expected cash, counted cash, and variance.
+- **Order** — one customer sale, with items, labor, extras, payments, and change.
+- **Catalog** — the QuickBooks item and price list. No stock.
+- **Custom line** — an item not in QuickBooks, flagged on the order.
+- **Main worker** — the person who gets the labor remainder.
+- **Helper** — the second worker on an order, with a fixed labor share.
+- **Extra** — a keep-the-change tip assigned to a worker.
+- **Net GCash** — GCash payments minus GCash change.
+- **Shop GCash held** — the parts share of GCash still in a personal account.
+- **Labor GCash held** — the labor/extras share of GCash still in a personal account.
+- **Transfer** — moving GCash to the shop bank or to the other worker.
+- **Snapshot** — a frozen item name and price stored on an order.
+- **Month close** — settle GCash, export parts sales, and lock the month (later step).
+- **IIF** — the QuickBooks Desktop import file format.
 - **RPC** — a PostgreSQL function called from the browser; the only way to write transactional data.
 - **RLS** — Row Level Security; the database rules that decide which rows a user can see or change.
 - **PWA** — an installable web app with an offline shell.
-- **HMAC** — a keyed hash only the database can produce; it makes receipt edits detectable.
 - **Anon key** — the public Supabase key. Safe only because RLS and functions restrict it.
 - **Service role key** — the secret key that bypasses RLS. It never ships to the browser.

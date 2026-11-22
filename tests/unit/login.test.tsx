@@ -28,9 +28,9 @@ function renderLogin(value: AuthContextValue) {
 test('shows the shop capabilities and the Manila clock', () => {
   renderLogin(signedOutValue());
 
-  expect(screen.getByText('Bay')).toBeInTheDocument();
-  expect(screen.getByText('Stock')).toBeInTheDocument();
-  expect(screen.getByText('Receipts')).toBeInTheDocument();
+  expect(screen.getByText('Orders')).toBeInTheDocument();
+  expect(screen.getByText('Items')).toBeInTheDocument();
+  expect(screen.getByText('Reports')).toBeInTheDocument();
   expect(screen.getAllByText(/Manila/).length).toBeGreaterThan(0);
   expect(
     screen.getAllByAltText('J.J.A Motor Accessories and Motorcycle Repair').length,
