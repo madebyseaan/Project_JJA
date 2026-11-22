@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useManilaClock } from '@/hooks/use-manila-clock';
 import { AppError } from '@/lib/errors';
+import { formatEmployeeIdInput } from '@/lib/staff-identity';
 
 import { BrandPanel } from './BrandPanel';
 import { MobileBrandHeader } from './MobileBrandHeader';
@@ -31,6 +32,8 @@ export function LoginPage() {
     resolver: zodResolver(loginSchema),
     defaultValues: { employeeId: '', password: '' },
   });
+
+  const employeeIdField = register('employeeId');
 
   useEffect(() => {
     if (status === 'signed-in') {
@@ -117,10 +120,15 @@ export function LoginPage() {
                     autoCapitalize="characters"
                     spellCheck={false}
                     placeholder="JJA-001"
-                    className="pl-10"
+                    maxLength={20}
+                    className="pl-10 uppercase"
                     aria-invalid={errors.employeeId ? true : undefined}
                     aria-describedby={errors.employeeId ? 'employee-id-error' : undefined}
-                    {...register('employeeId')}
+                    {...employeeIdField}
+                    onChange={(event) => {
+                      event.target.value = formatEmployeeIdInput(event.target.value);
+                      void employeeIdField.onChange(event);
+                    }}
                   />
                 </div>
                 {errors.employeeId?.message ? (

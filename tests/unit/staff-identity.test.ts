@@ -1,9 +1,24 @@
 import { expect, test } from 'vitest';
 
-import { employeeIdToEmail, isValidEmployeeId, normalizeEmployeeId } from '@/lib/staff-identity';
+import {
+  employeeIdToEmail,
+  formatEmployeeIdInput,
+  isValidEmployeeId,
+  normalizeEmployeeId,
+} from '@/lib/staff-identity';
 
 test('normalizes an employee ID', () => {
   expect(normalizeEmployeeId('  jja-001 ')).toBe('JJA-001');
+});
+
+test('formats employee IDs while typing', () => {
+  expect(formatEmployeeIdInput('jja001')).toBe('JJA-001');
+  expect(formatEmployeeIdInput('jja-001')).toBe('JJA-001');
+  expect(formatEmployeeIdInput('jja 001')).toBe('JJA-001');
+  expect(formatEmployeeIdInput('JJA')).toBe('JJA');
+  expect(formatEmployeeIdInput('JJA001A')).toBe('JJA-001A');
+  expect(formatEmployeeIdInput('123')).toBe('123');
+  expect(formatEmployeeIdInput('')).toBe('');
 });
 
 test('validates employee IDs', () => {
