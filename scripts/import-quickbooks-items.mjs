@@ -129,6 +129,10 @@ async function main() {
   const anonKey = requiredEnv('SUPABASE_ANON_KEY');
   const employeeId = requiredEnv('STAFF_EMPLOYEE_ID').trim().toUpperCase();
   const password = requiredEnv('STAFF_PASSWORD');
+  const idMatch = employeeId.match(/^([A-Z]+)-?(\d{1,3})$/);
+  const normalizedId = idMatch
+    ? `${idMatch[1]}-${(idMatch[2] ?? '').padStart(3, '0')}`
+    : employeeId;
 
   const csv = await readFile(file, 'utf8');
   const { items, errors, skipped } = toItems(csv);
@@ -147,7 +151,7 @@ async function main() {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
-  const email = `${employeeId.toLowerCase()}@staff.jja.internal`;
+  const email = `${normalizedId.toLowerCase()}@staff.jja.internal`;
   const { error: authError } = await client.auth.signInWithPassword({ email, password });
 
   if (authError) {

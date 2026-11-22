@@ -454,6 +454,7 @@ There is no custom server. The browser talks to Supabase directly. The app is a 
 - `private.next_sales_order_no(p_day date) returns text` — daily order number.
 - `public.save_sales_order(...) returns sales_orders` — create or replace an open order and all child rows in one transaction.
 - `public.import_catalog_items(p_items jsonb) returns jsonb` — idempotent catalog upsert.
+- `public.deactivate_missing_catalog_items(p_names text[]) returns jsonb` — full-list sync; deactivates catalog rows missing from the export.
 - `public.get_gcash_balances() returns jsonb` — per-person shop and labor balances.
 - `public.record_gcash_transfer(...) returns gcash_transfers` — validated transfer.
 - `public.get_sales_receipt(p_token text) returns jsonb` — public receipt payload.
