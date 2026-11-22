@@ -99,8 +99,12 @@ Rules:
 | `SUPABASE_DB_URL` | `backup.yml` | Production `pg_dump` |
 | `SUPABASE_URL` | `keepalive.yml` | Daily `ping()` endpoint |
 | `SUPABASE_ANON_KEY` | `keepalive.yml` | Public anon key for `ping()` |
+| `VITE_SUPABASE_URL` | `deploy.yml` | Baked into the production SPA build |
+| `VITE_SUPABASE_ANON_KEY` | `deploy.yml` | Baked into the production SPA build |
 | `CLOUDFLARE_API_TOKEN` | `deploy.yml` | Deploy the static Worker |
 | `CLOUDFLARE_ACCOUNT_ID` | `deploy.yml` | Select the Cloudflare account |
+
+`VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are public by design, but they still belong in GitHub secrets so the production build never points at staging by mistake. The deploy workflow will not build without them.
 
 Never put the service-role key in a `VITE_*` variable or the browser. `SUPABASE_DB_URL` and the service-role key are CI-only.
 
