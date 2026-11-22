@@ -93,11 +93,15 @@ Rules:
 └─────────────────────────────┘
 ```
 
-- Top bar: shop name, signed-in staff name (truncated), connection status, lock.
-- Bottom tabs: Bay, Stock, Owner (owner only).
+- Top bar: shop name, signed-in staff name (truncated), connection status, install, lock.
+- Bottom tabs: Bay, Stock, Sales, Owner (owner only).
 - Primary actions are 56px tall; other targets are at least 48px.
 - The queue is a vertical list of job rows with a 4px status stripe on the left.
 - The ticket detail uses a sticky bottom bar: total on the left, action on the right.
+- The phone shell is a `100dvh` flex column: safe-area top, fixed header, one scrollable main area, bottom tabs as the last flex child. The tabs are not a fixed overlay, so browser chrome changes cannot leave a gap or make them jump.
+- Safe areas: header padding uses `env(safe-area-inset-top)`; the tab bar fills `env(safe-area-inset-bottom)` with its own background.
+- Mobile form controls render at 16px to stop iOS focus zoom. Pinch zoom is never disabled.
+- The installed app suppresses rubber-band overscroll and pull-to-refresh.
 
 ### Desktop
 

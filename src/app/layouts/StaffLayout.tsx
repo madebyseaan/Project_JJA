@@ -29,7 +29,7 @@ export function StaffLayout() {
   const { profile, signOut } = auth;
 
   return (
-    <div className="bg-paper min-h-screen md:grid md:grid-cols-[220px_minmax(0,1fr)]">
+    <div className="bg-paper flex h-[100dvh] flex-col overflow-hidden md:grid md:h-auto md:min-h-[100dvh] md:grid-cols-[220px_minmax(0,1fr)] md:overflow-visible">
       <aside className="border-line bg-surface hidden border-r md:sticky md:top-0 md:flex md:h-screen md:flex-col">
         <div className="border-line flex items-center gap-3 border-b px-4 py-4">
           <BrandMark className="size-10" />
@@ -75,9 +75,9 @@ export function StaffLayout() {
         </div>
       </aside>
 
-      <div className="flex min-w-0 flex-col md:min-h-screen">
-        <div className="sticky top-0 z-30 md:z-20">
-          <header className="border-line bg-surface border-b md:hidden">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <div className="shrink-0">
+          <header className="border-line bg-surface border-b pt-[env(safe-area-inset-top)] md:hidden">
             <div className="flex items-center gap-3 px-4 py-2">
               <BrandMark className="size-9" />
               <div className="min-w-0 flex-1">
@@ -107,7 +107,7 @@ export function StaffLayout() {
           <OfflineBanner online={online} />
         </div>
 
-        <main className="mx-auto w-full max-w-[1280px] flex-1 px-4 pt-6 pb-24 md:px-8 md:pt-8 md:pb-8">
+        <main className="mx-auto min-h-0 w-full max-w-[1280px] flex-1 overflow-y-auto px-4 pt-6 pb-4 md:overflow-visible md:px-8 md:pt-8 md:pb-8">
           <Outlet />
         </main>
 

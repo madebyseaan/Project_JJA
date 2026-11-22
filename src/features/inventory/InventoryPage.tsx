@@ -54,13 +54,21 @@ export function InventoryPage() {
     [parts.data],
   );
 
+  const outCount = useMemo(
+    () => (parts.data ?? []).filter((part) => part.isActive && part.availableQty <= 0).length,
+    [parts.data],
+  );
+
   const lowCount = useMemo(
     () =>
       (parts.data ?? []).filter(
-        (part) => part.isActive && part.availableQty <= part.lowStockThreshold,
+        (part) =>
+          part.isActive && part.availableQty > 0 && part.availableQty <= part.lowStockThreshold,
       ).length,
     [parts.data],
   );
+
+  const restockCount = outCount + lowCount;
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -91,7 +99,7 @@ export function InventoryPage() {
 
   const description =
     parts.data && parts.data.length > 0
-      ? `${parts.data.length} parts · ${lowCount} low on stock`
+      ? `${parts.data.length} parts · ${outCount} out of stock · ${lowCount} low`
       : 'Parts, prices, and available stock.';
 
   return (
@@ -151,7 +159,7 @@ export function InventoryPage() {
             aria-pressed={lowOnly}
             onClick={() => setLowOnly((value) => !value)}
           >
-            Low stock{lowCount > 0 ? ` (${lowCount})` : ''}
+            Needs restock{restockCount > 0 ? ` (${restockCount})` : ''}
           </Button>
           {isOwner ? (
             <Button
