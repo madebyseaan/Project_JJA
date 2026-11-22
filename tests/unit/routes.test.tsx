@@ -58,6 +58,12 @@ test('shows the stock route', async () => {
   expect(await screen.findByRole('heading', { name: 'Stock' })).toBeInTheDocument();
 });
 
+test('shows the sales route to the mechanic', async () => {
+  renderApp('/sales', signedInValue(mechanicProfile));
+
+  expect(await screen.findByRole('heading', { name: 'Sales' })).toBeInTheDocument();
+});
+
 test('shows the owner route to the owner', async () => {
   renderApp('/owner', signedInValue(ownerProfile));
 

@@ -74,7 +74,7 @@ JJA_002_PASSWORD=
 npm run setup:supabase
 ```
 
-The script applies the migration if needed, creates `JJA-001` (Dad, owner) and `JJA-002` (Uncle, mechanic), and sets the display names. If it generates passwords, it writes them to `.staff-credentials.local` (gitignored) instead of printing them.
+The script applies the migration if needed, creates `JJA-001` (Dad, mechanic) and `JJA-002` (Uncle, owner), and sets the display names. If it generates passwords, it writes them to `.staff-credentials.local` (gitignored) instead of printing them.
 
 4. Save the generated passwords, then delete both `.staff-credentials.local` and `.env.setup.local`. Rotate the secret key if you want.
 
@@ -126,11 +126,11 @@ Staff log in with an **employee ID**, not an email. Supabase Auth still needs a 
 
 ```sql
 update public.profiles
-set display_name = 'Dad', role = 'owner'
+set display_name = 'Dad'
 where employee_id = 'JJA-001';
 
 update public.profiles
-set display_name = 'Uncle'
+set display_name = 'Uncle', role = 'owner'
 where employee_id = 'JJA-002';
 ```
 
@@ -180,9 +180,9 @@ Never point these variables at production.
 
 1. Start the app: `npm run dev`.
 2. Open `/login`.
-3. Sign in with **JJA-001** and Dad's password. The temporary staff home should show **Dad**, `JJA-001`, and **Owner**.
+3. Sign in with **JJA-001** and Dad's password. The staff home should show **Dad**, `JJA-001`, and **Mechanic**.
 4. Refresh. The session should survive.
-5. Sign out, then sign in with **JJA-002** and Uncle's password. The staff home should show **Uncle**, `JJA-002`, and **Mechanic**.
+5. Sign out, then sign in with **JJA-002** and Uncle's password. The staff home should show **Uncle**, `JJA-002`, and **Owner**.
 6. Try a wrong password. The message should be clear and must not reveal whether the employee ID exists.
 
 ---

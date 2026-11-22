@@ -69,14 +69,14 @@ The app is a static React application hosted free on Cloudflare. Supabase provid
 
 | Role | Person | Can do |
 |---|---|---|
-| **Owner** | Dad | Everything: bay, inventory, prices, stock adjustments, payments, void sales, day close, audit log, settings |
-| **Mechanic** | Uncle | Create tickets, add catalog parts and labor, verify parts, record payments, complete tickets, view inventory |
+| **Owner** | Uncle | Everything: bay, inventory, prices, stock adjustments, payments, void sales, day close, audit log, settings |
+| **Mechanic** | Dad | Create tickets, add catalog parts and labor, verify parts, record payments, complete tickets, view inventory, view sales and export CSV |
 | **Customer** | Walk-in | No account. Receives an e-receipt link or QR. Can open and verify a receipt. |
 
 Rules:
 
 - The owner account can also work the bay. There is no separate "owner mode" toggle; permissions follow the signed-in account.
-- A mechanic cannot void a sale, edit a price, adjust stock, close the day, or read the audit log.
+- A mechanic cannot void a sale, edit a price, adjust stock, close the day, or read the audit log. A mechanic can view the sales list and export CSV for QuickBooks.
 - The PIN is a local screen lock, not an identity. The Supabase session decides the role.
 - Each person should use their own device or sign out when switching. A shared device logged in as the owner gives the next user owner powers.
 
@@ -174,8 +174,9 @@ A completed sale can be voided in full when it was a genuine mistake or a full r
 | `/bay` | Staff | Live queue, new ticket, ticket search |
 | `/bay/ticket/:id` | Staff | Ticket detail: items, labor, payments, verification, status, complete |
 | `/inventory` | Staff (read), owner (write) | Parts table, add/edit, restock, adjust, low-stock filter |
+| `/sales` | Staff | Receipt/sales list, filters, CSV export |
 | `/owner` | Owner | Today's sales, payment split, low stock, day close summary |
-| `/owner/sales` | Owner | Receipt/sales list, filters, CSV export |
+| `/sales` | Staff | Receipt/sales list, filters, CSV export |
 | `/owner/audit` | Owner | Audit log and receipt integrity report |
 | `/owner/settings` | Owner | Shop details, receipt footer, defaults |
 | `/r/:token` | Public (unguessable token) | Customer e-receipt |

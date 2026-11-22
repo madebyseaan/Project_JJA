@@ -45,8 +45,8 @@ See docs/setup.md.`);
 const STAFF_EMAIL_DOMAIN = 'staff.jja.internal';
 
 const staff = [
-  { employeeId: 'JJA-001', displayName: 'Dad', role: 'owner' },
-  { employeeId: 'JJA-002', displayName: 'Uncle', role: 'mechanic' },
+  { employeeId: 'JJA-001', displayName: 'Dad', role: 'mechanic' },
+  { employeeId: 'JJA-002', displayName: 'Uncle', role: 'owner' },
 ];
 
 function projectUrlFromDbUrl(value) {
