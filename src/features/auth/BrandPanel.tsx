@@ -1,4 +1,4 @@
-import { Package, Receipt, Wrench } from 'lucide-react';
+import { BarChart3, Package, ReceiptText } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 import { BrandMark } from '@/components/BrandMark';
@@ -11,9 +11,9 @@ type BrandPanelProps = {
 };
 
 const CAPABILITIES = [
-  { label: 'Bay', Icon: Wrench, tone: 'text-brand-red' },
-  { label: 'Stock', Icon: Package, tone: 'text-brand-blue' },
-  { label: 'Receipts', Icon: Receipt, tone: 'text-brand-gold' },
+  { label: 'Orders', Icon: ReceiptText, tone: 'text-brand-red' },
+  { label: 'Items', Icon: Package, tone: 'text-brand-blue' },
+  { label: 'Reports', Icon: BarChart3, tone: 'text-brand-gold' },
 ] as const;
 
 export function BrandPanel({ manilaTime, eyebrow, title, description }: BrandPanelProps) {

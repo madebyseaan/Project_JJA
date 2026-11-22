@@ -36,10 +36,10 @@ function renderLayout({
     [
       {
         element: <StaffLayout />,
-        children: [{ path: '/bay', element: <div>Bay content</div> }],
+        children: [{ path: '/orders', element: <div>Bay content</div> }],
       },
     ],
-    { initialEntries: ['/bay'] },
+    { initialEntries: ['/orders'] },
   );
 
   render(
@@ -57,7 +57,7 @@ test('shows the shop, staff identity, navigation, and page content', () => {
   expect(screen.getAllByText('J.J.A').length).toBeGreaterThan(0);
   expect(screen.getAllByText('Dad').length).toBeGreaterThan(0);
   expect(screen.getAllByText('JJA-001').length).toBeGreaterThan(0);
-  expect(screen.getAllByRole('link', { name: 'Bay' }).length).toBeGreaterThan(0);
+  expect(screen.getAllByRole('link', { name: 'Orders' }).length).toBeGreaterThan(0);
   expect(screen.getByText('Bay content')).toBeInTheDocument();
 });
 

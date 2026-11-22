@@ -74,7 +74,7 @@ JJA_002_PASSWORD=
 npm run setup:supabase
 ```
 
-The script applies the migration if needed, creates `JJA-001` (Dad, mechanic) and `JJA-002` (Uncle, owner), and sets the display names. If it generates passwords, it writes them to `.staff-credentials.local` (gitignored) instead of printing them.
+The script applies the migrations if needed, creates `JJA-001` (Dad) and `JJA-002` (Uncle), and sets the display names. Both accounts have the same sales-log access; the legacy `owner`/`mechanic` role is kept only for compatibility. If it generates passwords, it writes them to `.staff-credentials.local` (gitignored) instead of printing them.
 
 4. Save the generated passwords, then delete both `.staff-credentials.local` and `.env.setup.local`. Rotate the secret key if you want.
 
@@ -94,7 +94,7 @@ In the dashboard:
 
 ## 4. Apply the database migrations
 
-The migration creates `profiles`, the role helpers, and the auth-user trigger.
+The migrations create `profiles`, the legacy inventory/bay/owner tables, and the sales log (catalog, orders, labor, extras, payments, changes, GCash, and receipts), plus the role helpers and the auth-user trigger.
 
 ```bash
 npx supabase login
@@ -122,7 +122,7 @@ Staff log in with an **employee ID**, not an email. Supabase Auth still needs a 
 1. **Authentication → Users → Add user**.
 2. Dad: email `jja-001@staff.jja.internal`, a strong password, **Auto Confirm User** on.
 3. Uncle: email `jja-002@staff.jja.internal`, a different password, **Auto Confirm User** on.
-4. Set the display names and role in the SQL editor:
+4. Set the display names and, for legacy compatibility, a role:
 
 ```sql
 update public.profiles
@@ -133,6 +133,8 @@ update public.profiles
 set display_name = 'Uncle', role = 'owner'
 where employee_id = 'JJA-002';
 ```
+
+The sales log does not use the role. Both accounts can do everything.
 
 The trigger sets `employee_id` from the part before `@` in the auth email. The prefix must match the login ID in lowercase. If you add more staff later, use the same pattern: `jja-003@staff.jja.internal` and log in with `JJA-003`.
 
@@ -180,9 +182,9 @@ Never point these variables at production.
 
 1. Start the app: `npm run dev`.
 2. Open `/login`.
-3. Sign in with **JJA-001** and Dad's password. The staff home should show **Dad**, `JJA-001`, and **Mechanic**.
+3. Sign in with **JJA-001** and Dad's password. The app should open **Orders** and show **Dad**, `JJA-001`, and the main navigation (Orders, Items, Reports, Settings).
 4. Refresh. The session should survive.
-5. Sign out, then sign in with **JJA-002** and Uncle's password. The staff home should show **Uncle**, `JJA-002`, and **Owner**.
+5. Sign out, then sign in with **JJA-002** and Uncle's password. The app should show **Uncle**, `JJA-002`, and the same navigation and access.
 6. Try a wrong password. The message should be clear and must not reveal whether the employee ID exists.
 
 ---

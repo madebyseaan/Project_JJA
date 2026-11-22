@@ -39,7 +39,7 @@ export function StaffLayout() {
           </div>
         </div>
 
-        <AppNav role={profile.role} variant="rail" className="px-2 py-4" />
+        <AppNav variant="rail" className="px-2 py-4" />
 
         <div className="border-line mt-auto border-t px-4 py-4">
           <p className="text-steel text-xs">Signed in as</p>
@@ -111,7 +111,7 @@ export function StaffLayout() {
           <Outlet />
         </main>
 
-        <AppNav role={profile.role} variant="tabs" className="md:hidden" />
+        <AppNav variant="tabs" className="md:hidden" />
       </div>
 
       <InstallAppDialog

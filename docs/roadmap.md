@@ -54,22 +54,115 @@ A step is not done until all of these are true:
 | 01 | **Login and staff identity** | **Done — approved** |
 | 02 | **PIN lock and idle lock** | **Done — approved** |
 | 03 | **App shell and navigation** | **Done — approved 21 Nov 2026 (delegated)** |
-| 04 | **Inventory and stock** | **Done — verified 21 Nov 2026** |
-| 05 | **Bay tickets** | **Done — verified 21 Nov 2026** |
-| 06 | **Payments and completion** | **Done — verified 21 Nov 2026** |
-| 07 | **E-receipt and verification** | **Done — verified 21 Nov 2026** |
-| 08 | **Owner dashboard and day close** | **Done — verified 21 Nov 2026** |
-| 09 | **Launch: PWA, backups, deploy, UAT** | **In progress** |
-| 10 | Phase 2: storefront, QR pass, photos, returns, QuickBooks | Later |
+| 04 | **Inventory and stock** | Retired by Step 10 (old tables kept) |
+| 05 | **Bay tickets** | Retired by Step 10 (old tables kept) |
+| 06 | **Payments and completion** | Retired by Step 10 (old tables kept) |
+| 07 | **E-receipt and verification** | Retired by Step 10 (legacy links kept) |
+| 08 | **Owner dashboard and day close** | Retired by Step 10 (old tables kept) |
+| 09 | **Launch: PWA, backups, deploy, UAT** | Partially done; superseded by the sales-log redesign |
+| 10 | **Sales log core** | **In review — implemented 22 Nov 2026** |
+| 11 | **QuickBooks export, month close, reconciliation** | **Blocked — morning answers needed** |
+| 12 | **Sales-log UAT and production cutover** | Later |
 
 ---
 
 ## 4. Current step
 
-**Step 09 — Launch.**
-Status: **In progress.** Steps 03–08 are built, unit-tested, and database-verified in CI. The PWA shell, install manifest, update prompt, deploy workflow, nightly backup workflow, keep-alive workflow, Playwright smoke suite, and review screenshots are in place. Remaining before launch: staging/production secrets, a real-device UAT day, a restore drill, UptimeRobot monitors, and the final smoke test. Plan: `docs/superpowers/plans/2026-11-21-step-09-launch.md`.
+**Step 10 — Sales log core.**
+Status: **Implemented 22 Nov 2026; waiting for the human architect to test and approve.** The app is now a daily sales log, not an inventory system. It has a QuickBooks catalog import, orders with items and per-order price overrides, labor with a helper split, extras, mixed cash/GCash payments, change, GCash held and transfers, daily and monthly reports, an optional public receipt, and equal access for both staff. QuickBooks export, month lock, and reconciliation are deliberately excluded until the morning answers arrive. Plan: `docs/superpowers/plans/2026-11-22-sales-log-core.md`; design: `docs/superpowers/specs/2026-11-22-sales-log-design.md`.
 
-**Next session starts here.** Read the Step 09 plan and the runbook. Do not rebuild Steps 03–08.
+**Next session starts here.** Wait for the architect’s approval of Step 10. Then answer the QuickBooks questions in Step 11 and implement the export.
+
+---
+
+## Step 10 — Sales log core
+
+**Status:** Implemented 22 Nov 2026 — in review.
+
+**Goal:** Replace the inventory/repair-ticket flow with the daily sales log the shop actually needs.
+
+### Delivered
+
+- [x] Catalog from the QuickBooks Item List, with no stock.
+- [x] Orders with date, optional customer and motorcycle.
+- [x] Multiple items per order, catalog prices, and per-order overrides.
+- [x] Custom item lines flagged “not in QuickBooks.”
+- [x] Total labor, optional helper, helper share, and main-user remainder.
+- [x] Extras (keep-the-change tips) defaulting to the main user.
+- [x] Multiple cash/GCash payments with GCash recipient.
+- [x] Change as cash or GCash, with balance validation.
+- [x] Order editing; snapshots of item names and prices.
+- [x] Daily totals and full order list.
+- [x] Monthly report with daily rows and labor per person.
+- [x] GCash held per person and recorded transfers.
+- [x] Optional public digital receipt at `/s/:token`.
+- [x] Equal navigation and access for both staff.
+- [x] Old inventory/bay/owner routes removed from navigation; old links kept for legacy receipts.
+- [x] Database tests for orders, labor splits, payments, GCash, receipts, RLS, and direct-write denial.
+- [x] Unit and E2E coverage for the new flow.
+
+### Gate
+
+The architect tests the new flow on a phone and desktop and says **approved**. Until then, do not start QuickBooks export.
+
+---
+
+## Step 11 — QuickBooks export, month close, reconciliation
+
+**Status:** Blocked on the answers below.
+
+**Goal:** Close a month, settle GCash, export parts-only IIF receipts, lock the month, and reconcile against QuickBooks.
+
+### Blocked by
+
+- [ ] Exact QuickBooks account names for cash and GCash.
+- [ ] Sales tax code: VAT or non-VAT.
+- [ ] Exact IIF header format for QuickBooks Desktop Enterprise 13.0 Retail Edition.
+- [ ] Custom-item carry rule at export.
+- [ ] Whether inactive QuickBooks items are ever imported.
+- [ ] Digital receipt verification: link only, or code as well.
+- [ ] Weekly or monthly GCash settlement reminder.
+
+### Planned scope
+
+- [ ] Month-close checklist and database-enforced month lock.
+- [ ] GCash settlement check with a written carry-forward reason.
+- [ ] Export preview: parts totals by day and payment method.
+- [ ] One IIF sales receipt per day per payment method.
+- [ ] Export history, checksum, and mapping settings.
+- [ ] Manual reconciliation screen showing Aligned or Difference.
+- [ ] Database tests for lock enforcement, export totals, and settlement blocking.
+
+**GATE:** Architect answers the questions, then approves the export design.
+
+---
+
+## Step 12 — Sales-log UAT and production cutover
+
+- [ ] Import the active QuickBooks item list into production.
+- [ ] Create two staff accounts with equal access.
+- [ ] Run a full shop day in parallel with the paper book.
+- [ ] Verify daily and monthly totals against QuickBooks.
+- [ ] Install the PWA on both phones.
+- [ ] Confirm the nightly backup restore.
+- [ ] Approve the production cutover.
+
+**GATE:** Architect says **approved**.
+
+---
+
+## Phase 2 — later
+
+Only after the shop has used the sales log and QuickBooks export for a while:
+
+- [ ] Customer storefront and online cart.
+- [ ] Customer QR ticket pass and live status.
+- [ ] Camera QR scanner.
+- [ ] Part photos.
+- [ ] Partial returns and exchanges.
+- [ ] Supplier and purchase-order tracking.
+- [ ] Payroll and commission reports.
+
 
 ---
 
@@ -401,9 +494,9 @@ Screenshots: `docs/screenshots/step-03-shell-bay-desktop.png`, `step-03-shell-ba
 
 ---
 
-## Step 10 — Phase 2
+## Retired Step 10 — Phase 2 (first draft)
 
-Only after the shop has used phase 1 for a while:
+This section was written before the sales-log redesign. It is kept only as history. The current plan is the sales log and QuickBooks export above; the storefront, QR pass, camera scanner, photos, and returns are not scheduled.
 
 - [ ] Customer storefront and online cart.
 - [ ] Customer QR ticket pass and live status.

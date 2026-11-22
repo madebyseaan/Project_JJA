@@ -45,47 +45,47 @@ function renderApp(
   return router;
 }
 
-test('redirects the root to the bay', async () => {
+test('redirects the root to orders', async () => {
   const router = renderApp('/', signedInValue(ownerProfile));
 
-  expect(await screen.findByRole('heading', { name: 'Bay' })).toBeInTheDocument();
-  expect(router.state.location.pathname).toBe('/bay');
+  expect(await screen.findByRole('heading', { name: 'Orders' })).toBeInTheDocument();
+  expect(router.state.location.pathname).toBe('/orders');
 });
 
-test('shows the stock route', async () => {
-  renderApp('/inventory', signedInValue(ownerProfile));
+test('shows the items route', async () => {
+  renderApp('/items', signedInValue(ownerProfile));
 
-  expect(await screen.findByRole('heading', { name: 'Stock' })).toBeInTheDocument();
+  expect(await screen.findByRole('heading', { name: 'Items' })).toBeInTheDocument();
 });
 
-test('shows the sales route to the mechanic', async () => {
-  renderApp('/sales', signedInValue(mechanicProfile));
+test('shows reports to the mechanic', async () => {
+  const router = renderApp('/reports', signedInValue(mechanicProfile));
 
-  expect(await screen.findByRole('heading', { name: 'Sales' })).toBeInTheDocument();
+  expect(await screen.findByRole('heading', { name: 'Reports' })).toBeInTheDocument();
+  expect(router.state.location.pathname).toBe('/reports');
 });
 
-test('shows the owner route to the owner', async () => {
-  renderApp('/owner', signedInValue(ownerProfile));
+test('shows the GCash route inside reports', async () => {
+  renderApp('/reports/gcash', signedInValue(mechanicProfile));
 
-  expect(await screen.findByRole('heading', { name: 'Owner' })).toBeInTheDocument();
+  expect(await screen.findByRole('heading', { name: 'GCash' })).toBeInTheDocument();
 });
 
-test('keeps a mechanic out of the owner route', async () => {
-  const router = renderApp('/owner', signedInValue(mechanicProfile));
+test('shows settings to either staff member', async () => {
+  renderApp('/settings', signedInValue(mechanicProfile));
 
-  expect(await screen.findByRole('heading', { name: 'Bay' })).toBeInTheDocument();
-  expect(router.state.location.pathname).toBe('/bay');
+  expect(await screen.findByRole('heading', { name: 'Settings' })).toBeInTheDocument();
 });
 
 test('sends signed-out staff to login', async () => {
-  const router = renderApp('/bay', signedOutValue());
+  const router = renderApp('/orders', signedOutValue());
 
   await waitFor(() => expect(router.state.location.pathname).toBe('/login'));
 });
 
 test('sends locked staff to the lock screen', async () => {
   const router = renderApp(
-    '/bay',
+    '/orders',
     signedInValue(ownerProfile),
     pinLockValue({ unlocked: false, hasPin: true }),
   );

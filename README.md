@@ -1,8 +1,8 @@
-# J.J.A Motor Accessories & Repair POS
+# J.J.A Motor Accessories & Repair Sales Log
 
-A phone-friendly web app for **J.J.A Motor Accessories and Motorcycle Repair Shop** (Est. 2023): walk-in tickets, inventory, payments, tamper-evident e-receipts, and daily sales for QuickBooks Desktop.
+A phone-friendly web app for **J.J.A Motor Accessories and Motorcycle Repair Shop** (Est. 2023): a daily sales log for parts and labor, helper splits, extras, cash/GCash payments, GCash held, reports, and optional digital receipts. The item list comes from QuickBooks; the app does not track stock.
 
-**Status:** Phase 1 is built through the owner dashboard and launch tooling. Steps 03–08 are verified by `npm run check` and the CI database job; launch is waiting on deployment secrets, a real-device UAT day, and the restore drill. See [`docs/roadmap.md`](docs/roadmap.md).
+**Status:** The sales-log core is implemented and in review. QuickBooks export, month close, and reconciliation are the next step, blocked on the accountant/QuickBooks answers. See [`docs/roadmap.md`](docs/roadmap.md).
 
 **Budget:** ₱0 per month. Static React app on Cloudflare, Supabase Free for auth, database, and realtime.
 
@@ -14,7 +14,7 @@ A phone-friendly web app for **J.J.A Motor Accessories and Motorcycle Repair Sho
 |---|---|
 | [`docs/roadmap.md`](docs/roadmap.md) | Step-by-step delivery order and approval gates |
 | [`docs/spec.md`](docs/spec.md) | Product and technical specification — the source of truth |
-| [`docs/design.md`](docs/design.md) | Service Bay Ledger design system |
+| [`docs/design.md`](docs/design.md) | Service Ledger design system |
 | [`AGENTS.md`](AGENTS.md) | Engineering rules and the contract for AI agents |
 | [`docs/runbook.md`](docs/runbook.md) | Deploy, backup, restore, and incident procedures |
 | [`docs/decisions/`](docs/decisions/) | Architecture decision records |
@@ -107,7 +107,7 @@ Never change the schema from the Supabase dashboard. Use migrations.
 src/
   app/            router, providers, layouts, guards
   components/ui/  shadcn primitives
-  features/       auth, bay, inventory, owner, pwa, receipts, settings
+  features/       auth, sales, pwa, receipts (legacy bay/inventory/owner retained)
   hooks/          cross-feature hooks
   lib/            supabase, money, dates, csv, errors, print, pin
   routes/         thin page components
@@ -131,9 +131,8 @@ scripts/
 
 - The browser never writes transactional tables directly; use PostgreSQL functions.
 - Money is integer centavos; the database computes totals.
-- Stock changes always write a ledger row in the same transaction.
-- Completed tickets and receipts are immutable. Void the sale and create a new ticket.
-- Roles are enforced by RLS and functions, not by hiding buttons.
+- There is no stock tracking. QuickBooks owns stock and accounting.
+- Both staff have equal access; sales-log functions are staff-only, not owner-only.
 - The service-role key never reaches the browser.
 - No source file may exceed 1,000 lines; split by responsibility.
 - The repository root contains only `README.md` and `AGENTS.md`; other docs go under `docs/`.

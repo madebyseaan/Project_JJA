@@ -1,12 +1,10 @@
-import { ChartNoAxesCombined, Package, ReceiptText, Wrench } from 'lucide-react';
+import { BarChart3, Package, ReceiptText, Settings } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { NavLink } from 'react-router';
 
 import { cn } from '@/lib/utils';
-import type { Role } from '@/types/domain';
 
 type AppNavProps = {
-  role: Role;
   variant: 'rail' | 'tabs';
   className?: string;
 };
@@ -15,19 +13,16 @@ type NavItem = {
   label: string;
   to: string;
   Icon: LucideIcon;
-  ownerOnly?: boolean;
 };
 
 const ITEMS: NavItem[] = [
-  { label: 'Bay', to: '/bay', Icon: Wrench },
-  { label: 'Stock', to: '/inventory', Icon: Package },
-  { label: 'Sales', to: '/sales', Icon: ReceiptText },
-  { label: 'Owner', to: '/owner', Icon: ChartNoAxesCombined, ownerOnly: true },
+  { label: 'Orders', to: '/orders', Icon: ReceiptText },
+  { label: 'Items', to: '/items', Icon: Package },
+  { label: 'Reports', to: '/reports', Icon: BarChart3 },
+  { label: 'Settings', to: '/settings', Icon: Settings },
 ];
 
-export function AppNav({ role, variant, className }: AppNavProps) {
-  const items = ITEMS.filter((item) => !item.ownerOnly || role === 'owner');
-
+export function AppNav({ variant, className }: AppNavProps) {
   return (
     <nav
       aria-label="Main"
@@ -38,7 +33,7 @@ export function AppNav({ role, variant, className }: AppNavProps) {
       )}
     >
       <ul className={cn(variant === 'rail' ? 'flex flex-col gap-2' : 'flex')}>
-        {items.map(({ label, to, Icon }) => (
+        {ITEMS.map(({ label, to, Icon }) => (
           <li key={to} className={variant === 'tabs' ? 'flex-1' : undefined}>
             <NavLink
               to={to}

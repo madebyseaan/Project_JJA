@@ -22,23 +22,23 @@ The Supabase Free plan allows two active projects. Do not create a third without
 
 1. Merge a pull request to `main`.
 2. GitHub Actions runs typecheck, lint, format, unit tests, database tests, build, and E2E.
-3. On success, the deploy job builds and runs `wrangler deploy`.
-4. Open the production URL and run the smoke test:
-   - sign in as the mechanic,
-   - create a test ticket,
-   - add a part,
-   - complete with cash,
-   - open the receipt,
-   - verify the receipt,
-   - check that stock decreased,
-   - sign in as the owner and confirm the sale appears,
-   - void the test sale or leave it as a training record (do not leave fake money in the drawer).
+3. On success, the deploy workflow applies pending migrations with `supabase db push --remote "$SUPABASE_DB_URL"` using the CI secret. If the secret is missing or the migration fails, the deploy stops.
+4. The deploy job then builds and runs `wrangler deploy`.
+5. Open the production URL and run the smoke test on staging or with a real order:
+   - sign in as Dad or Uncle,
+   - open **Orders**, change the date, and confirm today’s totals load,
+   - create an order with one catalog item, labor, a cash payment, and check the daily total,
+   - open the order and share its digital receipt,
+   - open **Reports** and confirm the month total,
+   - open **GCash** and confirm the shop-held balance,
+   - do not leave a fake order in production reports. Use staging for destructive smoke tests.
 
 ### Manual deploy (incident only)
 
 ```bash
 npm ci
 npm run check
+npx supabase db push --remote "$SUPABASE_DB_URL" --yes
 npm run deploy
 ```
 
@@ -47,7 +47,7 @@ Record why the normal path was bypassed.
 ### PWA updates
 
 - The service worker uses `prompt`, not auto-update. Staff see **A new version is ready** and tap **Update now**.
-- Never force a reload while a ticket form is open.
+- Never force a reload while an order form is open.
 - The service worker is `NetworkOnly` for every `*.supabase.co` request. Do not add runtime caching for Supabase.
 - If a device is stuck on an old shell, close every app tab and reopen the PWA. As a last resort, clear site data for the app origin; this also clears the local PIN and requires a password sign-in.
 
@@ -65,17 +65,24 @@ Record why the normal path was bypassed.
 
 ## 4. Migrations
 
+1. Write the migration in `supabase/migrations`.
+2. Run `npx supabase db reset` locally if Docker is available, then `npm run test:db`.
+3. If Docker is unavailable, push the branch and let CI run the database job.
+4. Apply to staging first with `npm run db:push`, then test the app.
+5. After the migration is applied, run `npm run db:types` if the project has `src/types/database.types.ts`, and commit it.
+6. Apply to production only after CI and staging pass.
+
 ```bash
 # after creating a migration
 npm run db:push        # apply to the linked project (staging first)
-npm run db:types       # regenerate types
+npm run db:types       # regenerate types when the generated file exists
 npm run db:types:check # confirm the generated file is current
 ```
 
 Rules:
 
 - Apply to staging, test, then production.
-- Never edit an applied migration.
+- Never edit an applied migration. Roll forward with a new one.
 - Never change the schema in the Supabase dashboard.
 - Back up before a destructive migration.
 - A migration that drops or renames a column needs a data migration and a rollback note.
@@ -171,9 +178,9 @@ Symptom: the app shows network errors; the Supabase dashboard says the project i
 2. Update GitHub Actions secrets.
 3. Never put it in the frontend.
 
-### Receipt HMAC secret
+### Legacy receipt HMAC secret
 
-The secret is stored in `private.app_secrets` and backed up in GitHub Actions. Rotating it invalidates verification for old receipts unless you keep the old key for verification. For phase 1, do not rotate it. If it is exposed, plan a migration that stores a `key_version` per receipt and keeps old keys for verification.
+The secret is stored in `private.app_secrets` and backed up in GitHub Actions. It is used only by the legacy receipt and verification functions. New sales-log digital receipts use a random public token and do not use HMAC. Do not rotate the legacy secret unless old receipt verification is intentionally retired; if it is exposed, plan a migration that stores a `key_version` per old receipt and keeps old keys for verification.
 
 ---
 
@@ -182,43 +189,49 @@ The secret is stored in `private.app_secrets` and backed up in GitHub Actions. R
 1. Choose an employee ID, e.g. `JJA-003`.
 2. Create the user in Supabase Auth with the hidden email `<employee-id>@staff.jja.internal` (lowercase), a password, and **Auto Confirm User** on. The address is never used for mail.
 3. The `profiles` trigger creates a `mechanic` profile with the employee ID.
-4. Set `display_name` and, if needed, role to `owner` or `mechanic` deliberately.
+4. Set `display_name`. The sales log does not use the legacy `owner`/`mechanic` role for access.
 5. Ask the user to sign in with the employee ID, set a PIN, and install the PWA.
-6. Test the role: a mechanic must not see owner routes or be able to call owner functions.
+6. Test access: the new user must see **Orders**, **Items**, **Reports**, and **Settings**, and must be able to create an order. Anon users must not read sales tables.
 
 ---
 
-## 10. Daily close
+## 10. Daily sales review
 
-1. Owner opens **Owner → Day Close**.
-2. Compare expected cash with the physical drawer.
-3. Enter the counted cash and notes.
-4. Investigate any variance above the shop's tolerance. Check:
-   - voided sales,
-   - deposits,
-   - GCash/Maya references,
-   - missing receipt numbers in the integrity report.
-5. The close is a snapshot; it does not lock the day.
+1. Open **Orders** and confirm today’s date.
+2. Check parts, labor, cash, GCash, and the order count.
+3. Open each order if a number looks wrong; edit the order while the month is open.
+4. Open **Reports** for the month and compare the daily rows with the paper record.
+5. Open **GCash** and confirm who is holding shop money.
+6. Record any transfer to the shop bank as soon as it happens.
+7. Month close, QuickBooks export, and month lock arrive in the next step; until then, do not promise a locked month.
+
+### Import the QuickBooks item list
+
+1. In QuickBooks Desktop, export **Lists → Item List → Excel/CSV**.
+2. Run the one-time importer with a staff account and the private CSV:
+
+```bash
+SUPABASE_URL=... \
+SUPABASE_ANON_KEY=... \
+STAFF_EMPLOYEE_ID=JJA-001 \
+STAFF_PASSWORD=... \
+node scripts/import-quickbooks-items.mjs --file draft.CSV
+```
+
+3. Expect counts such as `1,053 new, 0 updated, 266 skipped` and `Deactivated 0 item(s) no longer in the list`. A second run must show `0 new, 1,053 updated`.
+4. Only active **Inventory Part** rows are imported. Stock quantities are ignored.
+5. A full-list run also deactivates catalog items that disappeared from QuickBooks. If you are importing a partial list, add `--no-full-sync`.
+6. The CSV stays outside the repository. Never commit it.
 
 ---
 
-## 11. Receipt integrity
+## 11. Digital receipt checks
 
-Owner → Audit → **Check integrity**.
-
-It reports:
-
-- receipts whose stored hash does not match the recomputed hash,
-- missing receipt numbers for each business date,
-- voided sales.
-
-If a mismatch appears:
-
-1. Do not edit the row.
-2. Compare the snapshot with the ticket and payments.
-3. Check the audit log and Supabase database logs.
-4. If the database was tampered with, restore from the last known-good backup and investigate access.
-5. Rotate credentials if compromise is suspected.
+- The receipt is optional and public at `/s/<token>`.
+- It shows the order number, date, items, labor, optional tip, total charged, payments, change, and net paid.
+- It never shows the internal labor split, costs, or notes.
+- If a customer disputes a receipt, open the order in **Orders** and compare the values. There is no verification code in the current phase.
+- The old `/r/<token>` receipt and `/verify` page remain only for legacy links and old records.
 
 ---
 
@@ -244,7 +257,7 @@ If a limit is approached, export data and review the paid plan. The upgrade path
 2. Is Supabase paused or erroring? Check the dashboard.
 3. Is it a bad deploy? Roll back.
 4. Is it a bad migration? Roll forward with a fix; do not edit history.
-5. Is data wrong? Check the audit log and stock ledger before changing anything.
-6. Is a receipt disputed? Verify the number and code; compare the snapshot.
+5. Is data wrong? Check the order, GCash allocations, audit events, and database logs before changing anything.
+6. Is a receipt disputed? Open the order by number and compare the digital receipt. There is no verification code in the current phase.
 7. Is a device lost? Revoke sessions and change the password.
 8. Write down what happened and update this runbook.

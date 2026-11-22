@@ -69,20 +69,34 @@ export function navLink(page: Page, name: string) {
 export async function signInAs(page: Page, user: TestUser): Promise<void> {
   const hash = await pinHash();
 
-  await page.route('**/rest/v1/profiles*', (route) =>
-    route.fulfill({
+  const profiles = [
+    {
+      id: owner.id,
+      employee_id: owner.employeeId,
+      display_name: owner.displayName,
+      role: owner.role,
+    },
+    {
+      id: mechanic.id,
+      employee_id: mechanic.employeeId,
+      display_name: mechanic.displayName,
+      role: mechanic.role,
+    },
+  ];
+
+  await page.route('**/rest/v1/profiles*', (route) => {
+    const requestUrl = new URL(route.request().url());
+    const idFilter = requestUrl.searchParams.get('id');
+    const rows = idFilter?.startsWith('eq.')
+      ? profiles.filter((row) => row.id === idFilter.slice(3))
+      : profiles;
+
+    return route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify([
-        {
-          id: user.id,
-          employee_id: user.employeeId,
-          display_name: user.displayName,
-          role: user.role,
-        },
-      ]),
-    }),
-  );
+      body: JSON.stringify(rows),
+    });
+  });
 
   await page.addInitScript(
     ({ sessionKey, session, pinKey, pinRecord }) => {
@@ -97,11 +111,11 @@ export async function signInAs(page: Page, user: TestUser): Promise<void> {
     },
   );
 
-  await page.goto('/bay');
+  await page.goto('/orders');
 
-  const bayHeading = page.getByRole('heading', { name: 'Bay', exact: true });
+  const ordersHeading = page.getByRole('heading', { name: 'Orders', exact: true });
   const lockHeading = page.getByRole('heading', { name: 'Welcome back' });
-  await lockHeading.or(bayHeading).waitFor({ timeout: 15_000 });
+  await lockHeading.or(ordersHeading).waitFor({ timeout: 15_000 });
 
   if (await lockHeading.isVisible()) {
     for (const digit of pin) {
@@ -109,5 +123,5 @@ export async function signInAs(page: Page, user: TestUser): Promise<void> {
     }
   }
 
-  await expect(bayHeading).toBeVisible();
+  await expect(ordersHeading).toBeVisible();
 }

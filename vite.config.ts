@@ -38,8 +38,8 @@ export default defineConfig({
         navigateFallback: '/index.html',
         runtimeCaching: [
           {
-            // Supabase responses must never be cached: they contain stock,
-            // prices, tickets, and staff data.
+            // Supabase responses must never be cached: they contain orders,
+            // prices, labor, GCash, and staff data.
             urlPattern: /^https:\/\/[^/]*\.supabase\.co\/.*/,
             handler: 'NetworkOnly',
           },
