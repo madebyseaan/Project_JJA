@@ -1,4 +1,4 @@
-import { ChartNoAxesCombined, Package, Wrench } from 'lucide-react';
+import { ChartNoAxesCombined, Package, ReceiptText, Wrench } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { NavLink } from 'react-router';
 
@@ -21,6 +21,7 @@ type NavItem = {
 const ITEMS: NavItem[] = [
   { label: 'Bay', to: '/bay', Icon: Wrench },
   { label: 'Stock', to: '/inventory', Icon: Package },
+  { label: 'Sales', to: '/sales', Icon: ReceiptText },
   { label: 'Owner', to: '/owner', Icon: ChartNoAxesCombined, ownerOnly: true },
 ];
 

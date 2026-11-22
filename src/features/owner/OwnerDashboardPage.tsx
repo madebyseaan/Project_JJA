@@ -49,7 +49,7 @@ export function OwnerDashboardPage() {
               variant="outline"
               size="touch"
               nativeButton={false}
-              render={<Link to="/owner/sales" />}
+              render={<Link to="/sales" />}
             >
               <ReceiptText aria-hidden="true" />
               Sales

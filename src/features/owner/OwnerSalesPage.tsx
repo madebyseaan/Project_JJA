@@ -17,6 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useAuth } from '@/features/auth/use-auth';
 import { formatManilaDate, formatManilaDateTime, manilaDateKey } from '@/lib/dates';
 import { toCsv } from '@/lib/csv';
 import { formatCentavos } from '@/lib/money';
@@ -72,9 +73,11 @@ function exportCsv(date: string, rows: SalesReceipt[]) {
 }
 
 export function OwnerSalesPage() {
+  const auth = useAuth();
   const [date, setDate] = useState(manilaDateKey());
   const [status, setStatus] = useState<StatusFilter>('ALL');
   const sales = useSales(date);
+  const isOwner = auth.status === 'signed-in' && auth.profile.role === 'owner';
 
   const filtered = useMemo(
     () => (sales.data ?? []).filter((receipt) => status === 'ALL' || receipt.status === status),
@@ -243,9 +246,14 @@ export function OwnerSalesPage() {
         </>
       )}
 
-      <Button variant="ghost" size="touch" nativeButton={false} render={<Link to="/owner" />}>
+      <Button
+        variant="ghost"
+        size="touch"
+        nativeButton={false}
+        render={<Link to={isOwner ? '/owner' : '/bay'} />}
+      >
         <ReceiptText aria-hidden="true" />
-        Back to the owner dashboard
+        {isOwner ? 'Back to the owner dashboard' : 'Back to the bay'}
       </Button>
     </div>
   );

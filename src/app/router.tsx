@@ -71,6 +71,10 @@ export const routes: RouteObject[] = [
                     element: <StockPage />,
                   },
                   {
+                    path: '/sales',
+                    element: <OwnerSalesPage />,
+                  },
+                  {
                     element: <RequireOwner />,
                     children: [
                       {
@@ -79,7 +83,7 @@ export const routes: RouteObject[] = [
                       },
                       {
                         path: '/owner/sales',
-                        element: <OwnerSalesPage />,
+                        element: <Navigate to="/sales" replace />,
                       },
                       {
                         path: '/owner/audit',
