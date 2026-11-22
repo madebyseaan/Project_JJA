@@ -205,6 +205,23 @@ The secret is stored in `private.app_secrets` and backed up in GitHub Actions. I
 6. Record any transfer to the shop bank as soon as it happens.
 7. Month close, QuickBooks export, and month lock arrive in the next step; until then, do not promise a locked month.
 
+### Import the QuickBooks item list
+
+1. In QuickBooks Desktop, export **Lists → Item List → Excel/CSV**.
+2. Run the one-time importer with a staff account and the private CSV:
+
+```bash
+SUPABASE_URL=... \
+SUPABASE_ANON_KEY=... \
+STAFF_EMPLOYEE_ID=JJA-001 \
+STAFF_PASSWORD=... \
+node scripts/import-quickbooks-items.mjs --file draft.CSV
+```
+
+3. Expect counts such as `1,053 new, 0 updated, 266 skipped`. A second run must show `0 new, 1,053 updated`.
+4. Only active **Inventory Part** rows are imported. Stock quantities are ignored.
+5. The CSV stays outside the repository. Never commit it.
+
 ---
 
 ## 11. Digital receipt checks
