@@ -30,6 +30,14 @@ describe('toAppError', () => {
   test('maps validation codes to a generic actionable message', () => {
     expect(toAppError({ message: 'INVALID_PRICE' }).code).toBe('INVALID_INPUT');
     expect(toAppError({ message: 'INVALID_QUANTITY' }).code).toBe('INVALID_INPUT');
+    expect(toAppError({ message: 'INVALID_GCASH_RECIPIENT' }).code).toBe('INVALID_INPUT');
+  });
+
+  test('maps sales-log money codes to specific messages', () => {
+    expect(toAppError({ message: 'CHANGE_TOO_LARGE' }).message).toContain('Change cannot');
+    expect(toAppError({ message: 'INSUFFICIENT_GCASH' }).message).toContain('GCash held');
+    expect(toAppError({ message: 'INVALID_LABOR_SPLIT' }).message).toContain('helper');
+    expect(toAppError({ message: 'ORDER_LOCKED' }).message).toContain('QuickBooks');
   });
 
   test('maps network failures and hides unknown SQL errors', () => {

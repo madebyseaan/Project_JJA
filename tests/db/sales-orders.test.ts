@@ -46,6 +46,7 @@ async function saveOrder(
     helperUserId?: string | null;
     items: {
       catalog_item_id: string | null;
+      item_name?: string | null;
       qty: number;
       unit_price_centavos: number;
       is_custom: boolean;
@@ -426,6 +427,7 @@ describe('sales orders', () => {
         },
         {
           catalog_item_id: null,
+          item_name: 'Custom chain',
           qty: 2,
           unit_price_centavos: 5000,
           is_custom: true,

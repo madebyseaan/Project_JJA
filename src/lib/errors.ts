@@ -11,6 +11,13 @@ export type AppErrorCode =
   | 'FORBIDDEN'
   | 'RECEIPT_NOT_ISSUED'
   | 'ALREADY_COMPLETED'
+  | 'INVALID_DATE'
+  | 'INVALID_LABOR_SPLIT'
+  | 'CHANGE_TOO_LARGE'
+  | 'EMPTY_ORDER'
+  | 'INSUFFICIENT_GCASH'
+  | 'ORDER_NOT_FOUND'
+  | 'ORDER_LOCKED'
   | 'INVALID_INPUT'
   | 'NETWORK'
   | 'UNKNOWN';
@@ -28,13 +35,20 @@ export class AppError extends Error {
 const UNKNOWN_MESSAGE = 'Something went wrong. Try again; if it persists, contact Sean.';
 
 const DEFAULT_MESSAGES: Record<string, string> = {
-  FORBIDDEN: 'Only the owner can do this.',
+  FORBIDDEN: 'You do not have access to this action.',
   NOT_VERIFIED: 'Verify all parts before completing the ticket.',
   TICKET_NOT_OPEN: 'This ticket is already closed.',
   ALREADY_COMPLETED: 'This ticket is already completed.',
   RECEIPT_NOT_ISSUED: 'This sale has no active receipt.',
-  PAYMENT_MISMATCH: 'Payments do not match the total.',
+  PAYMENT_MISMATCH: 'Payments do not match the total and extras.',
   INSUFFICIENT_STOCK: 'Not enough stock for this part. Reduce the quantity or restock.',
+  INVALID_DATE: 'Choose a valid business date.',
+  INVALID_LABOR_SPLIT: 'The helper’s share cannot be more than the total labor.',
+  CHANGE_TOO_LARGE: 'Change cannot be more than the payment for that method.',
+  EMPTY_ORDER: 'Add at least one item, labor, or extra.',
+  INSUFFICIENT_GCASH: 'That is more than the GCash held. Check the balance and try again.',
+  ORDER_NOT_FOUND: 'This order was not found. It may have been removed.',
+  ORDER_LOCKED: 'This month has been exported. Corrections are made in QuickBooks.',
   INVALID_INPUT: 'Check the entered values and try again.',
   NETWORK: 'No connection. Nothing was saved.',
   UNKNOWN: UNKNOWN_MESSAGE,
@@ -48,6 +62,13 @@ const CODE_MESSAGES: Record<string, AppErrorCode> = {
   FORBIDDEN: 'FORBIDDEN',
   RECEIPT_NOT_ISSUED: 'RECEIPT_NOT_ISSUED',
   ALREADY_COMPLETED: 'ALREADY_COMPLETED',
+  INVALID_DATE: 'INVALID_DATE',
+  INVALID_LABOR_SPLIT: 'INVALID_LABOR_SPLIT',
+  CHANGE_TOO_LARGE: 'CHANGE_TOO_LARGE',
+  EMPTY_ORDER: 'EMPTY_ORDER',
+  INSUFFICIENT_GCASH: 'INSUFFICIENT_GCASH',
+  ORDER_NOT_FOUND: 'ORDER_NOT_FOUND',
+  ORDER_LOCKED: 'ORDER_LOCKED',
 };
 
 const INVALID_INPUT_CODES = new Set([
@@ -60,6 +81,7 @@ const INVALID_INPUT_CODES = new Set([
   'INVALID_THRESHOLD',
   'INVALID_MODELS',
   'INVALID_QUANTITY',
+  'INVALID_QTY',
   'INVALID_REASON',
   'INVALID_NOTE',
   'INVALID_AMOUNT',
@@ -73,6 +95,19 @@ const INVALID_INPUT_CODES = new Set([
   'INVALID_STATUS_TRANSITION',
   'INVALID_CUSTOMER',
   'INVALID_BIKE',
+  'INVALID_ITEM',
+  'INVALID_ITEM_NAME',
+  'INVALID_LABOR',
+  'INVALID_EXTRA',
+  'INVALID_EXTRA_USER',
+  'INVALID_MAIN_USER',
+  'INVALID_HELPER',
+  'INVALID_GCASH_RECIPIENT',
+  'INVALID_CASH_RECIPIENT',
+  'INVALID_DESTINATION',
+  'INVALID_COUNTERPARTY',
+  'INVALID_ORDER_DATA',
+  'INVALID_USER',
   'EMPTY_TICKET',
   'PART_NOT_FOUND',
   'PART_INACTIVE',
