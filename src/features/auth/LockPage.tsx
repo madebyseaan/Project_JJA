@@ -102,10 +102,10 @@ export function LockPage() {
     stage === 'unlock' ? 'Welcome back' : stage === 'confirm' ? 'Confirm your PIN' : 'Set your PIN';
   const subtitle =
     stage === 'unlock'
-      ? 'Enter your 4-digit PIN to continue.'
+      ? 'Enter the 4-digit PIN for this device.'
       : stage === 'confirm'
         ? 'Enter the same 4 digits again.'
-        : 'Choose a 4-digit PIN for the start of your shift.';
+        : 'Choose a 4-digit PIN for this device. You will set one on each phone or computer.';
 
   return (
     <main className="bg-paper min-h-screen md:grid md:grid-cols-[1.05fr_0.95fr]">
@@ -197,7 +197,7 @@ export function LockPage() {
 
           <p className="text-steel mt-4 flex items-center justify-center gap-2 text-xs">
             <ShieldCheck className="size-4 shrink-0" aria-hidden="true" />
-            <span>Locks after 5 minutes idle. The PIN stays on this device.</span>
+            <span>Locks after 5 minutes idle. Each phone or computer has its own PIN.</span>
           </p>
         </div>
       </section>
