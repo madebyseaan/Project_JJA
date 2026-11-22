@@ -100,6 +100,7 @@ Status: **Implemented 22 Nov 2026; waiting for the human architect to test and a
 - [x] Old inventory/bay/owner routes removed from navigation; old links kept for legacy receipts.
 - [x] Database tests for orders, labor splits, payments, GCash, receipts, RLS, and direct-write denial.
 - [x] Unit and E2E coverage for the new flow.
+- [x] Review screenshots in `docs/screenshots/step-10-*.png` (mobile and desktop).
 
 ### Gate
 
