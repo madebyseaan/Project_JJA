@@ -106,6 +106,14 @@ Rules:
 
 `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are public by design, but they still belong in GitHub secrets so the production build never points at staging by mistake. The deploy workflow will not build without them.
 
+`SUPABASE_DB_URL` must be the Supabase **Session pooler** connection string, not the direct `db.<ref>.supabase.co` host. GitHub-hosted runners do not have IPv6, and the direct database host resolves to IPv6. The pooler URL looks like:
+
+```text
+postgresql://postgres.<project-ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres
+```
+
+Get it from Supabase **Connect → Session pooler**. The transaction pooler on port 6543 does not support `pg_dump`.
+
 Never put the service-role key in a `VITE_*` variable or the browser. `SUPABASE_DB_URL` and the service-role key are CI-only.
 
 ### Manual backup before a risky change
