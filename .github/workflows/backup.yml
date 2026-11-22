@@ -16,13 +16,16 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Dump the production database
+        id: dump
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
           if [ -z "$SUPABASE_DB_URL" ]; then
-            echo "SUPABASE_DB_URL secret is not configured." >&2
-            exit 1
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping backup: SUPABASE_DB_URL is not configured." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
           fi
+          echo "configured=true" >> "$GITHUB_OUTPUT"
           mkdir -p backups
           stamp="$(date -u +%Y%m%d)"
           pg_dump "$SUPABASE_DB_URL" \
@@ -33,6 +36,7 @@ jobs:
           gzip -9 "backups/jja-${stamp}.dump"
 
       - uses: actions/upload-artifact@v4
+        if: steps.dump.outputs.configured == 'true'
         with:
           name: jja-backup-${{ github.run_id }}
           path: backups/
