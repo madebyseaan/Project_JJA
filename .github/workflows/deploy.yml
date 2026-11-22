@@ -19,15 +19,30 @@ jobs:
         with:
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
+      - name: Check deployment secrets
+        id: check
+        run: |
+          if [ -n "${{ secrets.CLOUDFLARE_API_TOKEN }}" ] && [ -n "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "Cloudflare secrets are not configured; skipping deploy." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
       - uses: actions/setup-node@v4
+        if: steps.check.outputs.ready == 'true'
         with:
           node-version: 24
           cache: npm
 
-      - run: npm ci
-      - run: npm run build
+      - if: steps.check.outputs.ready == 'true'
+        run: npm ci
+
+      - if: steps.check.outputs.ready == 'true'
+        run: npm run build
 
       - uses: cloudflare/wrangler-action@v3
+        if: steps.check.outputs.ready == 'true'
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

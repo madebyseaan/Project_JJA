@@ -19,8 +19,8 @@ jobs:
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
           if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
-            echo "SUPABASE_URL and SUPABASE_ANON_KEY secrets are required." >&2
-            exit 1
+            echo "Skipping keep-alive: SUPABASE_URL and SUPABASE_ANON_KEY are not configured." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
           fi
           curl --fail --silent --show-error \
             "$SUPABASE_URL/rest/v1/rpc/ping" \
