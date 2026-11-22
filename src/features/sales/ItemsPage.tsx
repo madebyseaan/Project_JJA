@@ -207,6 +207,7 @@ export function ItemsPage() {
       `${item.name} ${item.sku ?? ''} ${item.description}`.toLowerCase().includes(term),
     );
   }, [items, search]);
+  const visible = filtered.slice(0, 200);
 
   return (
     <div className="space-y-5">
@@ -283,7 +284,7 @@ export function ItemsPage() {
             {(items?.length ?? 0) === 1 ? '' : 's'}
           </p>
           <ul className="divide-line border-line bg-surface divide-y rounded-lg border">
-            {filtered.map((item) => (
+            {visible.map((item) => (
               <li key={item.id} className="flex flex-wrap items-start justify-between gap-3 p-4">
                 <div className="min-w-0 flex-1">
                   <p className="font-medium">{item.name}</p>
@@ -300,6 +301,12 @@ export function ItemsPage() {
               </li>
             ))}
           </ul>
+          {filtered.length > visible.length ? (
+            <p className="text-steel text-sm">
+              Showing the first {visible.length} of {filtered.length} matches. Refine the search to
+              narrow the list.
+            </p>
+          ) : null}
         </>
       )}
 

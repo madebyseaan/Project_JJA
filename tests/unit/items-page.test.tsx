@@ -98,6 +98,18 @@ describe('ItemsPage', () => {
     expect(screen.getAllByRole('button', { name: /import item list/i }).length).toBeGreaterThan(0);
   });
 
+  test('caps the rendered list and asks for a narrower search', () => {
+    catalogState.data = Array.from({ length: 205 }, (_, index) => ({
+      ...brake,
+      id: `item-${index}`,
+      name: `Item ${index}`,
+    }));
+
+    renderPage();
+
+    expect(screen.getByText(/Showing the first 200 of 205 matches/)).toBeInTheDocument();
+  });
+
   test('shows a retry state when the catalog fails', () => {
     catalogState.isError = true;
     catalogState.error = new Error('No connection.');
