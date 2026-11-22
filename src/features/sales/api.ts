@@ -1,6 +1,7 @@
 import { toAppError } from '@/lib/errors';
 import { getSupabaseClient } from '@/lib/supabase';
 
+import { collectPages } from './pagination';
 import type {
   CatalogItem,
   DailyReport,
@@ -237,14 +238,21 @@ function mapChange(row: ChangeRow): SalesChange {
 }
 
 export async function listCatalog(): Promise<CatalogItem[]> {
-  const { data, error } = await getSupabaseClient()
-    .from('catalog_items')
-    .select(CATALOG_COLUMNS)
-    .eq('is_active', true)
-    .order('name', { ascending: true });
+  const client = getSupabaseClient();
 
-  if (error) throw toAppError(error);
-  return ((data ?? []) as unknown as CatalogRow[]).map(mapCatalog);
+  const rows = await collectPages<CatalogRow>(async (from, to) => {
+    const { data, error } = await client
+      .from('catalog_items')
+      .select(CATALOG_COLUMNS)
+      .eq('is_active', true)
+      .order('name', { ascending: true })
+      .range(from, to);
+
+    if (error) throw toAppError(error);
+    return (data ?? []) as unknown as CatalogRow[];
+  });
+
+  return rows.map(mapCatalog);
 }
 
 export async function listStaff(): Promise<StaffProfile[]> {
