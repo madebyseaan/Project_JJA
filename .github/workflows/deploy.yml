@@ -22,11 +22,14 @@ jobs:
       - name: Check deployment secrets
         id: check
         run: |
-          if [ -n "${{ secrets.CLOUDFLARE_API_TOKEN }}" ] && [ -n "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" ]; then
+          if [ -n "${{ secrets.CLOUDFLARE_API_TOKEN }}" ] \
+            && [ -n "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" ] \
+            && [ -n "${{ secrets.VITE_SUPABASE_URL }}" ] \
+            && [ -n "${{ secrets.VITE_SUPABASE_ANON_KEY }}" ]; then
             echo "ready=true" >> "$GITHUB_OUTPUT"
           else
             echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "Cloudflare secrets are not configured; skipping deploy." >> "$GITHUB_STEP_SUMMARY"
+            echo "Deployment secrets are not configured; skipping deploy." >> "$GITHUB_STEP_SUMMARY"
           fi
 
       - uses: actions/setup-node@v4
@@ -40,6 +43,9 @@ jobs:
 
       - if: steps.check.outputs.ready == 'true'
         run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
 
       - uses: cloudflare/wrangler-action@v3
         if: steps.check.outputs.ready == 'true'
