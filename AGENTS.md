@@ -196,6 +196,7 @@ Rules:
 - `npm run test:db` and `npm run test:e2e` must pass in CI. Locally they may be skipped only if Docker is unavailable; say so explicitly in the PR.
 - Never run `db:reset`, `db:push`, or destructive SQL against production.
 - Deployment happens from `main` through CI, not from a laptop unless there is an incident and the runbook says so.
+- The deploy workflow applies pending migrations through `supabase db push` using the CI-only `SUPABASE_DB_URL` secret before it deploys the frontend. Do not run `db:push` against production from a laptop.
 
 ---
 

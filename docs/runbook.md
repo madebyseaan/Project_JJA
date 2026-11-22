@@ -22,8 +22,9 @@ The Supabase Free plan allows two active projects. Do not create a third without
 
 1. Merge a pull request to `main`.
 2. GitHub Actions runs typecheck, lint, format, unit tests, database tests, build, and E2E.
-3. On success, the deploy job builds and runs `wrangler deploy`.
-4. Open the production URL and run the smoke test on staging or with a real order:
+3. On success, the deploy workflow applies pending migrations with `supabase db push --remote "$SUPABASE_DB_URL"` using the CI secret. If the secret is missing or the migration fails, the deploy stops.
+4. The deploy job then builds and runs `wrangler deploy`.
+5. Open the production URL and run the smoke test on staging or with a real order:
    - sign in as Dad or Uncle,
    - open **Orders**, change the date, and confirm today’s totals load,
    - create an order with one catalog item, labor, a cash payment, and check the daily total,
@@ -37,6 +38,7 @@ The Supabase Free plan allows two active projects. Do not create a third without
 ```bash
 npm ci
 npm run check
+npx supabase db push --remote "$SUPABASE_DB_URL" --yes
 npm run deploy
 ```
 
