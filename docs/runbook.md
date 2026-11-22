@@ -218,9 +218,10 @@ STAFF_PASSWORD=... \
 node scripts/import-quickbooks-items.mjs --file draft.CSV
 ```
 
-3. Expect counts such as `1,053 new, 0 updated, 266 skipped`. A second run must show `0 new, 1,053 updated`.
+3. Expect counts such as `1,053 new, 0 updated, 266 skipped` and `Deactivated 0 item(s) no longer in the list`. A second run must show `0 new, 1,053 updated`.
 4. Only active **Inventory Part** rows are imported. Stock quantities are ignored.
-5. The CSV stays outside the repository. Never commit it.
+5. A full-list run also deactivates catalog items that disappeared from QuickBooks. If you are importing a partial list, add `--no-full-sync`.
+6. The CSV stays outside the repository. Never commit it.
 
 ---
 

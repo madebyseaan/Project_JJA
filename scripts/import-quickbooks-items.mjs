@@ -51,7 +51,7 @@ function parseArgs(argv) {
     throw new Error('Pass the QuickBooks CSV path with --file <path>.');
   }
 
-  return { file };
+  return { file, fullSync: !argv.includes('--no-full-sync') };
 }
 
 function requiredEnv(name) {
@@ -124,7 +124,7 @@ function toItems(csvText) {
 }
 
 async function main() {
-  const { file } = parseArgs(process.argv.slice(2));
+  const { file, fullSync } = parseArgs(process.argv.slice(2));
   const url = requiredEnv('SUPABASE_URL');
   const anonKey = requiredEnv('SUPABASE_ANON_KEY');
   const employeeId = requiredEnv('STAFF_EMPLOYEE_ID').trim().toUpperCase();
@@ -176,6 +176,20 @@ async function main() {
   console.log(
     `Done. ${totals.inserted} new, ${totals.updated} updated, ${skipped + totals.skipped} skipped.`,
   );
+
+  if (fullSync && errors.length === 0) {
+    const { data, error } = await client.rpc('deactivate_missing_catalog_items', {
+      p_names: items.map((item) => item.name),
+    });
+
+    if (error) {
+      throw new Error(`Could not deactivate missing items: ${error.message}`);
+    }
+
+    console.log(`Deactivated ${data.deactivated} item(s) no longer in the list.`);
+  } else if (fullSync) {
+    console.warn('Skipped deactivation because some CSV rows had errors.');
+  }
 }
 
 main().catch((error) => {

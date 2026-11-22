@@ -349,6 +349,7 @@ A transfer cannot exceed the shop or labor balance held by that person. `INSUFFI
 - No stock quantity is imported.
 - Missing prices are reported as row errors; valid rows still import in batches.
 - The import is idempotent by item name. Re-import updates descriptions, prices, accounts, vendor, and active status.
+- A full-list import also deactivates catalog rows that are missing from the new export. Partial imports can skip this step with `--no-full-sync`.
 - Permanent item changes happen in QuickBooks first and are re-imported.
 - The private QuickBooks export file is never committed.
 

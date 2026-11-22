@@ -357,7 +357,7 @@ These are the highest-risk paths. Change them only with tests.
   - GCash allocation, held balances, and over-transfer rejection,
   - public receipt by token, missing token, and no internal split,
   - staff-only reads; anon denied; direct table writes denied,
-  - catalog import counts and idempotency.
+  - catalog import counts, idempotency, and full-list deactivation.
 - E2E: login → order → item → helper split → extra → mixed payment → change → save → daily list → edit → monthly report → GCash → digital receipt. Both staff see the same navigation.
 - Every bug fix gets a regression test.
 - Tests are deterministic. Reset the database between runs. Never test against production.

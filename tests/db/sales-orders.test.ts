@@ -564,4 +564,37 @@ describe('sales orders', () => {
     });
     expect(insertError).toMatchObject({ code: '42501' });
   });
+
+  it('deactivates catalog rows missing from a full list sync', async () => {
+    const { data: rows } = await uncleClient
+      .from('catalog_items')
+      .select('id,name')
+      .in('id', catalogIds);
+
+    const brake = rows?.find((row) => row.name.startsWith('Brake pad '));
+    const spark = rows?.find((row) => row.name.startsWith('Spark plug '));
+
+    if (!brake || !spark) {
+      throw new Error('Catalog fixtures are missing.');
+    }
+
+    const { data, error } = await uncleClient.rpc('deactivate_missing_catalog_items', {
+      p_names: [brake.name],
+    });
+
+    expect(error).toBeNull();
+    expect(data).toEqual({ deactivated: 1 });
+
+    const { data: after } = await uncleClient
+      .from('catalog_items')
+      .select('id,is_active')
+      .in('id', [brake.id, spark.id]);
+
+    expect(after).toEqual(
+      expect.arrayContaining([
+        { id: brake.id, is_active: true },
+        { id: spark.id, is_active: false },
+      ]),
+    );
+  });
 });
