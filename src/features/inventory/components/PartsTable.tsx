@@ -28,8 +28,12 @@ type PartsTableProps = {
   onLedger: (part: Part) => void;
 };
 
+function isOutOfStock(part: Part): boolean {
+  return part.isActive && part.availableQty <= 0;
+}
+
 function isLowStock(part: Part): boolean {
-  return part.isActive && part.availableQty <= part.lowStockThreshold;
+  return part.isActive && part.availableQty > 0 && part.availableQty <= part.lowStockThreshold;
 }
 
 function PartStatus({ part }: { part: Part }) {
@@ -37,6 +41,14 @@ function PartStatus({ part }: { part: Part }) {
     return (
       <span className="border-line text-steel inline-flex items-center gap-1 rounded-sm border px-1.5 py-0.5 text-xs font-medium">
         Inactive
+      </span>
+    );
+  }
+
+  if (isOutOfStock(part)) {
+    return (
+      <span className="border-danger/40 bg-danger/10 text-danger inline-flex items-center gap-1 rounded-sm border px-1.5 py-0.5 text-xs font-medium">
+        Out of stock
       </span>
     );
   }
@@ -117,7 +129,12 @@ export function PartsTable(props: PartsTableProps) {
           </TableHeader>
           <TableBody>
             {parts.map((part) => (
-              <TableRow key={part.id} className={isLowStock(part) ? 'bg-warn/5' : undefined}>
+              <TableRow
+                key={part.id}
+                className={
+                  isOutOfStock(part) ? 'bg-danger/5' : isLowStock(part) ? 'bg-warn/5' : undefined
+                }
+              >
                 <TableCell>
                   <div className="min-w-0">
                     <p className="font-medium">{part.name}</p>
@@ -176,9 +193,11 @@ export function PartsTable(props: PartsTableProps) {
           <li
             key={part.id}
             className={
-              isLowStock(part)
-                ? 'border-warn/50 bg-surface rounded-lg border border-l-4 p-3'
-                : 'border-line bg-surface rounded-lg border border-l-4 border-l-transparent p-3'
+              isOutOfStock(part)
+                ? 'border-danger/50 bg-surface rounded-lg border border-l-4 p-3'
+                : isLowStock(part)
+                  ? 'border-warn/50 bg-surface rounded-lg border border-l-4 p-3'
+                  : 'border-line bg-surface rounded-lg border border-l-4 border-l-transparent p-3'
             }
           >
             <div className="flex items-start justify-between gap-2">

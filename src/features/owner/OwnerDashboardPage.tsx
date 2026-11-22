@@ -195,14 +195,14 @@ export function OwnerDashboardPage() {
           <div className="grid gap-4 lg:grid-cols-2">
             <section className="border-line bg-surface rounded-lg border">
               <div className="border-line border-b p-4">
-                <h2 className="font-display text-xl font-semibold">Low stock</h2>
+                <h2 className="font-display text-xl font-semibold">Low / out of stock</h2>
                 <p className="text-steel text-sm">
                   {summary.data.lowStock.length} part
                   {summary.data.lowStock.length === 1 ? '' : 's'} at or below the threshold
                 </p>
               </div>
               {summary.data.lowStock.length === 0 ? (
-                <p className="text-steel p-4 text-sm">Nothing is low on stock.</p>
+                <p className="text-steel p-4 text-sm">Nothing needs restocking.</p>
               ) : (
                 <ul className="divide-line divide-y">
                   {summary.data.lowStock.map((part) => (

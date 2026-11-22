@@ -86,6 +86,15 @@ beforeEach(() => {
         availableQty: 1,
         lowStockThreshold: 3,
       }),
+      makePart({
+        id: 'part-3',
+        name: 'Air filter',
+        sku: 'AF-03',
+        category: 'Filters',
+        stockOnHand: 0,
+        availableQty: 0,
+        lowStockThreshold: 3,
+      }),
     ],
     refetch: vi.fn(),
   };
@@ -100,6 +109,7 @@ describe('InventoryPage', () => {
     expect(screen.getAllByText('Brake pad').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Spark plug').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Low stock').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Out of stock').length).toBeGreaterThan(0);
   });
 
   test('keeps the mechanic read-only', () => {
@@ -122,13 +132,14 @@ describe('InventoryPage', () => {
     expect(screen.queryAllByText('Brake pad')).toHaveLength(0);
   });
 
-  test('filters to low stock only', async () => {
+  test('filters to items that need restocking', async () => {
     const user = userEvent.setup();
     render(<InventoryPage />);
 
-    await user.click(screen.getByRole('button', { name: /low stock/i }));
+    await user.click(screen.getByRole('button', { name: /needs restock/i }));
 
     expect(screen.getAllByText('Spark plug').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Air filter').length).toBeGreaterThan(0);
     expect(screen.queryAllByText('Brake pad')).toHaveLength(0);
   });
 

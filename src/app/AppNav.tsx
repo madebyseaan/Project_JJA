@@ -32,7 +32,8 @@ export function AppNav({ role, variant, className }: AppNavProps) {
     <nav
       aria-label="Main"
       className={cn(
-        variant === 'tabs' && 'border-line bg-surface fixed inset-x-0 bottom-0 z-40 border-t',
+        variant === 'tabs' &&
+          'border-line bg-surface shrink-0 border-t pb-[env(safe-area-inset-bottom)]',
         className,
       )}
     >
