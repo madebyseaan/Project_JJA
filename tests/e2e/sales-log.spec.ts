@@ -475,6 +475,7 @@ test('records a parts-only sale in one save', async ({ page }) => {
   await expect(page.getByText('No jobs waiting for payment.')).toBeVisible();
   await expect(page.getByText(orderNo)).toBeVisible();
   await expect(page.getByText('No paid sales on this date')).toHaveCount(0);
+  expect(await page.locator('main').evaluate((element) => element.scrollTop)).toBe(0);
 });
 
 test('saves an unpaid job, takes payment later, and shows both lists', async ({ page }) => {
