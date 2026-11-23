@@ -89,7 +89,17 @@ Two staff accounts, both with the same access:
 5. If the item is not in QuickBooks, add a **custom line**: name, quantity, price. It is marked “not in QuickBooks”.
 6. Enter **total labor**. If someone helped, choose the helper and enter the helper’s share. The main worker receives `total labor − helper share`.
 7. The summary shows **Job total = parts + labor**.
-8. Save. The job appears under **Open jobs** as **Unpaid**. No payment is recorded yet.
+8. Save. A job with labor appears under **Open jobs** as **Unpaid**. A parts-only sale can be paid in the same save (below).
+
+If the job has at least one item and **total labor is zero**, the form shows **Payment now** instead:
+
+- Cash is already selected.
+- The amount is already the total, and can be adjusted if the customer hands more cash.
+- GCash can be chosen; the recipient defaults to the main worker.
+- **Save & record payment** creates the paid sale in one save.
+- **Pay later** saves it as an open job instead.
+
+This is the shortcut for a parts-only purchase, such as buying a battery without any mechanic work.
 
 ### Step 2 — Payment
 
@@ -102,8 +112,8 @@ Two staff accounts, both with the same access:
 11. Change is **calculated automatically**. Cash change is returned first, then GCash from the people who received it. Staff never type change rows.
 12. After the payment, add optional **extras** (tips/keep-the-change). The recipient defaults to the main worker; the helper can be chosen. An extra increases **Total to pay** and reduces the automatic change, which is how “keep the change” is recorded.
 13. The summary shows **Total to pay = job total + extras**, payments, change, and balance.
-14. Record the payment. The job becomes **Paid** and moves to paid sales on the payment date.
-15. Optionally share the digital receipt link or QR code.
+14. Record the payment. The job becomes **Paid**, a **Payment recorded** modal shows the paid amount, change, and receipt, and the sale moves to paid sales on the payment date.
+15. Optionally share the digital receipt link or QR code. A paid order keeps a green **Receipt ready** banner with the share action.
 
 Orders stay editable while the month is open. A paid order can be corrected, but the payment must be rebalanced before saving. Changing the job date assigns a new order number for that date. Once QuickBooks export and month lock exist, an exported month is read-only and corrections happen in QuickBooks.
 
@@ -115,8 +125,8 @@ An unpaid job can be **deleted** with a confirmation. Deletion removes its items
 
 | Route | Purpose |
 |---|---|
-| `/orders` | Open jobs, paid sales by payment date, daily totals, labor per person |
-| `/orders/new` | Step 1: create an unpaid job |
+| `/orders` | Open jobs in their own box, paid sales by payment date in a separate box, daily totals, labor per person |
+| `/orders/new` | Step 1: create a job; parts-only sales can be paid in the same save |
 | `/orders/:id` | Order and Payment tabs; edit, take payment, share receipt |
 | `/orders/:id?tab=payment` | Open the payment step directly |
 | `/items` | Search the catalog; import the QuickBooks item list |
@@ -307,7 +317,7 @@ A transfer cannot exceed the shop or labor balance held by that person. `INSUFFI
 - A helper must be a different staff account from the main worker.
 - An extra must go to the main or helper on that order. The default is the main worker.
 - Amounts are integer centavos. Payments and changes must balance exactly; a mismatch is rejected by the database.
-- A job can be saved with no payment (`OPEN`). Extras are not allowed until payment.
+- A job with labor can be saved with no payment (`OPEN`). A parts-only sale may be paid in the same save. Extras are not allowed until payment.
 - A paid order (`PAID`) must have at least one payment and a zero balance.
 - A paid order cannot be changed back to unpaid through the normal form.
 - Editing a paid order’s items, labor, or extras requires rebalancing the payment before saving.
@@ -504,6 +514,9 @@ Every write and every money-relevant change writes an `audit_events` row in the 
 
 - Money parsing and formatting, including invalid and maximum values.
 - Order money: parts, extras, payments, change, balance, net per method.
+- Quick sale: default Cash, prefilled total, GCash recipient, Pay later.
+- Payment recorded modal and receipt-ready state.
+- Receipt dialog fits a 360px screen without clipping the link.
 - Main labor remainder and helper-share edge cases.
 - Month range, monthly rows, monthly totals, labor by person.
 - Catalog CSV mapping: required columns, active/inventory filtering, missing price, blank MPN.
@@ -532,8 +545,10 @@ Every write and every money-relevant change writes an `audit_events` row in the 
 ### E2E
 
 - Login as Aldwin; create an unpaid job with an item, labor, and helper split; see the job total.
+- Create a parts-only sale with no labor; save and record payment in one save; see the paid modal.
 - See it in Open jobs as Unpaid.
-- Take payment later with extras, mixed cash/GCash, and automatic change.
+- Take payment later with extras, mixed cash/GCash, and automatic change; see the paid modal and receipt-ready banner.
+- Share the receipt at 360px without clipping.
 - See it move to Paid sales on the payment date and open the receipt.
 - The Signed-in user is shown as “You” in staff choices.
 - The mechanic has the same navigation and access.

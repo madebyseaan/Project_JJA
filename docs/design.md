@@ -97,7 +97,7 @@ Rules:
 - Bottom tabs: Orders, Items, Reports, Settings.
 - Primary actions are 56px tall; other targets are at least 48px.
 - The daily orders screen shows summary numbers first, then the dated order list.
-- The job form uses Customer, Items, and Labor with a prominent Job total. Payment uses a separate step with Payment date, Payments, automatic Change, then optional Extras.
+- The job form uses Customer, Items, and Labor with a prominent Job total. If labor is zero and there is an item, a **Payment now** box collects Cash or GCash and **Save & record payment** completes the sale; Pay later saves an open job. Otherwise, payment is a separate step with Payment date, Payments, automatic Change, then optional Extras.
 - The phone shell is a `100dvh` flex column: safe-area top, fixed header, one scrollable main area, bottom tabs as the last flex child. The tabs are not a fixed overlay, so browser chrome changes cannot leave a gap or make them jump.
 - Safe areas: header padding uses `env(safe-area-inset-top)`; the tab bar fills `env(safe-area-inset-bottom)` with its own background.
 - Mobile form controls render at 16px to stop iOS focus zoom. Pinch zoom is never disabled.
@@ -115,12 +115,13 @@ Rules:
 
 ### Key screens
 
-- **Orders:** Open jobs section with an unpaid total, Take payment, and a confirmed Delete for unpaid jobs; then Sales paid on date with four summary tiles, labor per person, and paid rows. Status is always a text badge.
-- **Job form:** customer/date block; searchable items with per-order price; custom line dialog; labor split; **Job total card** (parts + labor) always visible.
-- **Order detail:** Order and Payment tabs. Payment tab has payment date, mixed payments, automatic change, optional extras, and the total/balance card. An open job shows Delete job; a paid order shows Share receipt.
+- **Orders:** two clearly separate boxes. **Open jobs** is amber-accented with a count, unpaid total, Take payment, and a confirmed Delete. **Paid sales** is a separate neutral box with the payment-date picker, summary tiles, labor per person, and paid rows. Status is always a text badge.
+- **Job form:** customer/date block; searchable items with per-order price; custom line dialog; labor split; **Job total card** (parts + labor) always visible. With no labor and at least one item, a **Payment now** card shows Cash pre-selected, the total prefilled, GCash, and Pay later; the card becomes **Payment total** and the primary action is **Save & record payment**.
+- **Order detail:** Order and Payment tabs. Payment tab has payment date, mixed payments, automatic change, optional extras, and the total/balance card. An open job shows Delete job; a paid order shows a green **Receipt ready** banner with Share receipt. After a payment, a **Payment recorded** modal shows the amount, change, and receipt actions.
 - **Items:** searchable catalog, right-aligned prices, no stock. Import dialog with a preview and skipped-row count.
 - **Reports:** month picker, six paid summary tiles, paid-date table with a month total, and a full-breakdown labor panel.
 - **GCash:** shop-held banner, per-person balances, transfer dialog, recent history.
+- **Share receipt:** dialog fits the viewport, scrolls vertically, wraps the full link, and scales the QR code. On phones the footer buttons are full-width. Never clip the link or the description.
 - **Digital receipt:** white sheet, shop header, order number, items, labor, optional tip, total charged, payments, change, net paid, QR. No internal split.
 - **Legacy receipt and verify:** retained for old links only.
 - **Login:** split at 768px. Left: the J.J.A badge at the top; a faint blue-tinted blueprint grid behind the panel; an intentional safety-orange block behind “The day,”; the headline scales with `clamp(3.25rem, 6vw, 7rem)`; the subtitle is at most 26rem wide; a capability row (Orders, Items, Reports) uses the logo's red, blue, and gold icons; the footer has a tri-color stripe, `J.J.A · Est. 2023`, and a live Manila clock. Right: a bordered staff sign-in sheet, centered, max-w-md and max-w-lg at `xl`; a lock header (“Staff portal”), a 48px employee ID field with a user icon, a password field with a lock icon and an eye toggle, a 56px primary button with a spinner state, an error row with an alert icon, and a “Need access?” footer. Below 768px: a compact brand header with the badge, the shop name, and the clock, then the same sheet in one column.
@@ -159,7 +160,7 @@ Rules:
 
 ## 7. Copy
 
-- Verbs, sentence case: "New order", "Add item", "Custom line", "Add payment", "Delete job", "Take payment", "Record payment", "Record transfer", "Save order", "Import item list".
+- Verbs, sentence case: "New order", "Add item", "Custom line", "Add payment", "Delete job", "Take payment", "Record payment", "Record transfer", "Save order", "Save & record payment", "Pay now", "Pay later", "Done", "Import item list".
 - A button and its result use the same verb: “Save order” → “Order saved.”, “Import item list” → “Item list imported.”
 - Errors say what happened and what to do: “Payment is short by ₱20.00.”, “Choose who received each GCash payment.”
 - Empty states invite action: “No jobs waiting for payment.” and “No paid sales on this date.”

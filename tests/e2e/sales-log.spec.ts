@@ -420,6 +420,11 @@ test('deletes an unpaid job after confirmation', async ({ page }) => {
   await page.getByRole('button', { name: 'New order' }).first().click();
   await page.getByLabel('Search the catalog').fill('brake');
   await page.getByRole('button', { name: 'Add', exact: true }).click();
+
+  const quickSale = page.locator('section').filter({
+    has: page.getByRole('heading', { name: 'Payment now', exact: true }),
+  });
+  await quickSale.getByRole('button', { name: 'Pay later' }).click();
   await page.getByRole('button', { name: 'Save order' }).first().click();
 
   await expect(page).toHaveURL(/\/orders$/);
@@ -432,6 +437,44 @@ test('deletes an unpaid job after confirmation', async ({ page }) => {
 
   await expect(page.getByText('No jobs waiting for payment.')).toBeVisible();
   await expect(page.getByText(orderNo)).toHaveCount(0);
+});
+
+test('records a parts-only sale in one save', async ({ page }) => {
+  await mockSalesLog(page);
+  await signInAs(page, owner);
+
+  const today = manilaToday();
+  const orderNo = `SL-${today.replaceAll('-', '')}-0001`;
+
+  await page.getByRole('button', { name: 'New order' }).first().click();
+  await page.getByLabel('Search the catalog').fill('brake');
+  await page.getByRole('button', { name: 'Add', exact: true }).click();
+
+  const quickSale = page.locator('section').filter({
+    has: page.getByRole('heading', { name: 'Payment now', exact: true }),
+  });
+  await expect(quickSale).toBeVisible();
+  await expect(quickSale.getByRole('button', { name: 'Cash', exact: true })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  await expect(quickSale.getByLabel('Amount received (₱)')).toHaveValue('150.00');
+  await expect(quickSale.getByText('Exact payment.')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Save & record payment' }).first().click();
+
+  await expect(page).toHaveURL(/\/orders/);
+  const recorded = page.getByRole('dialog');
+  await expect(recorded.getByRole('heading', { name: 'Payment recorded' })).toBeVisible();
+  await expect(recorded.getByText(orderNo)).toBeVisible();
+  await expect(recorded.getByText('Paid', { exact: true })).toBeVisible();
+  await expect(recorded.getByText('Receipt ready')).toBeVisible();
+
+  await recorded.getByRole('button', { name: 'Done' }).click();
+
+  await expect(page.getByText('No jobs waiting for payment.')).toBeVisible();
+  await expect(page.getByText(orderNo)).toBeVisible();
+  await expect(page.getByText('No paid sales on this date')).toHaveCount(0);
 });
 
 test('saves an unpaid job, takes payment later, and shows both lists', async ({ page }) => {
@@ -449,10 +492,16 @@ test('saves an unpaid job, takes payment later, and shows both lists', async ({ 
   await page.getByLabel('Search the catalog').fill('brake');
   await page.getByRole('button', { name: 'Add', exact: true }).click();
 
+  const quickSale = page.locator('section').filter({
+    has: page.getByRole('heading', { name: 'Payment now', exact: true }),
+  });
+  await expect(quickSale).toBeVisible();
+
   const labor = page.locator('section').filter({
     has: page.getByRole('heading', { name: 'Labor', exact: true }),
   });
   await labor.getByLabel('Total labor (₱)').fill('100');
+  await expect(quickSale).toHaveCount(0);
   await labor
     .getByText('Helper', { exact: true })
     .locator('..')
@@ -493,13 +542,41 @@ test('saves an unpaid job, takes payment later, and shows both lists', async ({ 
   await expect(page.getByText('₱50.00').first()).toBeVisible();
   await page.getByRole('button', { name: 'Record payment' }).first().click();
 
-  await expect(page.getByText('Paid', { exact: true }).first()).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Share receipt' })).toBeVisible();
+  await expect(page).toHaveURL(/\/orders/);
+  const recorded = page.getByRole('dialog');
+  await expect(recorded.getByRole('heading', { name: 'Payment recorded' })).toBeVisible();
+  await expect(recorded.getByText(orderNo)).toBeVisible();
+  await expect(recorded.getByText('Paid', { exact: true })).toBeVisible();
+  await expect(recorded.getByText('Receipt ready')).toBeVisible();
 
-  await navLink(page, 'Orders').click();
+  await recorded.getByRole('button', { name: 'Share receipt' }).click();
+
+  const share = page.getByRole('dialog');
+  await expect(share.getByRole('heading', { name: 'Share receipt' })).toBeVisible();
+  const receiptLink = share.getByText(/\/s\//);
+  await expect(receiptLink).toBeVisible();
+  expect(await receiptLink.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(
+    true,
+  );
+  const shareBox = await share.boundingBox();
+  const viewport = page.viewportSize();
+  expect(shareBox).not.toBeNull();
+  expect(shareBox!.x).toBeGreaterThanOrEqual(0);
+  expect(shareBox!.x + shareBox!.width).toBeLessThanOrEqual((viewport?.width ?? 0) + 1);
+
+  await page.keyboard.press('Escape');
+  await expect(share).toHaveCount(0);
+
   await expect(page.getByText('No jobs waiting for payment.')).toBeVisible();
   await expect(page.getByText(orderNo)).toBeVisible();
   await expect(page.getByText('₱250.00').first()).toBeVisible();
+
+  await page.getByText(orderNo).click();
+  await expect(page.getByText('Receipt ready', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Share receipt' })).toBeVisible();
+
+  await navLink(page, 'Orders').click();
+  await expect(page.getByText(orderNo)).toBeVisible();
 
   await navLink(page, 'Reports').click();
   await expect(page.getByRole('heading', { name: 'Reports', exact: true })).toBeVisible();

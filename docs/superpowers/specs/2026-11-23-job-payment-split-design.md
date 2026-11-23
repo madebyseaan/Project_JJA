@@ -4,6 +4,8 @@
 **Status:** Approved direction; implementation plan follows.
 **Supersedes:** the one-step paid-order flow in `docs/spec.md` section 5.
 
+**Update 23 Nov 2026:** A parts-only sale (no labor) may be paid in the same save via **Payment now** and **Save & record payment**. Jobs with labor still save as Open and are paid later. A successful payment shows a **Payment recorded** modal and leaves a **Receipt ready** banner on the paid order. Open jobs and Paid sales are separate boxes on Orders.
+
 ## 1. Problem
 
 The order form currently mixes job details and payment on one long page, and a balanced payment is required before saving. In the shop, the job is recorded first and the customer pays after the repair is finished. Staff also find “Dad” and “Uncle” confusing because those are relationship labels, not the people’s names.
