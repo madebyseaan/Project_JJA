@@ -219,6 +219,11 @@ export function OrdersPage() {
     }
   };
 
+  const requestDelete = (order: SalesOrder) => {
+    deleteOrder.reset();
+    setOrderToDelete(order);
+  };
+
   return (
     <div className="space-y-5">
       <PageHeader
@@ -293,7 +298,7 @@ export function OrdersPage() {
                 key={order.id}
                 order={order}
                 currentUserId={currentUserId}
-                onDelete={setOrderToDelete}
+                onDelete={requestDelete}
               />
             ))}
           </ul>
@@ -404,7 +409,10 @@ export function OrdersPage() {
       <DeleteJobDialog
         open={orderToDelete !== null}
         onOpenChange={(open) => {
-          if (!open && !deleteOrder.isPending) setOrderToDelete(null);
+          if (!open && !deleteOrder.isPending) {
+            setOrderToDelete(null);
+            deleteOrder.reset();
+          }
         }}
         orderNo={orderToDelete?.orderNo ?? ''}
         pending={deleteOrder.isPending}

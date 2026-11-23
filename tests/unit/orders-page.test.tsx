@@ -28,7 +28,12 @@ vi.mock('@/features/sales/hooks/use-sales', () => ({
   useDailyReport: () => dailyState,
   useLaborReport: () => laborState,
   usePaymentsReport: () => paymentsState,
-  useDeleteOrder: () => ({ mutateAsync: mockDeleteMutate, isPending: false, error: null }),
+  useDeleteOrder: () => ({
+    mutateAsync: mockDeleteMutate,
+    isPending: false,
+    error: null,
+    reset: vi.fn(),
+  }),
 }));
 
 vi.mock('@/features/auth/use-auth', () => ({

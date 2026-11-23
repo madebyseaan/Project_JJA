@@ -156,6 +156,30 @@ async function mockSalesLog(page: Page) {
     ]),
   );
 
+  await page.route('**/rest/v1/rpc/delete_sales_order', (route) => {
+    const payload = route.request().postDataJSON() as { p_order_id: string };
+
+    if (!order || order.id !== payload.p_order_id || order.status !== 'OPEN') {
+      return route.fulfill({
+        status: 400,
+        contentType: 'application/json',
+        body: JSON.stringify({ message: 'ORDER_NOT_DELETABLE' }),
+      });
+    }
+
+    order = null;
+    itemRows = [];
+    laborRows = [];
+    extraRows = [];
+    paymentRows = [];
+    changeRows = [];
+    dailyRows = [];
+    laborReportRows = [];
+    paymentReportRows = [];
+
+    return fulfill(route, null);
+  });
+
   await page.route('**/rest/v1/rpc/save_sales_order', (route) => {
     const payload = route.request().postDataJSON() as {
       p_order_id: string | null;
@@ -385,6 +409,30 @@ async function mockSalesLog(page: Page) {
     });
   });
 }
+
+test('deletes an unpaid job after confirmation', async ({ page }) => {
+  await mockSalesLog(page);
+  await signInAs(page, owner);
+
+  const today = manilaToday();
+  const orderNo = `SL-${today.replaceAll('-', '')}-0001`;
+
+  await page.getByRole('button', { name: 'New order' }).first().click();
+  await page.getByLabel('Search the catalog').fill('brake');
+  await page.getByRole('button', { name: 'Add', exact: true }).click();
+  await page.getByRole('button', { name: 'Save order' }).first().click();
+
+  await expect(page).toHaveURL(/\/orders$/);
+  await expect(page.getByText(orderNo)).toBeVisible();
+
+  await page.getByRole('button', { name: `Delete job ${orderNo}` }).click();
+  await expect(page.getByRole('heading', { name: 'Delete open job?' })).toBeVisible();
+
+  await page.getByRole('dialog').getByRole('button', { name: 'Delete job' }).click();
+
+  await expect(page.getByText('No jobs waiting for payment.')).toBeVisible();
+  await expect(page.getByText(orderNo)).toHaveCount(0);
+});
 
 test('saves an unpaid job, takes payment later, and shows both lists', async ({ page }) => {
   test.setTimeout(60_000);

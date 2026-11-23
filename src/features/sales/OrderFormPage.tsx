@@ -363,6 +363,11 @@ export function OrderFormPage() {
     }
   };
 
+  const requestDelete = () => {
+    deleteOrder.reset();
+    setDeleteOpen(true);
+  };
+
   const setTab = (next: 'order' | 'payment') => {
     setSearchParams(next === 'payment' ? { tab: 'payment' } : {}, { replace: true });
   };
@@ -413,7 +418,7 @@ export function OrderFormPage() {
         {isEdit && existing.data ? (
           <div className="flex flex-wrap gap-2">
             {orderStatus === 'OPEN' ? (
-              <Button variant="destructive" size="touch" onClick={() => setDeleteOpen(true)}>
+              <Button variant="destructive" size="touch" onClick={requestDelete}>
                 <Trash2 aria-hidden="true" />
                 Delete job
               </Button>
@@ -671,7 +676,10 @@ export function OrderFormPage() {
           <DeleteJobDialog
             open={deleteOpen}
             onOpenChange={(open) => {
-              if (!open && !deleteOrder.isPending) setDeleteOpen(false);
+              if (!open && !deleteOrder.isPending) {
+                setDeleteOpen(false);
+                deleteOrder.reset();
+              }
             }}
             orderNo={existing.data.order.orderNo}
             pending={deleteOrder.isPending}
