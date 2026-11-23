@@ -1,6 +1,6 @@
 import { Download } from 'lucide-react';
-import { useState } from 'react';
-import { Outlet } from 'react-router';
+import { useEffect, useRef, useState } from 'react';
+import { Outlet, useLocation } from 'react-router';
 
 import { AppNav } from '@/app/AppNav';
 import { BrandMark } from '@/components/BrandMark';
@@ -19,7 +19,15 @@ export function StaffLayout() {
   const { lock } = usePinLock();
   const online = useOnlineStatus();
   const install = useInstallPrompt();
+  const location = useLocation();
+  const mainRef = useRef<HTMLElement | null>(null);
   const [installOpen, setInstallOpen] = useState(false);
+
+  useEffect(() => {
+    if (mainRef.current) mainRef.current.scrollTop = 0;
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, [location.pathname]);
 
   // RequireStaff owns redirects; this is a defensive frame, never a blank screen.
   if (auth.status !== 'signed-in') {
@@ -107,7 +115,10 @@ export function StaffLayout() {
           <OfflineBanner online={online} />
         </div>
 
-        <main className="mx-auto min-h-0 w-full max-w-[1280px] flex-1 overflow-y-auto px-4 pt-6 pb-4 md:overflow-visible md:px-8 md:pt-8 md:pb-8">
+        <main
+          ref={mainRef}
+          className="mx-auto min-h-0 w-full max-w-[1280px] flex-1 overflow-y-auto px-4 pt-6 pb-4 md:overflow-visible md:px-8 md:pt-8 md:pb-8"
+        >
           <Outlet />
         </main>
 

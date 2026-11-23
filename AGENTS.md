@@ -16,7 +16,7 @@ This file is the engineering contract for anyone — human or AI — working in 
 
 A web app that is a **daily sales log** for **J.J.A Motor Accessories and Motorcycle Repair Shop** (Est. 2023), one motorcycle parts and repair shop in the Philippines.
 
-- Aldwin and Magma record each walk-in job: date, optional customer and motorcycle, parts, labor, helper share, extras, and cash/GCash payments after the repair.
+- Aldwin and Magma record each walk-in job: date, optional customer and motorcycle, parts, labor, helper share, extras, and cash/GCash payments after the repair. A parts-only sale can be paid immediately.
 - The signed-in person is shown as **You** in staff choices and reports; the shell keeps the real name.
 - The item list and prices come from QuickBooks. The app does **not** track stock; QuickBooks remains the stock and accounting record.
 - Both staff have the **same access**. There is no owner/mechanic split in the sales log.
@@ -54,7 +54,7 @@ If a change alters behavior, update the spec in the same pull request. A change 
 4. **Philippine business dates.** Use `Asia/Manila` for "today," job dates, payment dates, order numbers, reports, and month selection. Store timestamps as `timestamptz`.
 5. **Snapshots.** `sales_order_items` freeze the item name, quantity, and unit price when the order is saved. The catalog base price is never used to rewrite an old order.
 6. **No stock tracking.** QuickBooks owns stock. Do not add quantities on hand, reservations, stock ledgers, or low-stock screens to this app. The old inventory tables are retained only until a cleanup migration.
-7. **Jobs are saved unpaid; payment comes later.** A job is `OPEN` with no payment. A balanced payment makes it `PAID` with a Manila `paid_on` date. A paid order cannot become unpaid. Sales, labor, GCash, and receipts use the payment date. Editing a paid order requires rebalancing before save. After QuickBooks export exists, a locked month is read-only and corrections happen in QuickBooks. Never silently rewrite an exported order.
+7. **Jobs are saved unpaid; payment comes later, except a parts-only sale.** A normal job is `OPEN` with no payment. A sale with no labor may be paid in the same save. A balanced payment makes it `PAID` with a Manila `paid_on` date. A paid order cannot become unpaid. Sales, labor, GCash, and receipts use the payment date. Editing a paid order requires rebalancing before save. After QuickBooks export exists, a locked month is read-only and corrections happen in QuickBooks. Never silently rewrite an exported order.
 8. **Both staff have equal access.** The database enforces staff-only access; it does not use the legacy owner/mechanic split in the sales log. Hiding a button is not security.
 9. **RLS on every table.** Default deny. No table ships without policies and tests.
 10. **No secrets in the browser.** Only `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are public. The service-role key never appears in `src/`, the bundle, logs, or screenshots.
@@ -315,7 +315,7 @@ These are the highest-risk paths. Change them only with tests.
 
 - Integer centavos everywhere. Parse peso input with a string parser, not `parseFloat`.
 - The database computes line totals, parts totals, order totals, and GCash allocations. The client never sends a total.
-- A job saves with no payment (`OPEN`). Extras require a payment.
+- A job with labor saves with no payment (`OPEN`). A parts-only sale may be paid in the same save. Extras require a payment.
 - A paid order requires payments = parts + labor + extras + change and a zero balance.
 - Payment date defaults to today, may be backdated, cannot be future or before the job date.
 - A paid order cannot become unpaid. Editing items/labor/extras requires rebalancing the payment.
@@ -366,7 +366,7 @@ These are the highest-risk paths. Change them only with tests.
   - public receipt by paid token; open/missing token returns null;
   - staff-only reads; anon denied; direct table writes denied,
   - catalog import counts, idempotency, and full-list deactivation.
-- E2E: login → unpaid job → item → helper split → job total → open jobs → take payment → extras → mixed cash/GCash → change → paid sales → report → GCash → digital receipt. Both staff see the same navigation and “You” labels.
+- E2E: login → unpaid job → item → helper split → job total → open jobs → take payment → extras → mixed cash/GCash → change → paid modal → paid sales → report → GCash → digital receipt; plus a parts-only sale paid in one save. Both staff see the same navigation and “You” labels.
 - Every bug fix gets a regression test.
 - Tests are deterministic. Reset the database between runs. Never test against production.
 - CI runs local Supabase in Docker. Locally, Docker is optional; `test:db` may be skipped only if documented.

@@ -94,7 +94,11 @@ Status: **Implemented 22–23 Nov 2026; waiting for the human architect to test 
 - [x] Unpaid jobs can be deleted with confirmation and an audit event; paid jobs cannot.
 - [x] Order editing; snapshots of item names and prices.
 - [x] Step 1 saves an unpaid job with a visible job total (parts + labor).
+- [x] Parts-only sales with no labor can be paid in the same save with **Save & record payment**.
 - [x] Step 2 records payment later with a payment date, extras, and change.
+- [x] Payment recorded modal with receipt actions; paid orders keep a Receipt ready banner.
+- [x] Open jobs and Paid sales are separate boxes on Orders.
+- [x] Receipt dialog fits a 360px phone; the full link and description stay visible.
 - [x] Open jobs section and paid sales filtered by payment date.
 - [x] Paid orders can be corrected with payment rebalancing.
 - [x] Staff names are Aldwin and Magma; the signed-in person is shown as “You”.

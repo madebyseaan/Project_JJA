@@ -1,4 +1,4 @@
-import { ArrowLeft, Loader2, Share2, Trash2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 import { toast } from 'sonner';
@@ -19,6 +19,8 @@ import { LaborFields } from './components/LaborFields';
 import { OrderItemEditor } from './components/OrderItemEditor';
 import { OrderPaymentEditor } from './components/OrderPaymentEditor';
 import { OrderSummaryCard } from './components/OrderSummaryCard';
+import { PaidReceiptBanner } from './components/PaidReceiptBanner';
+import { QuickSalePayment } from './components/QuickSalePayment';
 import { ShareReceiptDialog } from './components/ShareReceiptDialog';
 import { useCatalog, useDeleteOrder, useOrder, useSaveOrder, useStaff } from './hooks/use-sales';
 import { calculateAutoChanges } from './order-change';
@@ -29,6 +31,8 @@ import type {
   DraftOrderItem,
   DraftOrderPayment,
   OrderInput,
+  PaymentRecordedState,
+  QuickSalePaymentValue,
   SalesOrder,
 } from './types';
 
@@ -75,6 +79,13 @@ export function OrderFormPage() {
   const [helperLabor, setHelperLabor] = useState('');
   const [extras, setExtras] = useState<DraftOrderExtra[]>([]);
   const [payments, setPayments] = useState<DraftOrderPayment[]>([]);
+  const [quickSale, setQuickSale] = useState<QuickSalePaymentValue>({
+    payNow: true,
+    method: 'CASH',
+    amount: '',
+    amountTouched: false,
+    gcashRecipientId: '',
+  });
   const [paymentDate, setPaymentDate] = useState(manilaDateKey());
   const [formError, setFormError] = useState<string | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
@@ -160,7 +171,6 @@ export function OrderFormPage() {
     gcashRecipientId: payment.gcashRecipientId,
   }));
 
-  const hasPayment = parsedPayments.length > 0 || parsedExtras.length > 0;
   const orderStatus = existing.data?.order.status ?? 'OPEN';
   const orderWasPaid = orderStatus === 'PAID' || orderStatus === 'EXPORTED';
   const isLocked = orderStatus === 'EXPORTED';
@@ -170,21 +180,42 @@ export function OrderFormPage() {
     unitPriceCentavos: item.price ?? 0,
   }));
   const moneyExtras = parsedExtras.map((extra) => ({ amountCentavos: extra.amount }));
-  const moneyPayments = parsedPayments.map((payment) => ({
-    method: payment.method,
-    amountCentavos: payment.amount,
-    gcashRecipientId: payment.gcashRecipientId || null,
-  }));
 
   const baseMoney = calculateOrderMoney({
     items: moneyItems,
     laborTotalCentavos: laborCentavos,
     extras: moneyExtras,
-    payments: moneyPayments,
+    payments: [],
     changes: [],
   });
 
   const totalToPay = baseMoney.customerTotalCentavos + baseMoney.extrasCentavos;
+  const quickSaleVisible = !isEdit && !isLocked && parsedItems.length > 0 && laborCentavos === 0;
+  const quickPaymentActive = quickSaleVisible && quickSale.payNow;
+  const effectivePaymentDate = quickPaymentActive ? date : paymentDate;
+  const quickRecipientId = quickSale.gcashRecipientId || mainUserId || currentUserId || '';
+  const quickAmountCentavos = quickSale.amountTouched
+    ? (parsePesoToCentavos(quickSale.amount) ?? 0)
+    : totalToPay;
+
+  const effectiveParsedPayments = quickPaymentActive
+    ? [
+        {
+          key: 'quick-sale',
+          method: quickSale.method,
+          amount: quickAmountCentavos,
+          gcashRecipientId: quickSale.method === 'GCASH' ? quickRecipientId : '',
+        },
+      ]
+    : parsedPayments;
+
+  const hasPayment = effectiveParsedPayments.length > 0 || parsedExtras.length > 0;
+  const moneyPayments = effectiveParsedPayments.map((payment) => ({
+    method: payment.method,
+    amountCentavos: payment.amount,
+    gcashRecipientId: payment.gcashRecipientId || null,
+  }));
+
   const autoChanges = calculateAutoChanges(moneyPayments, totalToPay);
 
   const money = calculateOrderMoney({
@@ -259,11 +290,11 @@ export function OrderFormPage() {
     const jobError = validateJob();
     if (jobError) return jobError;
 
-    if (!paymentDate) return 'Choose the payment date.';
-    if (paymentDate > manilaDateKey()) return 'The payment date cannot be in the future.';
-    if (paymentDate < date) return 'The payment date cannot be before the job date.';
+    if (!effectivePaymentDate) return 'Choose the payment date.';
+    if (effectivePaymentDate > manilaDateKey()) return 'The payment date cannot be in the future.';
+    if (effectivePaymentDate < date) return 'The payment date cannot be before the job date.';
 
-    if (parsedPayments.length === 0) {
+    if (effectiveParsedPayments.length === 0) {
       return 'Add at least one payment.';
     }
 
@@ -272,7 +303,7 @@ export function OrderFormPage() {
       if (extra.amount <= 0) return 'Every extra needs an amount greater than zero.';
     }
 
-    for (const payment of parsedPayments) {
+    for (const payment of effectiveParsedPayments) {
       if (payment.amount <= 0) return 'Every payment needs an amount greater than zero.';
       if (payment.method === 'CASH' && payment.gcashRecipientId) {
         return 'Cash payments cannot have a GCash recipient.';
@@ -296,7 +327,7 @@ export function OrderFormPage() {
   const buildInput = (): OrderInput => ({
     orderId: id ?? null,
     businessDate: date,
-    paidOn: hasPayment ? paymentDate : null,
+    paidOn: hasPayment ? effectivePaymentDate : null,
     customerName: customer.trim() || null,
     bikeModel: bike.trim() || null,
     mainUserId,
@@ -315,7 +346,7 @@ export function OrderFormPage() {
       amountCentavos: extra.amount,
       note: extra.note || null,
     })),
-    payments: parsedPayments.map((payment) => ({
+    payments: effectiveParsedPayments.map((payment) => ({
       method: payment.method,
       amountCentavos: payment.amount,
       gcashRecipientId: payment.gcashRecipientId || null,
@@ -323,7 +354,8 @@ export function OrderFormPage() {
     changes: autoChanges.changes,
   });
 
-  const needsPaymentValidation = tab === 'payment' || hasPayment || orderWasPaid;
+  const needsPaymentValidation =
+    tab === 'payment' || hasPayment || orderWasPaid || quickPaymentActive;
 
   const submit = async () => {
     if (isLocked) {
@@ -337,7 +369,24 @@ export function OrderFormPage() {
     if (error) return;
 
     try {
-      await save.mutateAsync(buildInput());
+      const saved = await save.mutateAsync(buildInput());
+
+      if (saved.status === 'PAID' && (quickPaymentActive || tab === 'payment' || !isEdit)) {
+        const record: PaymentRecordedState = {
+          order: saved,
+          paidCentavos: money.paidCentavos,
+          changeCentavos: money.changeCentavos,
+          mode: orderWasPaid ? 'updated' : 'recorded',
+        };
+        const paidDate = saved.paidOn;
+        const dateQuery = paidDate && paidDate !== manilaDateKey() ? `?date=${paidDate}` : '';
+
+        navigate(`/orders${dateQuery}`, {
+          replace: true,
+          state: { paymentRecorded: record },
+        });
+        return;
+      }
 
       if (!isEdit) {
         toast.success('Job saved. Take payment when the work is done.');
@@ -372,14 +421,16 @@ export function OrderFormPage() {
     setSearchParams(next === 'payment' ? { tab: 'payment' } : {}, { replace: true });
   };
 
-  const summaryMode = tab === 'payment' ? 'payment' : 'job';
+  const summaryMode = tab === 'payment' || quickPaymentActive ? 'payment' : 'job';
   const primaryLabel = isLocked
     ? 'Read-only'
     : tab === 'payment'
       ? orderWasPaid
         ? 'Update payment'
         : 'Record payment'
-      : 'Save order';
+      : quickPaymentActive
+        ? 'Save & record payment'
+        : 'Save order';
 
   return (
     <div className="space-y-5">
@@ -410,27 +461,22 @@ export function OrderFormPage() {
           </p>
           {!isEdit ? (
             <p className="text-steel mt-1 text-sm">
-              Record the job now. Payment is recorded after the repair.
+              Record the job now. If there is no labor, you can take payment in the same save.
             </p>
           ) : null}
         </div>
 
-        {isEdit && existing.data ? (
-          <div className="flex flex-wrap gap-2">
-            {orderStatus === 'OPEN' ? (
-              <Button variant="destructive" size="touch" onClick={requestDelete}>
-                <Trash2 aria-hidden="true" />
-                Delete job
-              </Button>
-            ) : (
-              <Button variant="outline" size="touch" onClick={() => setShareOpen(true)}>
-                <Share2 aria-hidden="true" />
-                Share receipt
-              </Button>
-            )}
-          </div>
+        {isEdit && existing.data && orderStatus === 'OPEN' ? (
+          <Button variant="destructive" size="touch" onClick={requestDelete}>
+            <Trash2 aria-hidden="true" />
+            Delete job
+          </Button>
         ) : null}
       </div>
+
+      {isEdit && existing.data && orderWasPaid ? (
+        <PaidReceiptBanner order={existing.data.order} onShare={() => setShareOpen(true)} />
+      ) : null}
 
       {isEdit ? (
         <div className="flex gap-2" role="tablist" aria-label="Order steps">
@@ -506,6 +552,20 @@ export function OrderFormPage() {
                 onChooseMain={chooseMain}
                 onChooseHelper={chooseHelper}
               />
+
+              {quickSaleVisible ? (
+                <QuickSalePayment
+                  value={quickSale}
+                  totalCentavos={totalToPay}
+                  changeCentavos={autoChanges.changeCentavos}
+                  shortfallCentavos={autoChanges.shortfallCentavos}
+                  staff={staffOptions}
+                  currentUserId={currentUserId}
+                  defaultRecipientId={mainUserId}
+                  disabled={save.isPending}
+                  onChange={setQuickSale}
+                />
+              ) : null}
             </>
           ) : (
             <>
@@ -625,9 +685,11 @@ export function OrderFormPage() {
             balanceCentavos={money.balanceCentavos}
             note={
               tab === 'order'
-                ? orderWasPaid
-                  ? 'This order is paid. If you change items or labor, rebalance the payment before saving.'
-                  : 'Payment is recorded after the repair.'
+                ? quickPaymentActive
+                  ? 'Payment is recorded when you save.'
+                  : orderWasPaid
+                    ? 'This order is paid. If you change items or labor, rebalance the payment before saving.'
+                    : 'Payment is recorded after the repair.'
                 : 'Payment date is the date used in reports.'
             }
             primaryAction={

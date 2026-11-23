@@ -1,6 +1,6 @@
 import { ChevronRight, Plus, Trash2 } from 'lucide-react';
-import { useMemo, useState } from 'react';
-import { Link, useSearchParams } from 'react-router';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router';
 import { toast } from 'sonner';
 
 import { EmptyState } from '@/components/EmptyState';
@@ -14,6 +14,8 @@ import { formatManilaDate, manilaDateKey } from '@/lib/dates';
 import { formatCentavos } from '@/lib/money';
 
 import { DeleteJobDialog } from './components/DeleteJobDialog';
+import { PaymentRecordedDialog } from './components/PaymentRecordedDialog';
+import { ShareReceiptDialog } from './components/ShareReceiptDialog';
 import {
   useDailyReport,
   useDeleteOrder,
@@ -23,7 +25,7 @@ import {
   usePaymentsReport,
 } from './hooks/use-sales';
 import { staffLabel } from './staff-label';
-import type { SalesOrder } from './types';
+import type { PaymentRecordedState, SalesOrder } from './types';
 
 function Stat({ label, value }: { label: string; value: number }) {
   return (
@@ -162,6 +164,8 @@ function PaidOrderRow({
 
 export function OrdersPage() {
   const [params, setParams] = useSearchParams();
+  const location = useLocation();
+  const navigate = useNavigate();
   const auth = useAuth();
   const currentUserId = auth.status === 'signed-in' ? auth.profile.id : null;
   const today = manilaDateKey();
@@ -175,6 +179,16 @@ export function OrdersPage() {
   const payments = usePaymentsReport(date, date);
   const deleteOrder = useDeleteOrder();
   const [orderToDelete, setOrderToDelete] = useState<SalesOrder | null>(null);
+  const [paymentRecorded, setPaymentRecorded] = useState<PaymentRecordedState | null>(null);
+  const [receiptOrder, setReceiptOrder] = useState<SalesOrder | null>(null);
+
+  useEffect(() => {
+    const state = location.state as { paymentRecorded?: PaymentRecordedState } | null;
+    if (!state?.paymentRecorded) return;
+
+    setPaymentRecorded(state.paymentRecorded);
+    navigate(`${location.pathname}${location.search}`, { replace: true, state: null });
+  }, [location.pathname, location.search, location.state, navigate]);
 
   const report = daily.data?.[0];
   const cash = useMemo(
@@ -225,7 +239,7 @@ export function OrdersPage() {
   };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <PageHeader
         title="Orders"
         description="Jobs waiting for payment, and sales already paid."
@@ -247,112 +261,135 @@ export function OrdersPage() {
         }
       />
 
-      <section className="space-y-2" aria-labelledby="open-jobs">
-        <div className="flex flex-wrap items-end justify-between gap-2">
-          <div>
-            <h2 id="open-jobs" className="font-display text-xl font-semibold">
-              Open jobs
-            </h2>
-            <p className="text-steel text-xs">Jobs saved, not paid yet. Any date.</p>
+      <section
+        className="border-warn/30 bg-surface overflow-hidden rounded-lg border"
+        aria-labelledby="open-jobs"
+      >
+        <div className="border-warn/20 bg-warn/10 border-b p-4">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 id="open-jobs" className="font-display text-xl font-semibold">
+                  Open jobs
+                </h2>
+                <span className="border-warn/40 bg-surface text-warn rounded-full border px-2.5 py-0.5 text-xs font-semibold">
+                  {openOrders.data?.length ?? 0} job
+                  {(openOrders.data?.length ?? 0) === 1 ? '' : 's'}
+                </span>
+              </div>
+              <p className="text-steel mt-1 text-xs">Jobs saved, not paid yet. Any date.</p>
+            </div>
+            <div className="sm:text-right">
+              <p className="text-steel text-xs">Unpaid total</p>
+              <p className="font-display text-xl font-bold tabular-nums">
+                {formatCentavos(openTotal)}
+              </p>
+            </div>
           </div>
-          <p className="text-sm">
-            <span className="text-steel">
-              {openOrders.data?.length ?? 0} job{(openOrders.data?.length ?? 0) === 1 ? '' : 's'}
-              {' · '}
-              Unpaid total
-            </span>{' '}
-            <span className="font-display text-lg font-bold tabular-nums">
-              {formatCentavos(openTotal)}
-            </span>
-          </p>
         </div>
 
-        {openOrders.isPending ? (
-          <output className="block space-y-2" aria-label="Loading open jobs">
-            {[0, 1].map((row) => (
-              <Skeleton key={row} className="block h-24 w-full" />
-            ))}
-          </output>
-        ) : openOrders.isError ? (
-          <div role="alert" className="border-danger/30 bg-danger/10 rounded-lg border p-4">
-            <p className="text-danger font-medium">Could not load open jobs.</p>
-            <p className="text-ink-soft mt-1 text-sm">{openOrders.error.message}</p>
-            <Button
-              variant="outline"
-              size="touch"
-              className="mt-3"
-              onClick={() => void openOrders.refetch()}
-            >
-              Try again
-            </Button>
-          </div>
-        ) : (openOrders.data ?? []).length === 0 ? (
-          <div className="border-line bg-surface rounded-lg border p-4">
-            <p className="font-medium">No jobs waiting for payment.</p>
-            <p className="text-steel mt-1 text-sm">Saved jobs stay here until you take payment.</p>
-          </div>
-        ) : (
-          <ul className="space-y-2">
-            {openOrders.data?.map((order) => (
-              <OpenJobRow
-                key={order.id}
-                order={order}
-                currentUserId={currentUserId}
-                onDelete={requestDelete}
-              />
-            ))}
-          </ul>
-        )}
+        <div className="space-y-2 p-4">
+          {openOrders.isPending ? (
+            <output className="block space-y-2" aria-label="Loading open jobs">
+              {[0, 1].map((row) => (
+                <Skeleton key={row} className="block h-24 w-full" />
+              ))}
+            </output>
+          ) : openOrders.isError ? (
+            <div role="alert" className="border-danger/30 bg-danger/10 rounded-lg border p-4">
+              <p className="text-danger font-medium">Could not load open jobs.</p>
+              <p className="text-ink-soft mt-1 text-sm">{openOrders.error.message}</p>
+              <Button
+                variant="outline"
+                size="touch"
+                className="mt-3"
+                onClick={() => void openOrders.refetch()}
+              >
+                Try again
+              </Button>
+            </div>
+          ) : (openOrders.data ?? []).length === 0 ? (
+            <div className="border-line bg-surface rounded-lg border p-4">
+              <p className="font-medium">No jobs waiting for payment.</p>
+              <p className="text-steel mt-1 text-sm">
+                Saved jobs stay here until you take payment.
+              </p>
+            </div>
+          ) : (
+            <ul className="space-y-2">
+              {openOrders.data?.map((order) => (
+                <OpenJobRow
+                  key={order.id}
+                  order={order}
+                  currentUserId={currentUserId}
+                  onDelete={requestDelete}
+                />
+              ))}
+            </ul>
+          )}
+        </div>
       </section>
 
-      <section className="space-y-3" aria-labelledby="paid-sales">
-        <div className="flex flex-wrap items-end justify-between gap-2">
-          <div>
-            <h2 id="paid-sales" className="font-display text-xl font-semibold">
-              Paid sales
-            </h2>
-            <p className="text-steel text-xs">{formatManilaDate(`${date}T12:00:00+08:00`)}</p>
-          </div>
-          <div className="w-full max-w-xs">
-            <Label htmlFor="orders-date">Sales paid on</Label>
-            <Input
-              id="orders-date"
-              type="date"
-              value={date}
-              max={today}
-              onChange={(event) => changeDate(event.target.value)}
-            />
+      <section
+        className="border-line bg-surface overflow-hidden rounded-lg border"
+        aria-labelledby="paid-sales"
+      >
+        <div className="border-line bg-soft/40 border-b p-4">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 id="paid-sales" className="font-display text-xl font-semibold">
+                  Paid sales
+                </h2>
+                <span className="border-line bg-surface text-steel rounded-full border px-2.5 py-0.5 text-xs font-semibold">
+                  {report?.orderCount ?? 0} order{(report?.orderCount ?? 0) === 1 ? '' : 's'}
+                </span>
+              </div>
+              <p className="text-steel mt-1 text-xs">
+                {formatManilaDate(`${date}T12:00:00+08:00`)}
+              </p>
+            </div>
+            <div className="w-full max-w-xs">
+              <Label htmlFor="orders-date">Sales paid on</Label>
+              <Input
+                id="orders-date"
+                type="date"
+                value={date}
+                max={today}
+                onChange={(event) => changeDate(event.target.value)}
+              />
+            </div>
           </div>
         </div>
 
-        {paidPending ? (
-          <output className="block space-y-2" aria-label="Loading paid sales">
-            <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
-              {[0, 1, 2, 3].map((card) => (
-                <Skeleton key={card} className="block h-20 w-full" />
-              ))}
+        <div className="bg-paper/40 space-y-3 p-4">
+          {paidPending ? (
+            <output className="block space-y-2" aria-label="Loading paid sales">
+              <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+                {[0, 1, 2, 3].map((card) => (
+                  <Skeleton key={card} className="block h-20 w-full" />
+                ))}
+              </div>
+              <Skeleton className="block h-24 w-full" />
+            </output>
+          ) : paidFailed ? (
+            <div role="alert" className="border-danger/30 bg-danger/10 rounded-lg border p-4">
+              <p className="text-danger font-medium">Could not load paid sales.</p>
+              <p className="text-ink-soft mt-1 text-sm">{paidError?.message}</p>
+              <Button variant="outline" size="touch" className="mt-3" onClick={retryPaid}>
+                Try again
+              </Button>
             </div>
-            <Skeleton className="block h-24 w-full" />
-          </output>
-        ) : paidFailed ? (
-          <div role="alert" className="border-danger/30 bg-danger/10 rounded-lg border p-4">
-            <p className="text-danger font-medium">Could not load paid sales.</p>
-            <p className="text-ink-soft mt-1 text-sm">{paidError?.message}</p>
-            <Button variant="outline" size="touch" className="mt-3" onClick={retryPaid}>
-              Try again
-            </Button>
-          </div>
-        ) : (
-          <>
-            <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
-              <Stat label="Parts sales" value={report?.partsTotalCentavos ?? 0} />
-              <Stat label="Labor" value={report?.laborTotalCentavos ?? 0} />
-              <Stat label="Cash net" value={cash} />
-              <Stat label="GCash net" value={gcash} />
-            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+                <Stat label="Parts sales" value={report?.partsTotalCentavos ?? 0} />
+                <Stat label="Labor" value={report?.laborTotalCentavos ?? 0} />
+                <Stat label="Cash net" value={cash} />
+                <Stat label="GCash net" value={gcash} />
+              </div>
 
-            <div className="border-line bg-surface rounded-lg border p-4">
-              <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="border-line bg-surface rounded-lg border p-4">
                 <div>
                   <p className="text-steel text-xs">Labor per person</p>
                   <div className="mt-1 flex flex-wrap gap-3">
@@ -378,32 +415,29 @@ export function OrdersPage() {
                     Payout includes extras. The Labor card above is base labor only.
                   </p>
                 </div>
-                <p className="text-steel text-sm">
-                  {report?.orderCount ?? 0} order{(report?.orderCount ?? 0) === 1 ? '' : 's'}
-                </p>
               </div>
-            </div>
 
-            {(paidOrders.data ?? []).length === 0 ? (
-              <EmptyState
-                title="No paid sales on this date"
-                description="Take payment on an open job, then it appears here."
-                action={
-                  <Button size="touch" nativeButton={false} render={<Link to="/orders/new" />}>
-                    <Plus aria-hidden="true" />
-                    New order
-                  </Button>
-                }
-              />
-            ) : (
-              <ul className="space-y-2">
-                {paidOrders.data?.map((order) => (
-                  <PaidOrderRow key={order.id} order={order} currentUserId={currentUserId} />
-                ))}
-              </ul>
-            )}
-          </>
-        )}
+              {(paidOrders.data ?? []).length === 0 ? (
+                <EmptyState
+                  title="No paid sales on this date"
+                  description="Take payment on an open job, then it appears here."
+                  action={
+                    <Button size="touch" nativeButton={false} render={<Link to="/orders/new" />}>
+                      <Plus aria-hidden="true" />
+                      New order
+                    </Button>
+                  }
+                />
+              ) : (
+                <ul className="space-y-2">
+                  {paidOrders.data?.map((order) => (
+                    <PaidOrderRow key={order.id} order={order} currentUserId={currentUserId} />
+                  ))}
+                </ul>
+              )}
+            </>
+          )}
+        </div>
       </section>
 
       <DeleteJobDialog
@@ -419,6 +453,28 @@ export function OrdersPage() {
         error={deleteOrder.error?.message ?? null}
         onConfirm={() => void confirmDelete()}
       />
+
+      {paymentRecorded ? (
+        <PaymentRecordedDialog
+          record={paymentRecorded}
+          onClose={() => setPaymentRecorded(null)}
+          onShare={(order) => {
+            setPaymentRecorded(null);
+            setReceiptOrder(order);
+          }}
+        />
+      ) : null}
+
+      {receiptOrder ? (
+        <ShareReceiptDialog
+          open
+          onOpenChange={(open) => {
+            if (!open) setReceiptOrder(null);
+          }}
+          orderNo={receiptOrder.orderNo}
+          token={receiptOrder.publicToken}
+        />
+      ) : null}
     </div>
   );
 }

@@ -139,6 +139,21 @@ export type DraftOrderChange = {
   gcashRecipientId: string;
 };
 
+export type QuickSalePaymentValue = {
+  payNow: boolean;
+  method: 'CASH' | 'GCASH';
+  amount: string;
+  amountTouched: boolean;
+  gcashRecipientId: string;
+};
+
+export type PaymentRecordedState = {
+  order: SalesOrder;
+  paidCentavos: number;
+  changeCentavos: number;
+  mode: 'recorded' | 'updated';
+};
+
 export type OrderInput = {
   orderId: string | null;
   businessDate: string;

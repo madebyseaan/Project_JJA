@@ -158,6 +158,31 @@ describe('OrdersPage', () => {
     );
   });
 
+  test('shows the payment recorded modal from navigation state', () => {
+    render(
+      <MemoryRouter
+        initialEntries={[
+          {
+            pathname: '/orders',
+            state: {
+              paymentRecorded: {
+                order: paidOrder,
+                paidCentavos: 25000,
+                changeCentavos: 0,
+                mode: 'recorded',
+              },
+            },
+          },
+        ]}
+      >
+        <OrdersPage />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('heading', { name: 'Payment recorded' })).toBeInTheDocument();
+    expect(screen.getByText('Receipt ready')).toBeInTheDocument();
+  });
+
   test('shows You for the signed-in worker', () => {
     renderPage();
 
