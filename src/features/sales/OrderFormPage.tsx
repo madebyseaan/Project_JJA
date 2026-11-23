@@ -173,8 +173,8 @@ export function OrderFormPage() {
 
   const hasPayment =
     parsedPayments.length > 0 || parsedChanges.length > 0 || parsedExtras.length > 0;
-  const orderWasPaid = existing.data?.order.status === 'PAID';
   const orderStatus = existing.data?.order.status ?? 'OPEN';
+  const orderWasPaid = orderStatus === 'PAID' || orderStatus === 'EXPORTED';
 
   const money = calculateOrderMoney({
     items: parsedItems.map((item) => ({
@@ -453,9 +453,7 @@ export function OrderFormPage() {
             onClick={() => setTab('payment')}
           >
             Payment
-            <span className="text-xs font-normal">
-              {orderStatus === 'PAID' ? 'Paid' : 'Unpaid'}
-            </span>
+            <span className="text-xs font-normal">{orderWasPaid ? 'Paid' : 'Unpaid'}</span>
           </Button>
         </div>
       ) : null}
@@ -584,7 +582,9 @@ export function OrderFormPage() {
             balanceCentavos={money.balanceCentavos}
             note={
               tab === 'order'
-                ? 'Payment is recorded after the repair.'
+                ? orderWasPaid
+                  ? 'This order is paid. If you change items or labor, rebalance the payment before saving.'
+                  : 'Payment is recorded after the repair.'
                 : 'Payment date is the date used in reports.'
             }
             primaryAction={
