@@ -35,7 +35,7 @@ export function PaymentRecordedDialog({ record, onClose, onShare }: PaymentRecor
         if (!open) onClose();
       }}
     >
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-md">
         <DialogHeader>
           <div className="bg-ok/10 text-ok flex size-12 items-center justify-center rounded-full">
             <CheckCircle2 className="size-6" aria-hidden="true" />
