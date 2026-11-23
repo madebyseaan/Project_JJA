@@ -568,4 +568,80 @@ describe('job payments', () => {
     });
     expect(locked?.message).toBe('ORDER_LOCKED');
   });
+
+  it('deletes an unpaid job with an audit record and blocks paid jobs', async () => {
+    const job = await saveOrder(uncleClient, {
+      mainUserId: uncle.id,
+      items: [
+        {
+          catalog_item_id: catalogIds[0] as string,
+          qty: 1,
+          unit_price_centavos: 15000,
+          is_custom: false,
+        },
+      ],
+      labor: 0,
+      payments: [],
+      paidOn: null,
+    });
+
+    const { error } = await uncleClient.rpc('delete_sales_order', { p_order_id: job.id });
+    expect(error).toBeNull();
+
+    const { data: deleted } = await uncleClient
+      .from('sales_orders')
+      .select('id')
+      .eq('id', job.id)
+      .maybeSingle();
+    expect(deleted).toBeNull();
+
+    const service = getServiceClient();
+    const { data: audit } = await service
+      .from('audit_events')
+      .select('action,entity_id')
+      .eq('entity_id', job.id)
+      .eq('action', 'sales_order.deleted')
+      .single();
+    expect(audit).toMatchObject({ action: 'sales_order.deleted', entity_id: job.id });
+    await service.from('audit_events').delete().eq('entity_id', job.id);
+
+    const paid = await saveOrder(uncleClient, {
+      mainUserId: uncle.id,
+      items: [
+        {
+          catalog_item_id: catalogIds[0] as string,
+          qty: 1,
+          unit_price_centavos: 15000,
+          is_custom: false,
+        },
+      ],
+      labor: 0,
+      payments: [{ method: 'CASH', amount_centavos: 15000 }],
+    });
+
+    const { error: paidError } = await uncleClient.rpc('delete_sales_order', {
+      p_order_id: paid.id,
+    });
+    expect(paidError?.message).toBe('ORDER_NOT_DELETABLE');
+
+    const open = await saveOrder(uncleClient, {
+      mainUserId: uncle.id,
+      items: [
+        {
+          catalog_item_id: catalogIds[0] as string,
+          qty: 1,
+          unit_price_centavos: 15000,
+          is_custom: false,
+        },
+      ],
+      labor: 0,
+      payments: [],
+      paidOn: null,
+    });
+
+    const { error: anonError } = await getAnonClient().rpc('delete_sales_order', {
+      p_order_id: open.id,
+    });
+    expect(anonError).not.toBeNull();
+  });
 });

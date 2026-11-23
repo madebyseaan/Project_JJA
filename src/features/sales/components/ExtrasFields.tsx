@@ -41,7 +41,10 @@ export function ExtrasFields({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h2 className="font-display text-xl font-semibold">Extras</h2>
-          <p className="text-steel text-xs">Keep-the-change tips. Defaults to the main worker.</p>
+          <p className="text-steel text-xs">
+            Optional. Only if the customer wants to give part of the change. Defaults to the main
+            worker.
+          </p>
         </div>
         <Button
           type="button"

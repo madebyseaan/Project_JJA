@@ -76,9 +76,9 @@ Opened from:
 Fields:
 
 - Payment date: defaults to today; past allowed; future disabled; cannot be before the job date.
-- Extras/tips: recipient defaults to the main worker; helper can be chosen.
 - Multiple cash/GCash payments, each with a GCash recipient.
-- Change, cash or GCash, with a recipient for GCash.
+- Change is calculated automatically: cash first, then GCash from the people who received it.
+- Optional extras/tips after the payment; recipient defaults to the main worker, helper can be chosen; an extra reduces the change.
 - **Total to pay = job total + extras**
 - Payments, change, balance.
 
@@ -95,6 +95,7 @@ Actions:
   - Count and total unpaid.
   - Job date, order number, customer/bike, workers, job total.
   - **Take payment** action.
+  - **Delete** action for an unpaid job, with a confirmation; paid jobs cannot be deleted.
 - **Paid sales** section:
   - Filtered by the selected payment date.
   - Summary cards: parts, labor, cash net, GCash net, order count.
@@ -178,7 +179,7 @@ Shared pieces:
 - `OrderDetailsFields` — customer, date, items, labor
 - `OrderSummaryCard` — parts, labor, job total, or payment totals
 - `ExtrasEditor`
-- `OrderPaymentFields` — payment date, extras, payments, change
+- `OrderPaymentFields` - payment date, payments, automatic change, extras
 - `StaffChoice` / `staffLabel` helper for “You”
 
 Pages:
@@ -222,7 +223,7 @@ E2E:
 
 - Create an unpaid job with items and labor.
 - See it in Open jobs with the job total.
-- Take payment with extras, mixed cash/GCash, and change.
+- Take payment with extras, mixed cash/GCash, and automatic change.
 - See it move to Paid sales on the payment date.
 - Open the receipt.
 - Edit a paid order, change an item, and confirm rebalancing is required.

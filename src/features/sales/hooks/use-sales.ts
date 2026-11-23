@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import {
+  deleteOrder,
   getGcashBalances,
   getOrder,
   getPublicReceipt,
@@ -108,6 +109,15 @@ export function useSaveOrder() {
 
   return useMutation({
     mutationFn: (input: OrderInput) => saveOrder(input),
+    onSuccess: invalidate,
+  });
+}
+
+export function useDeleteOrder() {
+  const invalidate = useInvalidateSales();
+
+  return useMutation({
+    mutationFn: deleteOrder,
     onSuccess: invalidate,
   });
 }

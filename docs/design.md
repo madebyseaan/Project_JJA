@@ -97,7 +97,7 @@ Rules:
 - Bottom tabs: Orders, Items, Reports, Settings.
 - Primary actions are 56px tall; other targets are at least 48px.
 - The daily orders screen shows summary numbers first, then the dated order list.
-- The job form uses Customer, Items, and Labor with a prominent Job total. Payment uses a separate step with Payment date, Extras, Payments, and Change.
+- The job form uses Customer, Items, and Labor with a prominent Job total. Payment uses a separate step with Payment date, Payments, automatic Change, then optional Extras.
 - The phone shell is a `100dvh` flex column: safe-area top, fixed header, one scrollable main area, bottom tabs as the last flex child. The tabs are not a fixed overlay, so browser chrome changes cannot leave a gap or make them jump.
 - Safe areas: header padding uses `env(safe-area-inset-top)`; the tab bar fills `env(safe-area-inset-bottom)` with its own background.
 - Mobile form controls render at 16px to stop iOS focus zoom. Pinch zoom is never disabled.
@@ -115,9 +115,9 @@ Rules:
 
 ### Key screens
 
-- **Orders:** Open jobs section with an unpaid total and Take payment; then Sales paid on date with four summary tiles, labor per person, and paid rows. Status is always a text badge.
+- **Orders:** Open jobs section with an unpaid total, Take payment, and a confirmed Delete for unpaid jobs; then Sales paid on date with four summary tiles, labor per person, and paid rows. Status is always a text badge.
 - **Job form:** customer/date block; searchable items with per-order price; custom line dialog; labor split; **Job total card** (parts + labor) always visible.
-- **Order detail:** Order and Payment tabs. Payment tab has payment date, extras, mixed payments, change, and the total/balance card. A paid order shows Share receipt.
+- **Order detail:** Order and Payment tabs. Payment tab has payment date, mixed payments, automatic change, optional extras, and the total/balance card. An open job shows Delete job; a paid order shows Share receipt.
 - **Items:** searchable catalog, right-aligned prices, no stock. Import dialog with a preview and skipped-row count.
 - **Reports:** month picker, six paid summary tiles, paid-date table with a month total, and a full-breakdown labor panel.
 - **GCash:** shop-held banner, per-person balances, transfer dialog, recent history.
@@ -159,9 +159,9 @@ Rules:
 
 ## 7. Copy
 
-- Verbs, sentence case: “New order”, “Add item”, “Custom line”, “Add payment”, “Add change”, “Take payment”, “Record payment”, “Record transfer”, “Save order”, “Import item list”.
+- Verbs, sentence case: "New order", "Add item", "Custom line", "Add payment", "Delete job", "Take payment", "Record payment", "Record transfer", "Save order", "Import item list".
 - A button and its result use the same verb: “Save order” → “Order saved.”, “Import item list” → “Item list imported.”
-- Errors say what happened and what to do: “Payment is not balanced. Difference: ₱20.00.”, “GCash change must come from someone who received a GCash payment.”
+- Errors say what happened and what to do: “Payment is short by ₱20.00.”, “Choose who received each GCash payment.”
 - Empty states invite action: “No jobs waiting for payment.” and “No paid sales on this date.”
 - No “Submit”, “OK”, “An error occurred”, or exclamation marks.
 - Receipt language: “Sales receipt”, not “Official Receipt”, unless the BIR registration exists.

@@ -19,6 +19,7 @@ export type AppErrorCode =
   | 'PAYMENT_REQUIRED'
   | 'ORDER_NOT_FOUND'
   | 'ORDER_LOCKED'
+  | 'ORDER_NOT_DELETABLE'
   | 'INVALID_INPUT'
   | 'NETWORK'
   | 'UNKNOWN';
@@ -51,6 +52,7 @@ const DEFAULT_MESSAGES: Record<string, string> = {
   PAYMENT_REQUIRED: 'Add the payment or remove the extras before saving.',
   ORDER_NOT_FOUND: 'This order was not found. It may have been removed.',
   ORDER_LOCKED: 'This month has been exported. Corrections are made in QuickBooks.',
+  ORDER_NOT_DELETABLE: 'Only unpaid jobs can be deleted. Paid and exported orders stay in reports.',
   INVALID_INPUT: 'Check the entered values and try again.',
   NETWORK: 'No connection. Nothing was saved.',
   UNKNOWN: UNKNOWN_MESSAGE,
@@ -72,6 +74,7 @@ const CODE_MESSAGES: Record<string, AppErrorCode> = {
   PAYMENT_REQUIRED: 'PAYMENT_REQUIRED',
   ORDER_NOT_FOUND: 'ORDER_NOT_FOUND',
   ORDER_LOCKED: 'ORDER_LOCKED',
+  ORDER_NOT_DELETABLE: 'ORDER_NOT_DELETABLE',
 };
 
 const INVALID_INPUT_CODES = new Set([

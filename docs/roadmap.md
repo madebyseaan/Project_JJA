@@ -88,9 +88,10 @@ Status: **Implemented 22–23 Nov 2026; waiting for the human architect to test 
 - [x] Multiple items per order, catalog prices, and per-order overrides.
 - [x] Custom item lines flagged “not in QuickBooks.”
 - [x] Total labor, optional helper, helper share, and main-user remainder.
-- [x] Extras (keep-the-change tips) defaulting to the main user.
+- [x] Extras (keep-the-change tips) defaulting to the main user and entered at the end of payment; an extra reduces the automatic change.
 - [x] Multiple cash/GCash payments with GCash recipient.
-- [x] Change as cash or GCash, with balance validation.
+- [x] Change calculated automatically: cash first, then GCash from the people who received it.
+- [x] Unpaid jobs can be deleted with confirmation and an audit event; paid jobs cannot.
 - [x] Order editing; snapshots of item names and prices.
 - [x] Step 1 saves an unpaid job with a visible job total (parts + labor).
 - [x] Step 2 records payment later with a payment date, extras, and change.

@@ -12,21 +12,18 @@ const staff: StaffProfile[] = [
 
 function renderEditor() {
   const onPaymentsChange = vi.fn();
-  const onChangesChange = vi.fn();
 
   render(
     <OrderPaymentEditor
       payments={[]}
-      changes={[]}
       staff={staff}
       defaultRecipientId="aldwin"
       currentUserId="aldwin"
       onPaymentsChange={onPaymentsChange}
-      onChangesChange={onChangesChange}
     />,
   );
 
-  return { onPaymentsChange, onChangesChange };
+  return { onPaymentsChange };
 }
 
 describe('OrderPaymentEditor', () => {
@@ -37,17 +34,6 @@ describe('OrderPaymentEditor', () => {
     await user.click(screen.getByRole('button', { name: 'Add payment' }));
 
     expect(onPaymentsChange).toHaveBeenCalledWith([
-      expect.objectContaining({ method: 'CASH', gcashRecipientId: '' }),
-    ]);
-  });
-
-  test('adds a cash change without a hidden GCash recipient', async () => {
-    const user = userEvent.setup();
-    const { onChangesChange } = renderEditor();
-
-    await user.click(screen.getByRole('button', { name: 'Add change' }));
-
-    expect(onChangesChange).toHaveBeenCalledWith([
       expect.objectContaining({ method: 'CASH', gcashRecipientId: '' }),
     ]);
   });

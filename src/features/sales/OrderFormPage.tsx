@@ -1,4 +1,4 @@
-import { ArrowLeft, Loader2, Share2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Share2, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 import { toast } from 'sonner';
@@ -13,17 +13,18 @@ import { formatManilaDate, manilaDateKey } from '@/lib/dates';
 import { formatCentavos, formatPesoInput, parsePesoToCentavos } from '@/lib/money';
 
 import { CustomerFields } from './components/CustomerFields';
+import { DeleteJobDialog } from './components/DeleteJobDialog';
 import { ExtrasFields } from './components/ExtrasFields';
 import { LaborFields } from './components/LaborFields';
 import { OrderItemEditor } from './components/OrderItemEditor';
 import { OrderPaymentEditor } from './components/OrderPaymentEditor';
 import { OrderSummaryCard } from './components/OrderSummaryCard';
 import { ShareReceiptDialog } from './components/ShareReceiptDialog';
-import { useCatalog, useOrder, useSaveOrder, useStaff } from './hooks/use-sales';
+import { useCatalog, useDeleteOrder, useOrder, useSaveOrder, useStaff } from './hooks/use-sales';
+import { calculateAutoChanges } from './order-change';
 import { calculateOrderMoney, mainLaborCentavos } from './order-math';
 import { staffLabel } from './staff-label';
 import type {
-  DraftOrderChange,
   DraftOrderExtra,
   DraftOrderItem,
   DraftOrderPayment,
@@ -60,6 +61,7 @@ export function OrderFormPage() {
   const staff = useStaff();
   const existing = useOrder(id ?? null);
   const save = useSaveOrder();
+  const deleteOrder = useDeleteOrder();
 
   const currentUserId = auth.status === 'signed-in' ? auth.profile.id : null;
 
@@ -73,10 +75,10 @@ export function OrderFormPage() {
   const [helperLabor, setHelperLabor] = useState('');
   const [extras, setExtras] = useState<DraftOrderExtra[]>([]);
   const [payments, setPayments] = useState<DraftOrderPayment[]>([]);
-  const [changes, setChanges] = useState<DraftOrderChange[]>([]);
   const [paymentDate, setPaymentDate] = useState(manilaDateKey());
   const [formError, setFormError] = useState<string | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const loadedIdRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -121,14 +123,6 @@ export function OrderFormPage() {
         gcashRecipientId: payment.gcashRecipientId ?? '',
       })),
     );
-    setChanges(
-      detail.changes.map((change) => ({
-        key: change.id,
-        method: change.method,
-        amount: formatPesoInput(change.amountCentavos),
-        gcashRecipientId: change.gcashRecipientId ?? '',
-      })),
-    );
     setPaymentDate(detail.order.paidOn ?? manilaDateKey());
   }, [existing.data]);
 
@@ -165,34 +159,40 @@ export function OrderFormPage() {
     amount: parsePesoToCentavos(payment.amount) ?? 0,
     gcashRecipientId: payment.gcashRecipientId,
   }));
-  const parsedChanges = changes.map((change) => ({
-    key: change.key,
-    method: change.method,
-    amount: parsePesoToCentavos(change.amount) ?? 0,
-    gcashRecipientId: change.gcashRecipientId,
-  }));
 
-  const hasPayment =
-    parsedPayments.length > 0 || parsedChanges.length > 0 || parsedExtras.length > 0;
+  const hasPayment = parsedPayments.length > 0 || parsedExtras.length > 0;
   const orderStatus = existing.data?.order.status ?? 'OPEN';
   const orderWasPaid = orderStatus === 'PAID' || orderStatus === 'EXPORTED';
   const isLocked = orderStatus === 'EXPORTED';
 
-  const money = calculateOrderMoney({
-    items: parsedItems.map((item) => ({
-      qty: Number.isFinite(item.qty) ? item.qty : 0,
-      unitPriceCentavos: item.price ?? 0,
-    })),
+  const moneyItems = parsedItems.map((item) => ({
+    qty: Number.isFinite(item.qty) ? item.qty : 0,
+    unitPriceCentavos: item.price ?? 0,
+  }));
+  const moneyExtras = parsedExtras.map((extra) => ({ amountCentavos: extra.amount }));
+  const moneyPayments = parsedPayments.map((payment) => ({
+    method: payment.method,
+    amountCentavos: payment.amount,
+    gcashRecipientId: payment.gcashRecipientId || null,
+  }));
+
+  const baseMoney = calculateOrderMoney({
+    items: moneyItems,
     laborTotalCentavos: laborCentavos,
-    extras: parsedExtras.map((extra) => ({ amountCentavos: extra.amount })),
-    payments: parsedPayments.map((payment) => ({
-      method: payment.method,
-      amountCentavos: payment.amount,
-    })),
-    changes: parsedChanges.map((change) => ({
-      method: change.method,
-      amountCentavos: change.amount,
-    })),
+    extras: moneyExtras,
+    payments: moneyPayments,
+    changes: [],
+  });
+
+  const totalToPay = baseMoney.customerTotalCentavos + baseMoney.extrasCentavos;
+  const autoChanges = calculateAutoChanges(moneyPayments, totalToPay);
+
+  const money = calculateOrderMoney({
+    items: moneyItems,
+    laborTotalCentavos: laborCentavos,
+    extras: moneyExtras,
+    payments: moneyPayments,
+    changes: autoChanges.changes,
   });
 
   const mainLabor = mainLaborCentavos(laborCentavos, helperLaborCentavos);
@@ -282,52 +282,12 @@ export function OrderFormPage() {
       }
     }
 
-    for (const change of parsedChanges) {
-      if (change.amount <= 0) return 'Every change line needs an amount greater than zero.';
-      if (change.method === 'CASH' && change.gcashRecipientId) {
-        return 'Cash change cannot have a GCash recipient.';
-      }
-      if (change.method === 'GCASH' && !change.gcashRecipientId) {
-        return 'Choose who returned each GCash change.';
-      }
-    }
-
-    const gcashPaymentsByRecipient = new Map<string, number>();
-    for (const payment of parsedPayments) {
-      if (payment.method !== 'GCASH' || !payment.gcashRecipientId) continue;
-      gcashPaymentsByRecipient.set(
-        payment.gcashRecipientId,
-        (gcashPaymentsByRecipient.get(payment.gcashRecipientId) ?? 0) + payment.amount,
-      );
-    }
-
-    const gcashChangesByRecipient = new Map<string, number>();
-    for (const change of parsedChanges) {
-      if (change.method !== 'GCASH' || !change.gcashRecipientId) continue;
-      gcashChangesByRecipient.set(
-        change.gcashRecipientId,
-        (gcashChangesByRecipient.get(change.gcashRecipientId) ?? 0) + change.amount,
-      );
-    }
-
-    for (const [recipientId, changeAmount] of gcashChangesByRecipient) {
-      const received = gcashPaymentsByRecipient.get(recipientId) ?? 0;
-
-      if (received === 0) {
-        return 'GCash change must come from someone who received a GCash payment.';
-      }
-
-      if (changeAmount > received) {
-        return 'GCash change cannot be more than that person received.';
-      }
-    }
-
-    if (money.netCashCentavos < 0 || money.netGcashCentavos < 0) {
-      return 'Change cannot be more than the payment for that method.';
+    if (autoChanges.shortfallCentavos > 0) {
+      return `Payment is short by ${formatCentavos(autoChanges.shortfallCentavos)}.`;
     }
 
     if (money.balanceCentavos !== 0) {
-      return `Payment is not balanced. Difference: ${formatCentavos(money.balanceCentavos)}.`;
+      return 'Payment is not balanced.';
     }
 
     return null;
@@ -360,11 +320,7 @@ export function OrderFormPage() {
       amountCentavos: payment.amount,
       gcashRecipientId: payment.gcashRecipientId || null,
     })),
-    changes: parsedChanges.map((change) => ({
-      method: change.method,
-      amountCentavos: change.amount,
-      gcashRecipientId: change.gcashRecipientId || null,
-    })),
+    changes: autoChanges.changes,
   });
 
   const needsPaymentValidation = tab === 'payment' || hasPayment || orderWasPaid;
@@ -392,6 +348,18 @@ export function OrderFormPage() {
       toast.success(tab === 'payment' ? 'Payment saved.' : 'Order saved.');
     } catch (saveError) {
       setFormError(saveError instanceof Error ? saveError.message : 'Could not save the order.');
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!id) return;
+
+    try {
+      await deleteOrder.mutateAsync(id);
+      toast.success('Open job deleted.');
+      navigate('/orders');
+    } catch {
+      // The dialog renders the mutation error.
     }
   };
 
@@ -442,11 +410,20 @@ export function OrderFormPage() {
           ) : null}
         </div>
 
-        {isEdit && existing.data && orderStatus !== 'OPEN' ? (
-          <Button variant="outline" size="touch" onClick={() => setShareOpen(true)}>
-            <Share2 aria-hidden="true" />
-            Share receipt
-          </Button>
+        {isEdit && existing.data ? (
+          <div className="flex flex-wrap gap-2">
+            {orderStatus === 'OPEN' ? (
+              <Button variant="destructive" size="touch" onClick={() => setDeleteOpen(true)}>
+                <Trash2 aria-hidden="true" />
+                Delete job
+              </Button>
+            ) : (
+              <Button variant="outline" size="touch" onClick={() => setShareOpen(true)}>
+                <Share2 aria-hidden="true" />
+                Share receipt
+              </Button>
+            )}
+          </div>
         ) : null}
       </div>
 
@@ -545,6 +522,53 @@ export function OrderFormPage() {
                 </p>
               </section>
 
+              <OrderPaymentEditor
+                payments={payments}
+                staff={staffOptions}
+                defaultRecipientId={mainUserId}
+                currentUserId={currentUserId}
+                onPaymentsChange={setPayments}
+              />
+
+              <section className="border-line bg-surface rounded-lg border p-4">
+                <h2 className="font-display text-xl font-semibold">Change</h2>
+                <p className="text-steel text-xs">
+                  Calculated automatically. Cash is returned first, then GCash. Any extra below
+                  reduces the change.
+                </p>
+                {autoChanges.changes.length === 0 ? (
+                  <p className="text-steel mt-2 text-sm">
+                    {autoChanges.shortfallCentavos > 0
+                      ? `Payment is short by ${formatCentavos(autoChanges.shortfallCentavos)}.`
+                      : 'No change.'}
+                  </p>
+                ) : (
+                  <ul className="mt-2 space-y-1 text-sm">
+                    {autoChanges.changes.map((change, index) => {
+                      const person = change.gcashRecipientId
+                        ? staffOptions.find((row) => row.id === change.gcashRecipientId)
+                        : null;
+
+                      return (
+                        <li
+                          key={`${change.method}-${index}`}
+                          className="flex justify-between gap-3"
+                        >
+                          <span>
+                            {change.method === 'CASH'
+                              ? 'Cash'
+                              : `GCash · ${person ? staffLabel(person, currentUserId) : 'Staff'}`}
+                          </span>
+                          <span className="font-mono tabular-nums">
+                            {formatCentavos(change.amountCentavos)}
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </section>
+
               <ExtrasFields
                 extras={extras}
                 staff={staffOptions}
@@ -552,16 +576,6 @@ export function OrderFormPage() {
                 helperUserId={helperUserId}
                 currentUserId={currentUserId}
                 onChange={setExtras}
-              />
-
-              <OrderPaymentEditor
-                payments={payments}
-                changes={changes}
-                staff={staffOptions}
-                defaultRecipientId={mainUserId}
-                currentUserId={currentUserId}
-                onPaymentsChange={setPayments}
-                onChangesChange={setChanges}
               />
             </>
           )}
@@ -647,12 +661,24 @@ export function OrderFormPage() {
       </div>
 
       {isEdit && existing.data ? (
-        <ShareReceiptDialog
-          open={shareOpen}
-          onOpenChange={setShareOpen}
-          orderNo={existing.data.order.orderNo}
-          token={existing.data.order.publicToken}
-        />
+        <>
+          <ShareReceiptDialog
+            open={shareOpen}
+            onOpenChange={setShareOpen}
+            orderNo={existing.data.order.orderNo}
+            token={existing.data.order.publicToken}
+          />
+          <DeleteJobDialog
+            open={deleteOpen}
+            onOpenChange={(open) => {
+              if (!open && !deleteOrder.isPending) setDeleteOpen(false);
+            }}
+            orderNo={existing.data.order.orderNo}
+            pending={deleteOrder.isPending}
+            error={deleteOrder.error?.message ?? null}
+            onConfirm={() => void confirmDelete()}
+          />
+        </>
       ) : null}
     </div>
   );

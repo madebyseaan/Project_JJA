@@ -94,18 +94,20 @@ Two staff accounts, both with the same access:
 ### Step 2 — Payment
 
 9. When the repair is done, open the job and choose **Payment**.
-10. Add optional **extras** (tips/keep-the-change). The recipient defaults to the main worker; the helper can be chosen.
-11. Record payment:
+10. Record the payment:
     - one or more payments;
     - each is Cash or GCash;
     - each GCash payment records who received it;
-    - change can be cash or GCash and records its own recipient;
     - the **payment date** defaults to today; past dates are allowed, future dates are not.
-12. The summary shows **Total to pay = job total + extras**, payments, change, and balance.
-13. Record the payment. The job becomes **Paid** and moves to paid sales on the payment date.
-14. Optionally share the digital receipt link or QR code.
+11. Change is **calculated automatically**. Cash change is returned first, then GCash from the people who received it. Staff never type change rows.
+12. After the payment, add optional **extras** (tips/keep-the-change). The recipient defaults to the main worker; the helper can be chosen. An extra increases **Total to pay** and reduces the automatic change, which is how “keep the change” is recorded.
+13. The summary shows **Total to pay = job total + extras**, payments, change, and balance.
+14. Record the payment. The job becomes **Paid** and moves to paid sales on the payment date.
+15. Optionally share the digital receipt link or QR code.
 
 Orders stay editable while the month is open. A paid order can be corrected, but the payment must be rebalanced before saving. Changing the job date assigns a new order number for that date. Once QuickBooks export and month lock exist, an exported month is read-only and corrections happen in QuickBooks.
+
+An unpaid job can be **deleted** with a confirmation. Deletion removes its items, labor, and extras and writes an audit event. Paid and exported orders cannot be deleted; their money is already in reports.
 
 ---
 
@@ -429,6 +431,7 @@ Stable error codes:
 - `INSUFFICIENT_GCASH` — transfer exceeds the held balance.
 - `INVALID_DESTINATION`, `INVALID_COUNTERPARTY`, `INVALID_REFERENCE`, `INVALID_NOTE` — bad transfer.
 - `ORDER_NOT_FOUND`, `ORDER_LOCKED` — edit target missing or exported.
+- `ORDER_NOT_DELETABLE` — an unpaid job delete was requested for a paid or exported order.
 - `FORBIDDEN` — not staff.
 - `PAYMENT_MISMATCH`, `INVALID_GCASH_RECIPIENT`, and `CHANGE_TOO_LARGE` are mapped to human messages in the UI.
 
@@ -515,7 +518,8 @@ Every write and every money-relevant change writes an `audit_events` row in the 
 - Reject extras without a payment.
 - A paid order cannot become unpaid.
 - Changing a paid order's items requires rebalancing the payment.
-- Create an order with items, labor split, extras, mixed payments, and change.
+- Delete an unpaid job with an audit event; paid and exported jobs cannot be deleted.
+- Create an order with items, labor split, extras, mixed payments, and automatic change.
 - Reject helper share over total; reject payment mismatch and too much change.
 - Edit replaces child rows and recalculates totals.
 - Custom and catalog line snapshots.
@@ -529,7 +533,7 @@ Every write and every money-relevant change writes an `audit_events` row in the 
 
 - Login as Aldwin; create an unpaid job with an item, labor, and helper split; see the job total.
 - See it in Open jobs as Unpaid.
-- Take payment later with extras, mixed cash/GCash, and change.
+- Take payment later with extras, mixed cash/GCash, and automatic change.
 - See it move to Paid sales on the payment date and open the receipt.
 - The Signed-in user is shown as “You” in staff choices.
 - The mechanic has the same navigation and access.

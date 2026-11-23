@@ -1,9 +1,12 @@
 import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { OrdersPage } from '@/features/sales/OrdersPage';
 import type { DailyReport, LaborReport, PaymentsReport, SalesOrder } from '@/features/sales/types';
+
+const { mockDeleteMutate } = vi.hoisted(() => ({ mockDeleteMutate: vi.fn() }));
 
 type QueryState<T> = {
   isPending: boolean;
@@ -25,6 +28,7 @@ vi.mock('@/features/sales/hooks/use-sales', () => ({
   useDailyReport: () => dailyState,
   useLaborReport: () => laborState,
   usePaymentsReport: () => paymentsState,
+  useDeleteOrder: () => ({ mutateAsync: mockDeleteMutate, isPending: false, error: null }),
 }));
 
 vi.mock('@/features/auth/use-auth', () => ({
@@ -82,6 +86,7 @@ function emptyState<T>(): QueryState<T> {
 }
 
 beforeEach(() => {
+  mockDeleteMutate.mockReset();
   openState = { ...emptyState<SalesOrder>(), data: [openOrder] };
   paidState = { ...emptyState<SalesOrder>(), data: [paidOrder] };
   dailyState = {
@@ -177,5 +182,18 @@ describe('OrdersPage', () => {
 
     expect(screen.getByText('No jobs waiting for payment.')).toBeInTheDocument();
     expect(screen.getByText('No paid sales on this date')).toBeInTheDocument();
+  });
+
+  test('confirms before deleting an open job', async () => {
+    const user = userEvent.setup();
+    mockDeleteMutate.mockResolvedValue(undefined);
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: 'Delete job SL-20261123-0001' }));
+    expect(screen.getByText('Delete open job?')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Delete job' }));
+
+    expect(mockDeleteMutate).toHaveBeenCalledWith('open-1');
   });
 });

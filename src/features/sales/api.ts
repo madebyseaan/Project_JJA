@@ -411,6 +411,14 @@ export async function saveOrder(input: OrderInput): Promise<SalesOrder> {
   return mapOrder(data as unknown as OrderRow);
 }
 
+export async function deleteOrder(orderId: string): Promise<void> {
+  const { error } = await getSupabaseClient().rpc('delete_sales_order', {
+    p_order_id: orderId,
+  });
+
+  if (error) throw toAppError(error);
+}
+
 export async function listDailyReport(from: string, to: string): Promise<DailyReport[]> {
   const { data, error } = await getSupabaseClient()
     .from('v_sales_daily')

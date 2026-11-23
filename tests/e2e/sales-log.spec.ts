@@ -441,10 +441,8 @@ test('saves an unpaid job, takes payment later, and shows both lists', async ({ 
   await payment.getByRole('button', { name: 'Add payment' }).click();
   await payment.getByLabel('Amount (₱)').nth(1).fill('100');
 
-  await payment.getByRole('button', { name: 'Add change' }).click();
-  await payment.getByLabel('Amount (₱)').last().fill('50');
-
   await expect(page.getByText('₱260.00').first()).toBeVisible();
+  await expect(page.getByText('₱50.00').first()).toBeVisible();
   await page.getByRole('button', { name: 'Record payment' }).first().click();
 
   await expect(page.getByText('Paid', { exact: true }).first()).toBeVisible();

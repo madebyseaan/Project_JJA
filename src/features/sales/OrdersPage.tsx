@@ -1,6 +1,7 @@
-import { ChevronRight, Plus } from 'lucide-react';
-import { useMemo } from 'react';
+import { ChevronRight, Plus, Trash2 } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
+import { toast } from 'sonner';
 
 import { EmptyState } from '@/components/EmptyState';
 import { PageHeader } from '@/components/PageHeader';
@@ -12,8 +13,10 @@ import { useAuth } from '@/features/auth/use-auth';
 import { formatManilaDate, manilaDateKey } from '@/lib/dates';
 import { formatCentavos } from '@/lib/money';
 
+import { DeleteJobDialog } from './components/DeleteJobDialog';
 import {
   useDailyReport,
+  useDeleteOrder,
   useLaborReport,
   useOpenOrders,
   usePaidOrders,
@@ -58,7 +61,15 @@ function Workers({ order, currentUserId }: { order: SalesOrder; currentUserId: s
   );
 }
 
-function OpenJobRow({ order, currentUserId }: { order: SalesOrder; currentUserId: string | null }) {
+function OpenJobRow({
+  order,
+  currentUserId,
+  onDelete,
+}: {
+  order: SalesOrder;
+  currentUserId: string | null;
+  onDelete: (order: SalesOrder) => void;
+}) {
   return (
     <li className="border-line bg-surface rounded-lg border p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -82,14 +93,25 @@ function OpenJobRow({ order, currentUserId }: { order: SalesOrder; currentUserId
           <p className="font-display text-xl font-bold tabular-nums">
             {formatCentavos(order.totalCentavos)}
           </p>
-          <Button
-            size="touch"
-            variant="outline"
-            nativeButton={false}
-            render={<Link to={`/orders/${order.id}?tab=payment`} />}
-          >
-            Take payment
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              size="touch"
+              variant="outline"
+              nativeButton={false}
+              render={<Link to={`/orders/${order.id}?tab=payment`} />}
+            >
+              Take payment
+            </Button>
+            <Button
+              variant="ghost"
+              size="touch"
+              className="text-danger"
+              aria-label={`Delete job ${order.orderNo}`}
+              onClick={() => onDelete(order)}
+            >
+              <Trash2 aria-hidden="true" />
+            </Button>
+          </div>
         </div>
       </div>
     </li>
@@ -151,6 +173,8 @@ export function OrdersPage() {
   const daily = useDailyReport(date, date);
   const labor = useLaborReport(date, date);
   const payments = usePaymentsReport(date, date);
+  const deleteOrder = useDeleteOrder();
+  const [orderToDelete, setOrderToDelete] = useState<SalesOrder | null>(null);
 
   const report = daily.data?.[0];
   const cash = useMemo(
@@ -181,6 +205,18 @@ export function OrdersPage() {
     void daily.refetch();
     void labor.refetch();
     void payments.refetch();
+  };
+
+  const confirmDelete = async () => {
+    if (!orderToDelete) return;
+
+    try {
+      await deleteOrder.mutateAsync(orderToDelete.id);
+      toast.success('Open job deleted.');
+      setOrderToDelete(null);
+    } catch {
+      // The dialog renders the mutation error.
+    }
   };
 
   return (
@@ -253,7 +289,12 @@ export function OrdersPage() {
         ) : (
           <ul className="space-y-2">
             {openOrders.data?.map((order) => (
-              <OpenJobRow key={order.id} order={order} currentUserId={currentUserId} />
+              <OpenJobRow
+                key={order.id}
+                order={order}
+                currentUserId={currentUserId}
+                onDelete={setOrderToDelete}
+              />
             ))}
           </ul>
         )}
@@ -359,6 +400,17 @@ export function OrdersPage() {
           </>
         )}
       </section>
+
+      <DeleteJobDialog
+        open={orderToDelete !== null}
+        onOpenChange={(open) => {
+          if (!open && !deleteOrder.isPending) setOrderToDelete(null);
+        }}
+        orderNo={orderToDelete?.orderNo ?? ''}
+        pending={deleteOrder.isPending}
+        error={deleteOrder.error?.message ?? null}
+        onConfirm={() => void confirmDelete()}
+      />
     </div>
   );
 }
