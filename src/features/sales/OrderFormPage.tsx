@@ -458,6 +458,15 @@ export function OrderFormPage() {
         </div>
       ) : null}
 
+      {formError ? (
+        <p
+          role="alert"
+          className="border-danger/30 bg-danger/10 text-danger rounded-md border p-3 text-sm"
+        >
+          {formError}
+        </p>
+      ) : null}
+
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
         <div className="order-2 space-y-5 lg:order-1">
           {tab === 'order' ? (
@@ -532,15 +541,6 @@ export function OrderFormPage() {
               />
             </>
           )}
-
-          {formError ? (
-            <p
-              role="alert"
-              className="border-danger/30 bg-danger/10 text-danger rounded-md border p-3 text-sm"
-            >
-              {formError}
-            </p>
-          ) : null}
 
           {!online ? (
             <output className="text-warn block text-sm">

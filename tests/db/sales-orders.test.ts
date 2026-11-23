@@ -594,6 +594,12 @@ describe('sales orders', () => {
     const jobDate = manilaDateOffset(-120);
     const paidDate = manilaDateOffset(-119);
 
+    const beforeBalances = await uncleClient.rpc('get_gcash_balances');
+    const beforeEarned =
+      (beforeBalances.data as { user_id: string; labor_earned_centavos: number }[]).find(
+        (row) => row.user_id === uncle.id,
+      )?.labor_earned_centavos ?? 0;
+
     const job = await saveOrder(uncleClient, {
       mainUserId: uncle.id,
       date: jobDate,
@@ -612,6 +618,13 @@ describe('sales orders', () => {
 
     expect(job.status).toBe('OPEN');
     expect(job.paid_on).toBeNull();
+
+    const openBalances = await uncleClient.rpc('get_gcash_balances');
+    const afterOpenEarned =
+      (openBalances.data as { user_id: string; labor_earned_centavos: number }[]).find(
+        (row) => row.user_id === uncle.id,
+      )?.labor_earned_centavos ?? 0;
+    expect(afterOpenEarned).toBe(beforeEarned);
 
     const { data: unsold } = await uncleClient
       .from('v_sales_daily')
