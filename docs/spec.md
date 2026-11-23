@@ -1,12 +1,12 @@
 # J.J.A Sales Log — Specification
 
 **Status:** Current source of truth.
-**Updated:** 22 November 2026.
+**Updated:** 23 November 2026.
 **Supersedes:** the inventory and bay-ticket specification of 15–21 November 2026.
 
 The shop is **J.J.A Motor Accessories and Motorcycle Repair Shop** (Est. 2023), one motorcycle parts and repair shop in the Philippines. This document describes the daily sales log that replaces the old inventory/repair-ticket app. The old inventory, bay, day-close, and receipt tables remain in the database until a later cleanup, but their screens are no longer part of the product.
 
-The approved design note is `docs/superpowers/specs/2026-11-22-sales-log-design.md`. If this file and that note disagree, this file wins.
+The approved design notes are `docs/superpowers/specs/2026-11-22-sales-log-design.md` and `docs/superpowers/specs/2026-11-23-job-payment-split-design.md`. If this file and those notes disagree, this file wins.
 
 ---
 

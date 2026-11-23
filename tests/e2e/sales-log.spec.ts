@@ -180,6 +180,18 @@ async function mockSalesLog(page: Page) {
     const extras = payload.p_extras.reduce((total, extra) => total + extra.amount_centavos, 0);
     const isPaid = payload.p_payments.length > 0;
 
+    const cashWithRecipient = [...payload.p_payments, ...payload.p_changes].some(
+      (row) => row.method === 'CASH' && row.gcash_recipient_id !== null,
+    );
+
+    if (cashWithRecipient) {
+      return route.fulfill({
+        status: 400,
+        contentType: 'application/json',
+        body: JSON.stringify({ message: 'INVALID_CASH_RECIPIENT' }),
+      });
+    }
+
     order = {
       id: 'order-1',
       order_no:

@@ -272,18 +272,24 @@ export async function listStaff(): Promise<StaffProfile[]> {
 }
 
 export async function listOpenOrders(): Promise<SalesOrder[]> {
-  const { data, error } = await getSupabaseClient()
-    .from('sales_orders')
-    .select(
-      `${ORDER_COLUMNS},main:profiles!sales_orders_main_user_id_fkey(display_name),helper:profiles!sales_orders_helper_user_id_fkey(display_name)`,
-    )
-    .eq('status', 'OPEN')
-    .order('business_date', { ascending: true })
-    .order('created_at', { ascending: true })
-    .limit(200);
+  const client = getSupabaseClient();
 
-  if (error) throw toAppError(error);
-  return ((data ?? []) as unknown as OrderRow[]).map(mapOrder);
+  const rows = await collectPages<OrderRow>(async (from, to) => {
+    const { data, error } = await client
+      .from('sales_orders')
+      .select(
+        `${ORDER_COLUMNS},main:profiles!sales_orders_main_user_id_fkey(display_name),helper:profiles!sales_orders_helper_user_id_fkey(display_name)`,
+      )
+      .eq('status', 'OPEN')
+      .order('business_date', { ascending: true })
+      .order('created_at', { ascending: true })
+      .range(from, to);
+
+    if (error) throw toAppError(error);
+    return (data ?? []) as unknown as OrderRow[];
+  });
+
+  return rows.map(mapOrder);
 }
 
 export async function listPaidOrders(paidOn: string): Promise<SalesOrder[]> {

@@ -97,7 +97,7 @@ Status: **Implemented 22–23 Nov 2026; waiting for the human architect to test 
 - [x] Open jobs section and paid sales filtered by payment date.
 - [x] Paid orders can be corrected with payment rebalancing.
 - [x] Staff names are Aldwin and Magma; the signed-in person is shown as “You”.
-- [x] Daily totals and full order list.
+- [x] Daily totals, Open jobs, and paid sales by payment date.
 - [x] Monthly report with daily rows and labor per person.
 - [x] GCash held per person and recorded transfers.
 - [x] Optional public digital receipt at `/s/:token`.
