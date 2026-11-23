@@ -261,6 +261,7 @@ describe('sales orders', () => {
       p_extras: [],
       p_payments: [{ method: 'CASH', amount_centavos: 16000 }],
       p_changes: [],
+      p_paid_on: manilaToday(),
     });
 
     expect(error?.message).toBe('INVALID_LABOR_SPLIT');
@@ -282,6 +283,7 @@ describe('sales orders', () => {
       p_extras: [],
       p_payments: [{ method: 'CASH', amount_centavos: 10000 }],
       p_changes: [],
+      p_paid_on: manilaToday(),
     });
 
     expect(error?.message).toBe('PAYMENT_MISMATCH');
@@ -308,6 +310,7 @@ describe('sales orders', () => {
       p_extras: [],
       p_payments: [{ method: 'GCASH', amount_centavos: 16000, gcash_recipient_id: dad.id }],
       p_changes: [{ method: 'GCASH', amount_centavos: 1000, gcash_recipient_id: uncle.id }],
+      p_paid_on: manilaToday(),
     });
 
     expect(error?.message).toBe('CHANGE_TOO_LARGE');
