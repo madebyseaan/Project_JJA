@@ -16,6 +16,7 @@ export type AppErrorCode =
   | 'CHANGE_TOO_LARGE'
   | 'EMPTY_ORDER'
   | 'INSUFFICIENT_GCASH'
+  | 'PAYMENT_REQUIRED'
   | 'ORDER_NOT_FOUND'
   | 'ORDER_LOCKED'
   | 'INVALID_INPUT'
@@ -47,6 +48,7 @@ const DEFAULT_MESSAGES: Record<string, string> = {
   CHANGE_TOO_LARGE: 'Change cannot be more than the payment for that method.',
   EMPTY_ORDER: 'Add at least one item, labor, or extra.',
   INSUFFICIENT_GCASH: 'That is more than the GCash held. Check the balance and try again.',
+  PAYMENT_REQUIRED: 'Record the payment before saving this paid order.',
   ORDER_NOT_FOUND: 'This order was not found. It may have been removed.',
   ORDER_LOCKED: 'This month has been exported. Corrections are made in QuickBooks.',
   INVALID_INPUT: 'Check the entered values and try again.',
@@ -67,6 +69,7 @@ const CODE_MESSAGES: Record<string, AppErrorCode> = {
   CHANGE_TOO_LARGE: 'CHANGE_TOO_LARGE',
   EMPTY_ORDER: 'EMPTY_ORDER',
   INSUFFICIENT_GCASH: 'INSUFFICIENT_GCASH',
+  PAYMENT_REQUIRED: 'PAYMENT_REQUIRED',
   ORDER_NOT_FOUND: 'ORDER_NOT_FOUND',
   ORDER_LOCKED: 'ORDER_LOCKED',
 };

@@ -3,6 +3,7 @@ import { Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { staffLabel } from '../staff-label';
 import type { DraftOrderChange, DraftOrderPayment, StaffProfile } from '../types';
 
 type OrderPaymentEditorProps = {
@@ -10,6 +11,7 @@ type OrderPaymentEditorProps = {
   changes: DraftOrderChange[];
   staff: StaffProfile[];
   defaultRecipientId: string;
+  currentUserId: string | null;
   onPaymentsChange: (payments: DraftOrderPayment[]) => void;
   onChangesChange: (changes: DraftOrderChange[]) => void;
 };
@@ -46,10 +48,12 @@ function MethodButtons({
 function RecipientButtons({
   value,
   staff,
+  currentUserId,
   onChange,
 }: {
   value: string;
   staff: StaffProfile[];
+  currentUserId: string | null;
   onChange: (userId: string) => void;
 }) {
   return (
@@ -63,7 +67,7 @@ function RecipientButtons({
           aria-pressed={value === person.id}
           onClick={() => onChange(person.id)}
         >
-          {person.displayName}
+          {staffLabel(person, currentUserId)}
         </Button>
       ))}
     </div>
@@ -75,6 +79,7 @@ export function OrderPaymentEditor({
   changes,
   staff,
   defaultRecipientId,
+  currentUserId,
   onPaymentsChange,
   onChangesChange,
 }: OrderPaymentEditorProps) {
@@ -165,6 +170,7 @@ export function OrderPaymentEditor({
                     <RecipientButtons
                       value={row.gcashRecipientId}
                       staff={staff}
+                      currentUserId={currentUserId}
                       onChange={(gcashRecipientId) => updatePayment(row.key, { gcashRecipientId })}
                     />
                   </div>
@@ -259,6 +265,7 @@ export function OrderPaymentEditor({
                         <RecipientButtons
                           value={row.gcashRecipientId}
                           staff={gcashPayers}
+                          currentUserId={currentUserId}
                           onChange={(gcashRecipientId) =>
                             updateChange(row.key, { gcashRecipientId })
                           }

@@ -19,6 +19,8 @@ type Order = {
   id: string;
   order_no: string;
   business_date: string;
+  paid_on: string | null;
+  status: 'OPEN' | 'PAID' | 'EXPORTED';
   parts_total_centavos: number;
   labor_total_centavos: number;
   total_centavos: number;
@@ -38,28 +40,34 @@ async function importCatalog(client: SupabaseClient, items: unknown[]) {
   return data as { inserted: number; updated: number; skipped: number };
 }
 
-async function saveOrder(
-  client: SupabaseClient,
-  input: {
-    orderId?: string | null;
-    mainUserId: string;
-    helperUserId?: string | null;
-    items: {
-      catalog_item_id: string | null;
-      item_name?: string | null;
-      qty: number;
-      unit_price_centavos: number;
-      is_custom: boolean;
-    }[];
-    labor: number;
-    helperLabor?: number;
-    extras?: { user_id: string; amount_centavos: number; note?: string | null }[];
-    payments: { method: string; amount_centavos: number; gcash_recipient_id?: string | null }[];
-    changes?: { method: string; amount_centavos: number; gcash_recipient_id?: string | null }[];
-    date?: string;
-  },
-) {
-  const { data, error } = await client.rpc('save_sales_order', {
+function manilaDateOffset(days: number): string {
+  const date = new Date(`${manilaToday()}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+type SaveOrderInput = {
+  orderId?: string | null;
+  mainUserId: string;
+  helperUserId?: string | null;
+  items: {
+    catalog_item_id: string | null;
+    item_name?: string | null;
+    qty: number;
+    unit_price_centavos: number;
+    is_custom: boolean;
+  }[];
+  labor: number;
+  helperLabor?: number;
+  extras?: { user_id: string; amount_centavos: number; note?: string | null }[];
+  payments: { method: string; amount_centavos: number; gcash_recipient_id?: string | null }[];
+  changes?: { method: string; amount_centavos: number; gcash_recipient_id?: string | null }[];
+  date?: string;
+  paidOn?: string | null;
+};
+
+function saveOrderPayload(input: SaveOrderInput) {
+  return {
     p_order_id: input.orderId ?? null,
     p_business_date: input.date ?? manilaToday(),
     p_customer_name: 'Test Customer',
@@ -72,12 +80,22 @@ async function saveOrder(
     p_extras: input.extras ?? [],
     p_payments: input.payments,
     p_changes: input.changes ?? [],
-  });
+    p_paid_on: input.paidOn === undefined ? manilaToday() : input.paidOn,
+  };
+}
+
+async function saveOrder(client: SupabaseClient, input: SaveOrderInput) {
+  const { data, error } = await client.rpc('save_sales_order', saveOrderPayload(input));
 
   if (error) throw error;
   const order = data as Order;
   orderIds.push(order.id);
   return order;
+}
+
+async function saveOrderError(client: SupabaseClient, input: SaveOrderInput) {
+  const { error } = await client.rpc('save_sales_order', saveOrderPayload(input));
+  return error;
 }
 
 beforeAll(async () => {
@@ -243,6 +261,7 @@ describe('sales orders', () => {
       p_extras: [],
       p_payments: [{ method: 'CASH', amount_centavos: 16000 }],
       p_changes: [],
+      p_paid_on: manilaToday(),
     });
 
     expect(error?.message).toBe('INVALID_LABOR_SPLIT');
@@ -264,6 +283,7 @@ describe('sales orders', () => {
       p_extras: [],
       p_payments: [{ method: 'CASH', amount_centavos: 10000 }],
       p_changes: [],
+      p_paid_on: manilaToday(),
     });
 
     expect(error?.message).toBe('PAYMENT_MISMATCH');
@@ -290,6 +310,7 @@ describe('sales orders', () => {
       p_extras: [],
       p_payments: [{ method: 'GCASH', amount_centavos: 16000, gcash_recipient_id: dad.id }],
       p_changes: [{ method: 'GCASH', amount_centavos: 1000, gcash_recipient_id: uncle.id }],
+      p_paid_on: manilaToday(),
     });
 
     expect(error?.message).toBe('CHANGE_TOO_LARGE');
@@ -339,8 +360,8 @@ describe('sales orders', () => {
   it('shows daily totals and labor per user', async () => {
     const { data: daily } = await uncleClient
       .from('v_sales_daily')
-      .select('business_date, order_count, parts_total_centavos, labor_total_centavos')
-      .order('business_date', { ascending: false })
+      .select('paid_on, order_count, parts_total_centavos, labor_total_centavos')
+      .order('paid_on', { ascending: false })
       .limit(1);
 
     expect(daily?.[0]?.order_count).toBeGreaterThan(0);
@@ -407,6 +428,8 @@ describe('sales orders', () => {
     expect(error).toBeNull();
     expect(data).toMatchObject({
       order_no: order.order_no,
+      status: 'PAID',
+      paid_on: manilaToday(),
       labor_total_centavos: 2000,
       total_centavos: 17000,
       extras_total_centavos: 500,
@@ -489,19 +512,21 @@ describe('sales orders', () => {
       ],
       labor: 3000,
       payments: [{ method: 'CASH', amount_centavos: 18000 }],
+      paidOn: pastDate,
     });
 
     expect(order.business_date).toBe(pastDate);
+    expect(order.paid_on).toBe(pastDate);
     expect(order.order_no).toMatch(new RegExp(`^SL-${pastDate.replaceAll('-', '')}-\\d{4}$`));
 
     const { data: daily } = await uncleClient
       .from('v_sales_daily')
-      .select('business_date,order_count,parts_total_centavos,labor_total_centavos,total_centavos')
-      .eq('business_date', pastDate)
+      .select('paid_on,order_count,parts_total_centavos,labor_total_centavos,total_centavos')
+      .eq('paid_on', pastDate)
       .single();
 
     expect(daily).toEqual({
-      business_date: pastDate,
+      paid_on: pastDate,
       order_count: 1,
       parts_total_centavos: 15000,
       labor_total_centavos: 3000,
@@ -563,6 +588,324 @@ describe('sales orders', () => {
       created_by: dad.id,
     });
     expect(insertError).toMatchObject({ code: '42501' });
+  });
+
+  it('saves an unpaid job and then pays it on a later date', async () => {
+    const jobDate = manilaDateOffset(-120);
+    const paidDate = manilaDateOffset(-119);
+
+    const beforeBalances = await uncleClient.rpc('get_gcash_balances');
+    const beforeEarned =
+      (beforeBalances.data as { user_id: string; labor_earned_centavos: number }[]).find(
+        (row) => row.user_id === uncle.id,
+      )?.labor_earned_centavos ?? 0;
+
+    const job = await saveOrder(uncleClient, {
+      mainUserId: uncle.id,
+      date: jobDate,
+      items: [
+        {
+          catalog_item_id: catalogIds[0] as string,
+          qty: 1,
+          unit_price_centavos: 15000,
+          is_custom: false,
+        },
+      ],
+      labor: 5000,
+      payments: [],
+      paidOn: null,
+    });
+
+    expect(job.status).toBe('OPEN');
+    expect(job.paid_on).toBeNull();
+
+    const openBalances = await uncleClient.rpc('get_gcash_balances');
+    const afterOpenEarned =
+      (openBalances.data as { user_id: string; labor_earned_centavos: number }[]).find(
+        (row) => row.user_id === uncle.id,
+      )?.labor_earned_centavos ?? 0;
+    expect(afterOpenEarned).toBe(beforeEarned);
+
+    const { data: unsold } = await uncleClient
+      .from('v_sales_daily')
+      .select('paid_on')
+      .eq('paid_on', jobDate)
+      .maybeSingle();
+    expect(unsold).toBeNull();
+
+    const paid = await saveOrder(uncleClient, {
+      orderId: job.id,
+      mainUserId: uncle.id,
+      date: jobDate,
+      items: [
+        {
+          catalog_item_id: catalogIds[0] as string,
+          qty: 1,
+          unit_price_centavos: 15000,
+          is_custom: false,
+        },
+      ],
+      labor: 5000,
+      payments: [{ method: 'CASH', amount_centavos: 20000 }],
+      paidOn: paidDate,
+    });
+
+    expect(paid.status).toBe('PAID');
+    expect(paid.paid_on).toBe(paidDate);
+
+    const { data: daily } = await uncleClient
+      .from('v_sales_daily')
+      .select('paid_on,order_count,parts_total_centavos,labor_total_centavos,total_centavos')
+      .eq('paid_on', paidDate)
+      .single();
+
+    expect(daily).toEqual({
+      paid_on: paidDate,
+      order_count: 1,
+      parts_total_centavos: 15000,
+      labor_total_centavos: 5000,
+      total_centavos: 20000,
+    });
+  });
+
+  it('rejects a payment date before the job date or in the future', async () => {
+    const jobDate = manilaDateOffset(-10);
+
+    const job = await saveOrder(uncleClient, {
+      mainUserId: uncle.id,
+      date: jobDate,
+      items: [
+        {
+          catalog_item_id: catalogIds[0] as string,
+          qty: 1,
+          unit_price_centavos: 15000,
+          is_custom: false,
+        },
+      ],
+      labor: 0,
+      payments: [],
+      paidOn: null,
+    });
+
+    const beforeJob = await saveOrderError(uncleClient, {
+      orderId: job.id,
+      mainUserId: uncle.id,
+      date: jobDate,
+      items: [
+        {
+          catalog_item_id: catalogIds[0] as string,
+          qty: 1,
+          unit_price_centavos: 15000,
+          is_custom: false,
+        },
+      ],
+      labor: 0,
+      payments: [{ method: 'CASH', amount_centavos: 15000 }],
+      paidOn: manilaDateOffset(-11),
+    });
+    expect(beforeJob?.message).toBe('INVALID_DATE');
+
+    const future = await saveOrderError(uncleClient, {
+      orderId: job.id,
+      mainUserId: uncle.id,
+      date: jobDate,
+      items: [
+        {
+          catalog_item_id: catalogIds[0] as string,
+          qty: 1,
+          unit_price_centavos: 15000,
+          is_custom: false,
+        },
+      ],
+      labor: 0,
+      payments: [{ method: 'CASH', amount_centavos: 15000 }],
+      paidOn: manilaDateOffset(1),
+    });
+    expect(future?.message).toBe('INVALID_DATE');
+  });
+
+  it('does not allow a paid order to become unpaid', async () => {
+    const order = await saveOrder(uncleClient, {
+      mainUserId: uncle.id,
+      items: [
+        {
+          catalog_item_id: catalogIds[0] as string,
+          qty: 1,
+          unit_price_centavos: 15000,
+          is_custom: false,
+        },
+      ],
+      labor: 0,
+      payments: [{ method: 'CASH', amount_centavos: 15000 }],
+    });
+
+    const error = await saveOrderError(uncleClient, {
+      orderId: order.id,
+      mainUserId: uncle.id,
+      items: [
+        {
+          catalog_item_id: catalogIds[0] as string,
+          qty: 1,
+          unit_price_centavos: 15000,
+          is_custom: false,
+        },
+      ],
+      labor: 0,
+      payments: [],
+      paidOn: null,
+    });
+
+    expect(error?.message).toBe('PAYMENT_REQUIRED');
+  });
+
+  it('rejects extras without a payment', async () => {
+    const error = await saveOrderError(uncleClient, {
+      mainUserId: uncle.id,
+      items: [
+        {
+          catalog_item_id: catalogIds[0] as string,
+          qty: 1,
+          unit_price_centavos: 15000,
+          is_custom: false,
+        },
+      ],
+      labor: 0,
+      extras: [{ user_id: uncle.id, amount_centavos: 1000 }],
+      payments: [],
+      paidOn: null,
+    });
+
+    expect(error?.message).toBe('PAYMENT_REQUIRED');
+  });
+
+  it('requires rebalancing after changing a paid order', async () => {
+    const order = await saveOrder(uncleClient, {
+      mainUserId: uncle.id,
+      items: [
+        {
+          catalog_item_id: catalogIds[0] as string,
+          qty: 1,
+          unit_price_centavos: 15000,
+          is_custom: false,
+        },
+      ],
+      labor: 0,
+      payments: [{ method: 'CASH', amount_centavos: 15000 }],
+    });
+
+    const mismatch = await saveOrderError(uncleClient, {
+      orderId: order.id,
+      mainUserId: uncle.id,
+      items: [
+        {
+          catalog_item_id: catalogIds[0] as string,
+          qty: 2,
+          unit_price_centavos: 15000,
+          is_custom: false,
+        },
+      ],
+      labor: 0,
+      payments: [{ method: 'CASH', amount_centavos: 15000 }],
+    });
+    expect(mismatch?.message).toBe('PAYMENT_MISMATCH');
+
+    const rebalanced = await saveOrder(uncleClient, {
+      orderId: order.id,
+      mainUserId: uncle.id,
+      items: [
+        {
+          catalog_item_id: catalogIds[0] as string,
+          qty: 2,
+          unit_price_centavos: 15000,
+          is_custom: false,
+        },
+      ],
+      labor: 0,
+      payments: [{ method: 'CASH', amount_centavos: 30000 }],
+    });
+
+    expect(rebalanced.status).toBe('PAID');
+    expect(rebalanced.total_centavos).toBe(30000);
+  });
+
+  it('does not serve a public receipt for an unpaid job', async () => {
+    const job = await saveOrder(uncleClient, {
+      mainUserId: uncle.id,
+      items: [
+        {
+          catalog_item_id: catalogIds[0] as string,
+          qty: 1,
+          unit_price_centavos: 15000,
+          is_custom: false,
+        },
+      ],
+      labor: 0,
+      payments: [],
+      paidOn: null,
+    });
+
+    const anon = getAnonClient();
+    const { data, error } = await anon.rpc('get_sales_receipt', { p_token: job.public_token });
+
+    expect(error).toBeNull();
+    expect(data).toBeNull();
+  });
+
+  it('moves a paid job date only when the payment date stays valid', async () => {
+    const jobDate = manilaDateOffset(-2);
+    const order = await saveOrder(uncleClient, {
+      mainUserId: uncle.id,
+      date: jobDate,
+      items: [
+        {
+          catalog_item_id: catalogIds[0] as string,
+          qty: 1,
+          unit_price_centavos: 15000,
+          is_custom: false,
+        },
+      ],
+      labor: 0,
+      payments: [{ method: 'CASH', amount_centavos: 15000 }],
+      paidOn: jobDate,
+    });
+
+    const invalid = await saveOrderError(uncleClient, {
+      orderId: order.id,
+      mainUserId: uncle.id,
+      date: manilaDateOffset(-1),
+      items: [
+        {
+          catalog_item_id: catalogIds[0] as string,
+          qty: 1,
+          unit_price_centavos: 15000,
+          is_custom: false,
+        },
+      ],
+      labor: 0,
+      payments: [{ method: 'CASH', amount_centavos: 15000 }],
+      paidOn: jobDate,
+    });
+    expect(invalid?.message).toBe('INVALID_DATE');
+
+    const moved = await saveOrder(uncleClient, {
+      orderId: order.id,
+      mainUserId: uncle.id,
+      date: manilaDateOffset(-1),
+      items: [
+        {
+          catalog_item_id: catalogIds[0] as string,
+          qty: 1,
+          unit_price_centavos: 15000,
+          is_custom: false,
+        },
+      ],
+      labor: 0,
+      payments: [{ method: 'CASH', amount_centavos: 15000 }],
+      paidOn: manilaDateOffset(-1),
+    });
+
+    expect(moved.status).toBe('PAID');
+    expect(moved.paid_on).toBe(manilaDateOffset(-1));
   });
 
   it('deactivates catalog rows missing from a full list sync', async () => {

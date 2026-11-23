@@ -16,10 +16,12 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAuth } from '@/features/auth/use-auth';
 import { formatManilaDateTime } from '@/lib/dates';
 import { formatCentavos, parsePesoToCentavos } from '@/lib/money';
 
 import { useGcashBalances, useGcashTransfers, useRecordGcashTransfer } from './hooks/use-sales';
+import { staffLabel } from './staff-label';
 import type { GcashBalance } from './types';
 
 function TransferDialog({
@@ -27,11 +29,13 @@ function TransferDialog({
   onOpenChange,
   balances,
   initialUserId,
+  currentUserId,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   balances: GcashBalance[];
   initialUserId: string | null;
+  currentUserId: string | null;
 }) {
   const transfer = useRecordGcashTransfer();
   const [userId, setUserId] = useState(initialUserId ?? balances[0]?.userId ?? '');
@@ -134,7 +138,7 @@ function TransferDialog({
                     setError(null);
                   }}
                 >
-                  {row.displayName}
+                  {staffLabel({ id: row.userId, displayName: row.displayName }, currentUserId)}
                 </Button>
               ))}
             </div>
@@ -205,7 +209,7 @@ function TransferDialog({
                         setError(null);
                       }}
                     >
-                      {row.displayName}
+                      {staffLabel({ id: row.userId, displayName: row.displayName }, currentUserId)}
                     </Button>
                   ))
                 )}
@@ -268,6 +272,8 @@ function TransferDialog({
 }
 
 export function GcashPage() {
+  const auth = useAuth();
+  const currentUserId = auth.status === 'signed-in' ? auth.profile.id : null;
   const balances = useGcashBalances();
   const transfers = useGcashTransfers();
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -342,7 +348,9 @@ export function GcashPage() {
           {rows.map((row) => (
             <div key={row.userId} className="border-line bg-surface rounded-lg border p-4">
               <div className="flex items-center justify-between gap-2">
-                <h2 className="font-display text-xl font-semibold">{row.displayName}</h2>
+                <h2 className="font-display text-xl font-semibold">
+                  {staffLabel({ id: row.userId, displayName: row.displayName }, currentUserId)}
+                </h2>
                 <Wallet className="text-steel size-5" aria-hidden="true" />
               </div>
 
@@ -408,10 +416,20 @@ export function GcashPage() {
               <li key={row.id} className="flex flex-wrap items-start justify-between gap-2 p-4">
                 <div className="min-w-0">
                   <p className="font-medium">
-                    {row.userName ?? 'Staff'} →{' '}
+                    {staffLabel(
+                      { id: row.userId, displayName: row.userName ?? 'Staff' },
+                      currentUserId,
+                    )}{' '}
+                    →{' '}
                     {row.destination === 'SHOP_BANK'
                       ? 'Shop bank'
-                      : (row.counterpartyName ?? 'Staff')}
+                      : staffLabel(
+                          {
+                            id: row.counterpartyUserId ?? '',
+                            displayName: row.counterpartyName ?? 'Staff',
+                          },
+                          currentUserId,
+                        )}
                   </p>
                   <p className="text-steel mt-0.5 text-xs">
                     {formatManilaDateTime(row.createdAt)}
@@ -438,6 +456,7 @@ export function GcashPage() {
         onOpenChange={setDialogOpen}
         balances={rows}
         initialUserId={initialUserId}
+        currentUserId={currentUserId}
       />
     </div>
   );

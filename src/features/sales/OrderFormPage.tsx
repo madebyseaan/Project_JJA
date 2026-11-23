@@ -1,42 +1,35 @@
-import { ArrowLeft, CheckCircle2, Loader2, Plus, Share2, Trash2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Share2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 import { toast } from 'sonner';
 
 import { FullPageLoading } from '@/components/FullPageLoading';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/features/auth/use-auth';
 import { useOnlineStatus } from '@/hooks/use-online-status';
 import { formatManilaDate, manilaDateKey } from '@/lib/dates';
 import { formatCentavos, formatPesoInput, parsePesoToCentavos } from '@/lib/money';
-import { cn } from '@/lib/utils';
 
+import { CustomerFields } from './components/CustomerFields';
+import { ExtrasFields } from './components/ExtrasFields';
+import { LaborFields } from './components/LaborFields';
 import { OrderItemEditor } from './components/OrderItemEditor';
 import { OrderPaymentEditor } from './components/OrderPaymentEditor';
+import { OrderSummaryCard } from './components/OrderSummaryCard';
 import { ShareReceiptDialog } from './components/ShareReceiptDialog';
 import { useCatalog, useOrder, useSaveOrder, useStaff } from './hooks/use-sales';
 import { calculateOrderMoney, mainLaborCentavos } from './order-math';
+import { staffLabel } from './staff-label';
 import type {
   DraftOrderChange,
   DraftOrderExtra,
   DraftOrderItem,
   DraftOrderPayment,
   OrderInput,
+  SalesOrder,
 } from './types';
-
-function newKey() {
-  return crypto.randomUUID();
-}
 
 function parseDraftItems(items: DraftOrderItem[]) {
   return items.map((item) => ({
@@ -49,9 +42,17 @@ function parseDraftItems(items: DraftOrderItem[]) {
   }));
 }
 
+function statusLabel(status: SalesOrder['status']): string {
+  if (status === 'PAID') return 'Paid';
+  if (status === 'EXPORTED') return 'Exported';
+  return 'Unpaid';
+}
+
 export function OrderFormPage() {
   const { id } = useParams();
   const isEdit = Boolean(id);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tab = isEdit && searchParams.get('tab') === 'payment' ? 'payment' : 'order';
   const auth = useAuth();
   const online = useOnlineStatus();
   const navigate = useNavigate();
@@ -60,12 +61,12 @@ export function OrderFormPage() {
   const existing = useOrder(id ?? null);
   const save = useSaveOrder();
 
+  const currentUserId = auth.status === 'signed-in' ? auth.profile.id : null;
+
   const [date, setDate] = useState(manilaDateKey());
   const [customer, setCustomer] = useState('');
   const [bike, setBike] = useState('');
-  const [mainUserId, setMainUserId] = useState(() =>
-    auth.status === 'signed-in' ? auth.profile.id : '',
-  );
+  const [mainUserId, setMainUserId] = useState(currentUserId ?? '');
   const [helperUserId, setHelperUserId] = useState('');
   const [items, setItems] = useState<DraftOrderItem[]>([]);
   const [labor, setLabor] = useState('');
@@ -73,8 +74,8 @@ export function OrderFormPage() {
   const [extras, setExtras] = useState<DraftOrderExtra[]>([]);
   const [payments, setPayments] = useState<DraftOrderPayment[]>([]);
   const [changes, setChanges] = useState<DraftOrderChange[]>([]);
+  const [paymentDate, setPaymentDate] = useState(manilaDateKey());
   const [formError, setFormError] = useState<string | null>(null);
-  const [reviewOpen, setReviewOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const loadedRef = useRef(false);
 
@@ -127,6 +128,7 @@ export function OrderFormPage() {
         gcashRecipientId: change.gcashRecipientId ?? '',
       })),
     );
+    setPaymentDate(detail.order.paidOn ?? manilaDateKey());
   }, [existing.data]);
 
   if (isEdit && existing.isPending) {
@@ -169,6 +171,11 @@ export function OrderFormPage() {
     gcashRecipientId: change.gcashRecipientId,
   }));
 
+  const hasPayment =
+    parsedPayments.length > 0 || parsedChanges.length > 0 || parsedExtras.length > 0;
+  const orderStatus = existing.data?.order.status ?? 'OPEN';
+  const orderWasPaid = orderStatus === 'PAID' || orderStatus === 'EXPORTED';
+
   const money = calculateOrderMoney({
     items: parsedItems.map((item) => ({
       qty: Number.isFinite(item.qty) ? item.qty : 0,
@@ -189,7 +196,6 @@ export function OrderFormPage() {
   const mainLabor = mainLaborCentavos(laborCentavos, helperLaborCentavos);
   const staffOptions = staff.data ?? [];
   const mainUser = staffOptions.find((person) => person.id === mainUserId);
-  const helperOptions = staffOptions.filter((person) => person.id !== mainUserId);
 
   const chooseMain = (userId: string) => {
     if (userId === mainUserId) return;
@@ -218,14 +224,14 @@ export function OrderFormPage() {
     setHelperLabor('');
   };
 
-  const validate = (): string | null => {
-    if (!date) return 'Choose a date.';
-    if (date > manilaDateKey()) return 'The date cannot be in the future.';
-    if (!mainUserId) return 'The main user is missing.';
-    if (helperUserId && helperUserId === mainUserId) return 'The helper must be the other user.';
+  const validateJob = (): string | null => {
+    if (!date) return 'Choose a job date.';
+    if (date > manilaDateKey()) return 'The job date cannot be in the future.';
+    if (!mainUserId) return 'The main worker is missing.';
+    if (helperUserId && helperUserId === mainUserId) return 'The helper must be the other person.';
 
-    if (items.length === 0 && laborCentavos <= 0 && parsedExtras.length === 0) {
-      return 'Add at least one item, labor, or extra.';
+    if (items.length === 0 && laborCentavos <= 0) {
+      return 'Add at least one item or labor.';
     }
 
     for (const item of parsedItems) {
@@ -240,8 +246,24 @@ export function OrderFormPage() {
     if (helperUserId && helperLabor.trim() !== '' && parsePesoToCentavos(helperLabor) === null) {
       return 'Enter a valid helper labor amount.';
     }
-    if (helperLaborCentavos > laborCentavos)
-      return 'The helper share cannot exceed the total labor.';
+    if (helperLaborCentavos > laborCentavos) {
+      return 'The helper’s share cannot exceed the total labor.';
+    }
+
+    return null;
+  };
+
+  const validatePayment = (): string | null => {
+    const jobError = validateJob();
+    if (jobError) return jobError;
+
+    if (!paymentDate) return 'Choose the payment date.';
+    if (paymentDate > manilaDateKey()) return 'The payment date cannot be in the future.';
+    if (paymentDate < date) return 'The payment date cannot be before the job date.';
+
+    if (parsedPayments.length === 0) {
+      return 'Add at least one payment.';
+    }
 
     for (const extra of parsedExtras) {
       if (!extra.userId) return 'Choose who receives each extra.';
@@ -306,6 +328,7 @@ export function OrderFormPage() {
   const buildInput = (): OrderInput => ({
     orderId: id ?? null,
     businessDate: date,
+    paidOn: hasPayment ? paymentDate : null,
     customerName: customer.trim() || null,
     bikeModel: bike.trim() || null,
     mainUserId,
@@ -336,341 +359,104 @@ export function OrderFormPage() {
     })),
   });
 
-  const openReview = () => {
-    const error = validate();
-    setFormError(error);
-    if (error) return;
-    setReviewOpen(true);
-  };
+  const needsPaymentValidation = tab === 'payment' || hasPayment || orderWasPaid;
 
-  const confirmSave = async () => {
-    const error = validate();
-    if (error) {
-      setFormError(error);
-      setReviewOpen(false);
-      return;
-    }
+  const submit = async () => {
+    const error = needsPaymentValidation ? validatePayment() : validateJob();
+    setFormError(error);
+
+    if (error) return;
 
     try {
       await save.mutateAsync(buildInput());
-      toast.success(isEdit ? 'Order updated.' : 'Order saved.');
-      setReviewOpen(false);
-      navigate('/orders');
+
+      if (!isEdit) {
+        toast.success('Job saved. Take payment when the work is done.');
+        navigate('/orders');
+        return;
+      }
+
+      toast.success(hasPayment ? 'Payment saved.' : 'Order saved.');
     } catch (saveError) {
       setFormError(saveError instanceof Error ? saveError.message : 'Could not save the order.');
-      setReviewOpen(false);
     }
   };
 
+  const setTab = (next: 'order' | 'payment') => {
+    setSearchParams(next === 'payment' ? { tab: 'payment' } : {}, { replace: true });
+  };
+
+  const summaryMode = tab === 'payment' ? 'payment' : 'job';
+  const primaryLabel =
+    tab === 'payment' ? (orderWasPaid ? 'Update payment' : 'Record payment') : 'Save order';
+
   return (
-    <div className="space-y-5 pb-24">
-      <div className="flex items-center justify-between gap-2">
-        <Button variant="ghost" size="touch" nativeButton={false} render={<Link to="/orders" />}>
-          <ArrowLeft aria-hidden="true" />
-          Orders
-        </Button>
-        <div className="flex gap-2">
-          {isEdit && existing.data ? (
-            <Button variant="outline" size="touch" onClick={() => setShareOpen(true)}>
-              <Share2 aria-hidden="true" />
-              Share receipt
-            </Button>
-          ) : null}
-          <Button size="touch" disabled={!online || save.isPending} onClick={openReview}>
-            {save.isPending ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : null}
-            Review order
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <Button variant="ghost" size="touch" nativeButton={false} render={<Link to="/orders" />}>
+            <ArrowLeft aria-hidden="true" />
+            Orders
           </Button>
-        </div>
-      </div>
-
-      <div>
-        <h1 className="font-display text-3xl font-bold tracking-tight">
-          {isEdit ? 'Edit order' : 'New order'}
-        </h1>
-        <p className="text-ink-soft mt-1 text-sm">
-          {isEdit && existing.data ? (
-            <>
-              <span className="font-mono font-semibold">{existing.data.order.orderNo}</span>
-              {' · '}
-            </>
-          ) : null}
-          {formatManilaDate(`${date}T12:00:00+08:00`)}
-        </p>
-      </div>
-
-      <section className="border-line bg-surface rounded-lg border p-4">
-        <h2 className="font-display text-xl font-semibold">Customer</h2>
-        <div className="mt-3 grid gap-3 sm:grid-cols-3">
-          <div>
-            <Label htmlFor="order-date">Date</Label>
-            <Input
-              id="order-date"
-              type="date"
-              value={date}
-              max={manilaDateKey()}
-              onChange={(event) => setDate(event.target.value)}
-            />
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <h1 className="font-display text-3xl font-bold tracking-tight">
+              {isEdit ? 'Order' : 'New order'}
+            </h1>
+            {isEdit ? (
+              <span className="border-line text-steel rounded-sm border px-2 py-1 text-xs font-semibold">
+                {statusLabel(orderStatus)}
+              </span>
+            ) : null}
           </div>
-          <div>
-            <Label htmlFor="order-customer">Customer name</Label>
-            <Input
-              id="order-customer"
-              placeholder="Optional"
-              value={customer}
-              onChange={(event) => setCustomer(event.target.value)}
-            />
-          </div>
-          <div>
-            <Label htmlFor="order-bike">Motorcycle</Label>
-            <Input
-              id="order-bike"
-              placeholder="Optional"
-              value={bike}
-              onChange={(event) => setBike(event.target.value)}
-            />
-          </div>
-        </div>
-        {isEdit ? (
-          <p className="text-steel mt-3 text-xs">
-            Changing the date assigns a new order number for that business date.
+          <p className="text-ink-soft mt-1 text-sm">
+            {isEdit && existing.data ? (
+              <>
+                <span className="font-mono font-semibold">{existing.data.order.orderNo}</span>
+                {' · '}
+              </>
+            ) : null}
+            {formatManilaDate(`${date}T12:00:00+08:00`)}
           </p>
-        ) : null}
-      </section>
-
-      <OrderItemEditor
-        items={items}
-        catalog={catalog.data ?? []}
-        onChange={(next) => setItems(next)}
-      />
-
-      <section className="border-line bg-surface rounded-lg border p-4">
-        <h2 className="font-display text-xl font-semibold">Labor</h2>
-        <div className="mt-3 grid gap-4 sm:grid-cols-2">
-          <div>
-            <Label>Main worker</Label>
-            <div className="mt-1 flex flex-wrap gap-2">
-              {staffOptions.map((person) => (
-                <Button
-                  key={person.id}
-                  type="button"
-                  variant={mainUserId === person.id ? 'default' : 'outline'}
-                  size="touch"
-                  aria-pressed={mainUserId === person.id}
-                  onClick={() => chooseMain(person.id)}
-                >
-                  {person.displayName}
-                </Button>
-              ))}
-            </div>
-            <p className="text-steel mt-1 text-xs">
-              Gets the rest of the labor after the helper’s share.
+          {!isEdit ? (
+            <p className="text-steel mt-1 text-sm">
+              Record the job now. Payment is recorded after the repair.
             </p>
-          </div>
-          <div>
-            <Label htmlFor="labor-total">Total labor (₱)</Label>
-            <Input
-              id="labor-total"
-              inputMode="decimal"
-              value={labor}
-              onChange={(event) => setLabor(event.target.value)}
-            />
-          </div>
-          <div>
-            <Label>Helper</Label>
-            <div className="mt-1 flex flex-wrap gap-2">
-              <Button
-                type="button"
-                variant={!helperUserId ? 'default' : 'outline'}
-                size="touch"
-                aria-pressed={!helperUserId}
-                onClick={() => chooseHelper(null)}
-              >
-                No helper
-              </Button>
-              {helperOptions.map((person) => (
-                <Button
-                  key={person.id}
-                  type="button"
-                  variant={helperUserId === person.id ? 'default' : 'outline'}
-                  size="touch"
-                  aria-pressed={helperUserId === person.id}
-                  onClick={() => chooseHelper(person.id)}
-                >
-                  {person.displayName}
-                </Button>
-              ))}
-            </div>
-          </div>
-          {helperUserId ? (
-            <div>
-              <Label htmlFor="helper-labor">Helper’s share (₱)</Label>
-              <Input
-                id="helper-labor"
-                inputMode="decimal"
-                value={helperLabor}
-                onChange={(event) => setHelperLabor(event.target.value)}
-              />
-            </div>
           ) : null}
-          <div>
-            <Label>{mainUser?.displayName ?? 'Main user’s'} share</Label>
-            <p className="font-mono text-lg font-semibold tabular-nums">
-              {formatCentavos(mainLabor)}
-            </p>
-          </div>
         </div>
-      </section>
 
-      <section className="border-line bg-surface rounded-lg border p-4">
-        <div className="flex items-center justify-between gap-2">
-          <div>
-            <h2 className="font-display text-xl font-semibold">Extras</h2>
-            <p className="text-steel text-xs">Keep-the-change tips. Defaults to the main user.</p>
-          </div>
+        {isEdit && existing.data && orderStatus !== 'OPEN' ? (
+          <Button variant="outline" size="touch" onClick={() => setShareOpen(true)}>
+            <Share2 aria-hidden="true" />
+            Share receipt
+          </Button>
+        ) : null}
+      </div>
+
+      {isEdit ? (
+        <div className="flex gap-2" role="tablist" aria-label="Order steps">
           <Button
             type="button"
-            variant="outline"
+            role="tab"
+            aria-selected={tab === 'order'}
+            variant={tab === 'order' ? 'default' : 'outline'}
             size="touch"
-            onClick={() =>
-              setExtras([...extras, { key: newKey(), userId: mainUserId, amount: '', note: '' }])
-            }
+            onClick={() => setTab('order')}
           >
-            <Plus aria-hidden="true" />
-            Add extra
+            Order
+          </Button>
+          <Button
+            type="button"
+            role="tab"
+            aria-selected={tab === 'payment'}
+            variant={tab === 'payment' ? 'default' : 'outline'}
+            size="touch"
+            onClick={() => setTab('payment')}
+          >
+            Payment
+            <span className="text-xs font-normal">{orderWasPaid ? 'Paid' : 'Unpaid'}</span>
           </Button>
         </div>
-
-        {extras.length === 0 ? (
-          <p className="text-steel mt-2 text-sm">No extra.</p>
-        ) : (
-          <ul className="divide-line mt-2 divide-y">
-            {extras.map((extra) => (
-              <li
-                key={extra.key}
-                className="grid gap-2 py-3 sm:grid-cols-[1fr_8rem_1fr_auto] sm:items-end"
-              >
-                <div>
-                  <Label>Recipient</Label>
-                  <div className="mt-1 flex gap-2">
-                    {[mainUserId, helperUserId].filter(Boolean).map((userId) => {
-                      const person = staffOptions.find((row) => row.id === userId);
-                      return (
-                        <Button
-                          key={userId}
-                          type="button"
-                          variant={extra.userId === userId ? 'default' : 'outline'}
-                          size="touch"
-                          aria-pressed={extra.userId === userId}
-                          onClick={() =>
-                            setExtras(
-                              extras.map((row) =>
-                                row.key === extra.key ? { ...row, userId } : row,
-                              ),
-                            )
-                          }
-                        >
-                          {person?.displayName ?? 'User'}
-                        </Button>
-                      );
-                    })}
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor={`extra-${extra.key}`}>Amount (₱)</Label>
-                  <Input
-                    id={`extra-${extra.key}`}
-                    inputMode="decimal"
-                    value={extra.amount}
-                    onChange={(event) =>
-                      setExtras(
-                        extras.map((row) =>
-                          row.key === extra.key ? { ...row, amount: event.target.value } : row,
-                        ),
-                      )
-                    }
-                  />
-                </div>
-                <div>
-                  <Label htmlFor={`extra-note-${extra.key}`}>Note</Label>
-                  <Input
-                    id={`extra-note-${extra.key}`}
-                    placeholder="Optional"
-                    value={extra.note}
-                    onChange={(event) =>
-                      setExtras(
-                        extras.map((row) =>
-                          row.key === extra.key ? { ...row, note: event.target.value } : row,
-                        ),
-                      )
-                    }
-                  />
-                </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="touch"
-                  aria-label="Remove extra"
-                  onClick={() => setExtras(extras.filter((row) => row.key !== extra.key))}
-                >
-                  <Trash2 aria-hidden="true" />
-                </Button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <OrderPaymentEditor
-        payments={payments}
-        changes={changes}
-        staff={staffOptions}
-        defaultRecipientId={mainUserId}
-        onPaymentsChange={setPayments}
-        onChangesChange={setChanges}
-      />
-
-      <section className="border-line bg-surface rounded-lg border p-4">
-        <h2 className="font-display text-xl font-semibold">Totals</h2>
-        <dl className="mt-2 space-y-1 text-sm">
-          <div className="flex justify-between">
-            <dt className="text-steel">Parts</dt>
-            <dd className="font-mono tabular-nums">{formatCentavos(money.partsCentavos)}</dd>
-          </div>
-          <div className="flex justify-between">
-            <dt className="text-steel">Labor</dt>
-            <dd className="font-mono tabular-nums">{formatCentavos(laborCentavos)}</dd>
-          </div>
-          <div className="flex justify-between">
-            <dt className="text-steel">Extras</dt>
-            <dd className="font-mono tabular-nums">{formatCentavos(money.extrasCentavos)}</dd>
-          </div>
-          <div className="border-line flex justify-between border-t pt-2 text-base font-semibold">
-            <dt>Customer total</dt>
-            <dd className="font-mono tabular-nums">
-              {formatCentavos(money.customerTotalCentavos)}
-            </dd>
-          </div>
-          <div className="flex justify-between">
-            <dt className="text-steel">Payments</dt>
-            <dd className="font-mono tabular-nums">{formatCentavos(money.paidCentavos)}</dd>
-          </div>
-          <div className="flex justify-between">
-            <dt className="text-steel">Change</dt>
-            <dd className="font-mono tabular-nums">{formatCentavos(money.changeCentavos)}</dd>
-          </div>
-          <div className="flex justify-between">
-            <dt className={money.balanceCentavos === 0 ? 'text-ok' : 'text-danger'}>Balance</dt>
-            <dd
-              className={cn(
-                'font-mono font-semibold tabular-nums',
-                money.balanceCentavos === 0 ? 'text-ok' : 'text-danger',
-              )}
-            >
-              {formatCentavos(money.balanceCentavos)}
-            </dd>
-          </div>
-        </dl>
-      </section>
+      ) : null}
 
       {formError ? (
         <p
@@ -681,119 +467,160 @@ export function OrderFormPage() {
         </p>
       ) : null}
 
-      {!online ? (
-        <output className="text-warn block text-sm">
-          You are offline. Saving is disabled until the connection returns.
-        </output>
-      ) : null}
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
+        <div className="order-2 space-y-5 lg:order-1">
+          {tab === 'order' ? (
+            <>
+              <CustomerFields
+                date={date}
+                customer={customer}
+                bike={bike}
+                isEdit={isEdit}
+                onDateChange={setDate}
+                onCustomerChange={setCustomer}
+                onBikeChange={setBike}
+              />
 
-      <div className="flex gap-2">
-        <Button
-          size="touch"
-          className="flex-1"
-          disabled={!online || save.isPending}
-          onClick={openReview}
-        >
-          Review order
-        </Button>
-        <Button variant="outline" size="touch" nativeButton={false} render={<Link to="/orders" />}>
-          Cancel
-        </Button>
-      </div>
+              <OrderItemEditor
+                items={items}
+                catalog={catalog.data ?? []}
+                onChange={(next) => setItems(next)}
+              />
 
-      <Dialog open={reviewOpen} onOpenChange={setReviewOpen}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="font-display text-2xl">Review order</DialogTitle>
-            <DialogDescription>
-              Check the items, labor split, payment, change, and extra before saving.
-            </DialogDescription>
-          </DialogHeader>
+              <LaborFields
+                staff={staffOptions}
+                mainUserId={mainUserId}
+                helperUserId={helperUserId}
+                currentUserId={currentUserId}
+                labor={labor}
+                helperLabor={helperLabor}
+                mainLaborCentavos={mainLabor}
+                onLaborChange={setLabor}
+                onHelperLaborChange={setHelperLabor}
+                onChooseMain={chooseMain}
+                onChooseHelper={chooseHelper}
+              />
+            </>
+          ) : (
+            <>
+              <section className="border-line bg-surface rounded-lg border p-4">
+                <h2 className="font-display text-xl font-semibold">Payment date</h2>
+                <div className="mt-3 max-w-xs">
+                  <Label htmlFor="payment-date">Paid on</Label>
+                  <Input
+                    id="payment-date"
+                    type="date"
+                    value={paymentDate}
+                    min={date}
+                    max={manilaDateKey()}
+                    onChange={(event) => setPaymentDate(event.target.value)}
+                  />
+                </div>
+                <p className="text-steel mt-2 text-xs">
+                  This is the date used in sales and GCash reports.
+                </p>
+              </section>
 
-          <div className="max-h-[60vh] space-y-3 overflow-y-auto text-sm">
-            <div>
-              <p className="text-steel text-xs">Customer</p>
-              <p>
-                {customer.trim() || 'Walk-in'}
-                {bike.trim() ? ` · ${bike.trim()}` : ''}
-              </p>
-            </div>
-            <div>
-              <p className="text-steel text-xs">Items</p>
-              <ul className="mt-1 space-y-1">
-                {items.map((item) => (
-                  <li key={item.key} className="flex justify-between gap-2">
-                    <span>
-                      {item.qty} × {item.name}
-                      {item.isCustom ? ' (custom)' : ''}
-                    </span>
-                    <span className="font-mono tabular-nums">
-                      {formatCentavos(
-                        (Number(item.qty) || 0) * (parsePesoToCentavos(item.price) ?? 0),
-                      )}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <p className="text-steel text-xs">Labor</p>
-              <p>
-                {mainUser?.displayName ?? 'Main'}: {formatCentavos(mainLabor)}
-                {helperUserId
-                  ? ` · ${staffOptions.find((row) => row.id === helperUserId)?.displayName ?? 'Helper'}: ${formatCentavos(helperLaborCentavos)}`
-                  : ''}
-              </p>
-            </div>
-            <div>
-              <p className="text-steel text-xs">Payment</p>
-              <p>
-                {payments.length} payment{payments.length === 1 ? '' : 's'} · {changes.length}{' '}
-                change line{changes.length === 1 ? '' : 's'}
-              </p>
-            </div>
-            <div className="border-line flex justify-between border-t pt-2 text-base font-semibold">
-              <span>Customer total</span>
-              <span className="font-mono tabular-nums">
-                {formatCentavos(money.customerTotalCentavos)}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-steel">Extras</span>
-              <span className="font-mono tabular-nums">{formatCentavos(money.extrasCentavos)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-steel">Balance</span>
-              <span className="font-mono tabular-nums">
-                {formatCentavos(money.balanceCentavos)}
-              </span>
-            </div>
-          </div>
+              <ExtrasFields
+                extras={extras}
+                staff={staffOptions}
+                mainUserId={mainUserId}
+                helperUserId={helperUserId}
+                currentUserId={currentUserId}
+                onChange={setExtras}
+              />
 
-          <DialogFooter>
+              <OrderPaymentEditor
+                payments={payments}
+                changes={changes}
+                staff={staffOptions}
+                defaultRecipientId={mainUserId}
+                currentUserId={currentUserId}
+                onPaymentsChange={setPayments}
+                onChangesChange={setChanges}
+              />
+            </>
+          )}
+
+          {!online ? (
+            <output className="text-warn block text-sm">
+              You are offline. Saving is disabled until the connection returns.
+            </output>
+          ) : null}
+
+          <div className="flex gap-2 lg:hidden">
             <Button
               size="touch"
-              disabled={save.isPending || !online}
-              onClick={() => void confirmSave()}
+              className="flex-1"
+              disabled={!online || save.isPending}
+              onClick={() => void submit()}
             >
               {save.isPending ? (
                 <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-              ) : (
-                <CheckCircle2 aria-hidden="true" />
-              )}
-              Save order
+              ) : null}
+              {primaryLabel}
             </Button>
             <Button
-              type="button"
               variant="outline"
               size="touch"
-              onClick={() => setReviewOpen(false)}
+              nativeButton={false}
+              render={<Link to="/orders" />}
             >
-              Back
+              Cancel
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </div>
+
+        <div className="order-1 space-y-3 lg:sticky lg:top-6 lg:order-2">
+          <OrderSummaryCard
+            mode={summaryMode}
+            partsCentavos={money.partsCentavos}
+            laborCentavos={laborCentavos}
+            extrasCentavos={money.extrasCentavos}
+            paidCentavos={money.paidCentavos}
+            changeCentavos={money.changeCentavos}
+            balanceCentavos={money.balanceCentavos}
+            note={
+              tab === 'order'
+                ? orderWasPaid
+                  ? 'This order is paid. If you change items or labor, rebalance the payment before saving.'
+                  : 'Payment is recorded after the repair.'
+                : 'Payment date is the date used in reports.'
+            }
+            primaryAction={
+              <Button
+                size="touch"
+                className="w-full"
+                disabled={!online || save.isPending}
+                onClick={() => void submit()}
+              >
+                {save.isPending ? (
+                  <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                ) : null}
+                {primaryLabel}
+              </Button>
+            }
+            secondaryAction={
+              tab === 'payment' && !orderWasPaid ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="touch"
+                  className="w-full"
+                  onClick={() => setTab('order')}
+                >
+                  Add items or labor
+                </Button>
+              ) : null
+            }
+          />
+          {tab === 'order' && mainUser ? (
+            <p className="text-steel text-xs">
+              Main worker: <strong>{staffLabel(mainUser, currentUserId)}</strong>
+            </p>
+          ) : null}
+        </div>
+      </div>
 
       {isEdit && existing.data ? (
         <ShareReceiptDialog

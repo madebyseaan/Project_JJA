@@ -16,6 +16,7 @@ export type SalesOrder = {
   id: string;
   orderNo: string;
   businessDate: string;
+  paidOn: string | null;
   customerName: string | null;
   bikeModel: string | null;
   mainUserId: string;
@@ -25,7 +26,7 @@ export type SalesOrder = {
   partsTotalCentavos: number;
   laborTotalCentavos: number;
   totalCentavos: number;
-  status: 'OPEN' | 'EXPORTED';
+  status: 'OPEN' | 'PAID' | 'EXPORTED';
   createdAt: string;
   publicToken: string;
 };
@@ -141,6 +142,7 @@ export type DraftOrderChange = {
 export type OrderInput = {
   orderId: string | null;
   businessDate: string;
+  paidOn: string | null;
   customerName: string | null;
   bikeModel: string | null;
   mainUserId: string;
@@ -154,7 +156,7 @@ export type OrderInput = {
 };
 
 export type DailyReport = {
-  businessDate: string;
+  paidOn: string;
   orderCount: number;
   partsTotalCentavos: number;
   laborTotalCentavos: number;
@@ -163,7 +165,7 @@ export type DailyReport = {
 };
 
 export type LaborReport = {
-  businessDate: string;
+  paidOn: string;
   userId: string;
   displayName: string;
   baseLaborCentavos: number;
@@ -172,7 +174,7 @@ export type LaborReport = {
 };
 
 export type PaymentsReport = {
-  businessDate: string;
+  paidOn: string;
   method: 'CASH' | 'GCASH';
   receivedCentavos: number;
   changeCentavos: number;
@@ -226,6 +228,8 @@ export type PublicSalesReceipt = {
   };
   orderNo: string;
   businessDate: string;
+  paidOn: string;
+  status: 'PAID' | 'EXPORTED';
   customerName: string | null;
   bikeModel: string | null;
   items: {

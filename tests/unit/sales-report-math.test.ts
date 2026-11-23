@@ -24,7 +24,7 @@ describe('monthRange', () => {
 
 const daily: DailyReport[] = [
   {
-    businessDate: '2026-11-02',
+    paidOn: '2026-11-02',
     orderCount: 2,
     partsTotalCentavos: 30000,
     laborTotalCentavos: 10000,
@@ -32,7 +32,7 @@ const daily: DailyReport[] = [
     extrasTotalCentavos: 2000,
   },
   {
-    businessDate: '2026-11-01',
+    paidOn: '2026-11-01',
     orderCount: 1,
     partsTotalCentavos: 5000,
     laborTotalCentavos: 0,
@@ -43,21 +43,21 @@ const daily: DailyReport[] = [
 
 const payments: PaymentsReport[] = [
   {
-    businessDate: '2026-11-02',
+    paidOn: '2026-11-02',
     method: 'CASH',
     receivedCentavos: 45000,
     changeCentavos: 5000,
     netCentavos: 40000,
   },
   {
-    businessDate: '2026-11-02',
+    paidOn: '2026-11-02',
     method: 'GCASH',
     receivedCentavos: 5000,
     changeCentavos: 0,
     netCentavos: 5000,
   },
   {
-    businessDate: '2026-11-01',
+    paidOn: '2026-11-01',
     method: 'CASH',
     receivedCentavos: 5000,
     changeCentavos: 0,
@@ -69,7 +69,7 @@ describe('buildMonthlyRows', () => {
   test('combines daily sales with payment methods in date order', () => {
     const rows = buildMonthlyRows(daily, payments);
 
-    expect(rows.map((row) => row.businessDate)).toEqual(['2026-11-01', '2026-11-02']);
+    expect(rows.map((row) => row.paidOn)).toEqual(['2026-11-01', '2026-11-02']);
     expect(rows[1]).toMatchObject({
       orderCount: 2,
       partsCentavos: 30000,
@@ -100,7 +100,7 @@ describe('sumLaborByPerson', () => {
   test('sums base labor, extras, and payout for each person', () => {
     const rows: LaborReport[] = [
       {
-        businessDate: '2026-11-01',
+        paidOn: '2026-11-01',
         userId: 'dad',
         displayName: 'Dad',
         baseLaborCentavos: 1000,
@@ -108,7 +108,7 @@ describe('sumLaborByPerson', () => {
         laborPayoutCentavos: 1100,
       },
       {
-        businessDate: '2026-11-02',
+        paidOn: '2026-11-02',
         userId: 'dad',
         displayName: 'Dad',
         baseLaborCentavos: 2000,
@@ -116,7 +116,7 @@ describe('sumLaborByPerson', () => {
         laborPayoutCentavos: 2000,
       },
       {
-        businessDate: '2026-11-02',
+        paidOn: '2026-11-02',
         userId: 'uncle',
         displayName: 'Uncle',
         baseLaborCentavos: 500,

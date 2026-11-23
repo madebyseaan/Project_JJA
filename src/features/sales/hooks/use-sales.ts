@@ -10,7 +10,8 @@ import {
   listDailyReport,
   listGcashTransfers,
   listLaborReport,
-  listOrders,
+  listOpenOrders,
+  listPaidOrders,
   listPaymentsReport,
   listStaff,
   recordGcashTransfer,
@@ -30,10 +31,17 @@ export function useStaff() {
   return useQuery({ queryKey: staffQueryKey, queryFn: listStaff });
 }
 
-export function useOrders(businessDate: string) {
+export function useOpenOrders() {
   return useQuery({
-    queryKey: ['sales', 'orders', businessDate],
-    queryFn: () => listOrders(businessDate),
+    queryKey: ['sales', 'orders', 'open'],
+    queryFn: listOpenOrders,
+  });
+}
+
+export function usePaidOrders(paidOn: string) {
+  return useQuery({
+    queryKey: ['sales', 'orders', 'paid', paidOn],
+    queryFn: () => listPaidOrders(paidOn),
   });
 }
 

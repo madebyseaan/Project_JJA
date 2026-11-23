@@ -10,14 +10,14 @@ export type TestUser = {
 export const owner: TestUser = {
   id: '00000000-0000-4000-8000-000000000001',
   employeeId: 'JJA-001',
-  displayName: 'Dad',
+  displayName: 'Aldwin',
   role: 'owner',
 };
 
 export const mechanic: TestUser = {
   id: '00000000-0000-4000-8000-000000000002',
   employeeId: 'JJA-002',
-  displayName: 'Uncle',
+  displayName: 'Magma',
   role: 'mechanic',
 };
 

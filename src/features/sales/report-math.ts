@@ -1,7 +1,7 @@
 import type { DailyReport, LaborReport, PaymentsReport } from './types';
 
 export type MonthlyRow = {
-  businessDate: string;
+  paidOn: string;
   orderCount: number;
   partsCentavos: number;
   laborCentavos: number;
@@ -49,22 +49,18 @@ export function monthRange(month: string): { from: string; to: string } | null {
 export function buildMonthlyRows(daily: DailyReport[], payments: PaymentsReport[]): MonthlyRow[] {
   const dates = new Set<string>();
 
-  for (const row of daily) dates.add(row.businessDate);
-  for (const row of payments) dates.add(row.businessDate);
+  for (const row of daily) dates.add(row.paidOn);
+  for (const row of payments) dates.add(row.paidOn);
 
   return [...dates]
     .sort((left, right) => left.localeCompare(right))
-    .map((businessDate) => {
-      const day = daily.find((row) => row.businessDate === businessDate);
-      const cash = payments.find(
-        (row) => row.businessDate === businessDate && row.method === 'CASH',
-      );
-      const gcash = payments.find(
-        (row) => row.businessDate === businessDate && row.method === 'GCASH',
-      );
+    .map((paidOn) => {
+      const day = daily.find((row) => row.paidOn === paidOn);
+      const cash = payments.find((row) => row.paidOn === paidOn && row.method === 'CASH');
+      const gcash = payments.find((row) => row.paidOn === paidOn && row.method === 'GCASH');
 
       return {
-        businessDate,
+        paidOn,
         orderCount: day?.orderCount ?? 0,
         partsCentavos: day?.partsTotalCentavos ?? 0,
         laborCentavos: day?.laborTotalCentavos ?? 0,

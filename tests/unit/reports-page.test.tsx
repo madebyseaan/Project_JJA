@@ -24,6 +24,17 @@ vi.mock('@/features/sales/hooks/use-sales', () => ({
   usePaymentsReport: () => paymentsState,
 }));
 
+vi.mock('@/features/auth/use-auth', () => ({
+  useAuth: () => ({
+    status: 'signed-in',
+    profile: { id: 'aldwin', employeeId: 'JJA-001', displayName: 'Aldwin', role: 'owner' },
+    error: null,
+    signIn: vi.fn(),
+    signOut: vi.fn(),
+    refreshProfile: vi.fn(),
+  }),
+}));
+
 beforeEach(() => {
   dailyState = {
     isPending: false,
@@ -31,7 +42,7 @@ beforeEach(() => {
     error: null,
     data: [
       {
-        businessDate: '2026-11-02',
+        paidOn: '2026-11-02',
         orderCount: 2,
         partsTotalCentavos: 30000,
         laborTotalCentavos: 10000,
@@ -39,7 +50,7 @@ beforeEach(() => {
         extrasTotalCentavos: 2000,
       },
       {
-        businessDate: '2026-11-01',
+        paidOn: '2026-11-01',
         orderCount: 1,
         partsTotalCentavos: 5000,
         laborTotalCentavos: 0,
@@ -55,17 +66,17 @@ beforeEach(() => {
     error: null,
     data: [
       {
-        businessDate: '2026-11-02',
-        userId: 'dad',
-        displayName: 'Dad',
+        paidOn: '2026-11-02',
+        userId: 'aldwin',
+        displayName: 'Aldwin',
         baseLaborCentavos: 8000,
         extrasCentavos: 2000,
         laborPayoutCentavos: 10000,
       },
       {
-        businessDate: '2026-11-02',
-        userId: 'uncle',
-        displayName: 'Uncle',
+        paidOn: '2026-11-02',
+        userId: 'magma',
+        displayName: 'Magma',
         baseLaborCentavos: 2000,
         extrasCentavos: 0,
         laborPayoutCentavos: 2000,
@@ -79,21 +90,21 @@ beforeEach(() => {
     error: null,
     data: [
       {
-        businessDate: '2026-11-02',
+        paidOn: '2026-11-02',
         method: 'CASH',
         receivedCentavos: 45000,
         changeCentavos: 5000,
         netCentavos: 40000,
       },
       {
-        businessDate: '2026-11-02',
+        paidOn: '2026-11-02',
         method: 'GCASH',
         receivedCentavos: 5000,
         changeCentavos: 0,
         netCentavos: 5000,
       },
       {
-        businessDate: '2026-11-01',
+        paidOn: '2026-11-01',
         method: 'CASH',
         receivedCentavos: 5000,
         changeCentavos: 0,
@@ -136,8 +147,8 @@ describe('ReportsPage', () => {
     await user.click(screen.getByRole('button', { name: 'Full breakdown' }));
 
     expect(screen.getByText('Labor by person')).toBeInTheDocument();
-    expect(screen.getByText('Dad')).toBeInTheDocument();
-    expect(screen.getByText('Uncle')).toBeInTheDocument();
+    expect(screen.getByText('You')).toBeInTheDocument();
+    expect(screen.getByText('Magma')).toBeInTheDocument();
     expect(screen.getAllByText('₱100.00').length).toBeGreaterThan(0);
   });
 
@@ -148,7 +159,7 @@ describe('ReportsPage', () => {
 
     renderPage();
 
-    expect(screen.getByText(/No sales in/)).toBeInTheDocument();
+    expect(screen.getByText(/No paid sales in/)).toBeInTheDocument();
   });
 
   test('shows a retry state when a report fails', () => {

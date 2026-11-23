@@ -14,6 +14,8 @@ const receipt: PublicSalesReceipt = {
   },
   orderNo: 'SL-20261122-0001',
   businessDate: '2026-11-22',
+  paidOn: '2026-11-22',
+  status: 'PAID',
   customerName: 'Jose',
   bikeModel: 'Honda Click',
   items: [

@@ -12,6 +12,9 @@ playwright-report/
 test-results/
 blob-report/
 
+# Agent scratch
+.superpowers/
+
 # Environment
 .env
 .env.*

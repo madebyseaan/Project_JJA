@@ -26,6 +26,7 @@ const ORDER_COLUMNS = [
   'id',
   'order_no',
   'business_date',
+  'paid_on',
   'customer_name',
   'bike_model',
   'main_user_id',
@@ -58,6 +59,7 @@ type OrderRow = {
   id: string;
   order_no: string;
   business_date: string;
+  paid_on: string | null;
   customer_name: string | null;
   bike_model: string | null;
   main_user_id: string;
@@ -153,6 +155,7 @@ function mapOrder(row: OrderRow): SalesOrder {
     id: row.id,
     orderNo: row.order_no,
     businessDate: row.business_date,
+    paidOn: row.paid_on,
     customerName: row.customer_name,
     bikeModel: row.bike_model,
     mainUserId: row.main_user_id,
@@ -268,13 +271,29 @@ export async function listStaff(): Promise<StaffProfile[]> {
   );
 }
 
-export async function listOrders(businessDate: string): Promise<SalesOrder[]> {
+export async function listOpenOrders(): Promise<SalesOrder[]> {
   const { data, error } = await getSupabaseClient()
     .from('sales_orders')
     .select(
       `${ORDER_COLUMNS},main:profiles!sales_orders_main_user_id_fkey(display_name),helper:profiles!sales_orders_helper_user_id_fkey(display_name)`,
     )
-    .eq('business_date', businessDate)
+    .eq('status', 'OPEN')
+    .order('business_date', { ascending: true })
+    .order('created_at', { ascending: true })
+    .limit(200);
+
+  if (error) throw toAppError(error);
+  return ((data ?? []) as unknown as OrderRow[]).map(mapOrder);
+}
+
+export async function listPaidOrders(paidOn: string): Promise<SalesOrder[]> {
+  const { data, error } = await getSupabaseClient()
+    .from('sales_orders')
+    .select(
+      `${ORDER_COLUMNS},main:profiles!sales_orders_main_user_id_fkey(display_name),helper:profiles!sales_orders_helper_user_id_fkey(display_name)`,
+    )
+    .eq('paid_on', paidOn)
+    .in('status', ['PAID', 'EXPORTED'])
     .order('created_at', { ascending: false });
 
   if (error) throw toAppError(error);
@@ -351,6 +370,7 @@ export async function saveOrder(input: OrderInput): Promise<SalesOrder> {
   const { data, error } = await getSupabaseClient().rpc('save_sales_order', {
     p_order_id: input.orderId,
     p_business_date: input.businessDate,
+    p_paid_on: input.paidOn,
     p_customer_name: input.customerName,
     p_bike_model: input.bikeModel,
     p_main_user_id: input.mainUserId,
@@ -389,17 +409,17 @@ export async function listDailyReport(from: string, to: string): Promise<DailyRe
   const { data, error } = await getSupabaseClient()
     .from('v_sales_daily')
     .select(
-      'business_date,order_count,parts_total_centavos,labor_total_centavos,total_centavos,extras_total_centavos',
+      'paid_on,order_count,parts_total_centavos,labor_total_centavos,total_centavos,extras_total_centavos',
     )
-    .gte('business_date', from)
-    .lte('business_date', to)
-    .order('business_date', { ascending: false });
+    .gte('paid_on', from)
+    .lte('paid_on', to)
+    .order('paid_on', { ascending: false });
 
   if (error) throw toAppError(error);
 
   return (
     (data ?? []) as unknown as {
-      business_date: string;
+      paid_on: string;
       order_count: number;
       parts_total_centavos: number;
       labor_total_centavos: number;
@@ -407,7 +427,7 @@ export async function listDailyReport(from: string, to: string): Promise<DailyRe
       extras_total_centavos: number;
     }[]
   ).map((row) => ({
-    businessDate: row.business_date,
+    paidOn: row.paid_on,
     orderCount: row.order_count,
     partsTotalCentavos: row.parts_total_centavos,
     laborTotalCentavos: row.labor_total_centavos,
@@ -420,17 +440,17 @@ export async function listLaborReport(from: string, to: string): Promise<LaborRe
   const { data, error } = await getSupabaseClient()
     .from('v_sales_labor_daily')
     .select(
-      'business_date,user_id,display_name,base_labor_centavos,extras_centavos,labor_payout_centavos',
+      'paid_on,user_id,display_name,base_labor_centavos,extras_centavos,labor_payout_centavos',
     )
-    .gte('business_date', from)
-    .lte('business_date', to)
-    .order('business_date', { ascending: false });
+    .gte('paid_on', from)
+    .lte('paid_on', to)
+    .order('paid_on', { ascending: false });
 
   if (error) throw toAppError(error);
 
   return (
     (data ?? []) as unknown as {
-      business_date: string;
+      paid_on: string;
       user_id: string;
       display_name: string;
       base_labor_centavos: number;
@@ -438,7 +458,7 @@ export async function listLaborReport(from: string, to: string): Promise<LaborRe
       labor_payout_centavos: number;
     }[]
   ).map((row) => ({
-    businessDate: row.business_date,
+    paidOn: row.paid_on,
     userId: row.user_id,
     displayName: row.display_name,
     baseLaborCentavos: row.base_labor_centavos,
@@ -450,23 +470,23 @@ export async function listLaborReport(from: string, to: string): Promise<LaborRe
 export async function listPaymentsReport(from: string, to: string): Promise<PaymentsReport[]> {
   const { data, error } = await getSupabaseClient()
     .from('v_sales_payments_daily')
-    .select('business_date,method,received_centavos,change_centavos,net_centavos')
-    .gte('business_date', from)
-    .lte('business_date', to)
-    .order('business_date', { ascending: false });
+    .select('paid_on,method,received_centavos,change_centavos,net_centavos')
+    .gte('paid_on', from)
+    .lte('paid_on', to)
+    .order('paid_on', { ascending: false });
 
   if (error) throw toAppError(error);
 
   return (
     (data ?? []) as unknown as {
-      business_date: string;
+      paid_on: string;
       method: 'CASH' | 'GCASH';
       received_centavos: number;
       change_centavos: number;
       net_centavos: number;
     }[]
   ).map((row) => ({
-    businessDate: row.business_date,
+    paidOn: row.paid_on,
     method: row.method,
     receivedCentavos: row.received_centavos,
     changeCentavos: row.change_centavos,
@@ -560,6 +580,8 @@ export async function getPublicReceipt(token: string): Promise<PublicSalesReceip
     shop: PublicSalesReceipt['shop'];
     order_no: string;
     business_date: string;
+    paid_on: string;
+    status: 'PAID' | 'EXPORTED';
     customer_name: string | null;
     bike_model: string | null;
     items: {
@@ -579,6 +601,8 @@ export async function getPublicReceipt(token: string): Promise<PublicSalesReceip
     shop: payload.shop,
     orderNo: payload.order_no,
     businessDate: payload.business_date,
+    paidOn: payload.paid_on,
+    status: payload.status,
     customerName: payload.customer_name,
     bikeModel: payload.bike_model,
     items: payload.items.map((item) => ({
