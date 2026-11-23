@@ -69,7 +69,7 @@ A step is not done until all of these are true:
 ## 4. Current step
 
 **Step 10 — Sales log core.**
-Status: **Implemented 22 Nov 2026; waiting for the human architect to test and approve.** The app is now a daily sales log, not an inventory system. It has a QuickBooks catalog import, orders with items and per-order price overrides, labor with a helper split, extras, mixed cash/GCash payments, change, GCash held and transfers, daily and monthly reports, an optional public receipt, and equal access for both staff. QuickBooks export, month lock, and reconciliation are deliberately excluded until the morning answers arrive. Plan: `docs/superpowers/plans/2026-11-22-sales-log-core.md`; design: `docs/superpowers/specs/2026-11-22-sales-log-design.md`.
+Status: **Implemented 22–23 Nov 2026; waiting for the human architect to test and approve.** The app is now a daily sales log, not an inventory system. It has a QuickBooks catalog import, unpaid jobs saved before payment, a later payment step with extras and mixed cash/GCash, change, GCash held and transfers, paid-date reports, an optional public receipt for paid orders, and equal access for both staff. The staff names are Aldwin and Magma, and the signed-in person is shown as “You.” QuickBooks export, month lock, and reconciliation are deliberately excluded until the morning answers arrive. Plan: `docs/superpowers/plans/2026-11-23-job-payment-split.md`; design: `docs/superpowers/specs/2026-11-23-job-payment-split-design.md`.
 
 **Next session starts here.** Wait for the architect’s approval of Step 10. Then answer the QuickBooks questions in Step 11 and implement the export.
 
@@ -77,7 +77,7 @@ Status: **Implemented 22 Nov 2026; waiting for the human architect to test and a
 
 ## Step 10 — Sales log core
 
-**Status:** Implemented 22 Nov 2026 — in review.
+**Status:** Implemented 23 Nov 2026 — in review.
 
 **Goal:** Replace the inventory/repair-ticket flow with the daily sales log the shop actually needs.
 
@@ -92,6 +92,11 @@ Status: **Implemented 22 Nov 2026; waiting for the human architect to test and a
 - [x] Multiple cash/GCash payments with GCash recipient.
 - [x] Change as cash or GCash, with balance validation.
 - [x] Order editing; snapshots of item names and prices.
+- [x] Step 1 saves an unpaid job with a visible job total (parts + labor).
+- [x] Step 2 records payment later with a payment date, extras, and change.
+- [x] Open jobs section and paid sales filtered by payment date.
+- [x] Paid orders can be corrected with payment rebalancing.
+- [x] Staff names are Aldwin and Magma; the signed-in person is shown as “You”.
 - [x] Daily totals and full order list.
 - [x] Monthly report with daily rows and labor per person.
 - [x] GCash held per person and recorded transfers.

@@ -17,11 +17,13 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useAuth } from '@/features/auth/use-auth';
 import { formatManilaDate, manilaDateKey, MANILA_TIME_ZONE } from '@/lib/dates';
 import { formatCentavos } from '@/lib/money';
 
 import { useDailyReport, useLaborReport, usePaymentsReport } from './hooks/use-sales';
 import { buildMonthlyRows, monthRange, sumLaborByPerson, sumMonthlyRows } from './report-math';
+import { staffLabel } from './staff-label';
 
 function Stat({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
@@ -46,6 +48,8 @@ function monthLabel(month: string): string {
 }
 
 export function ReportsPage() {
+  const auth = useAuth();
+  const currentUserId = auth.status === 'signed-in' ? auth.profile.id : null;
   const [month, setMonth] = useState(manilaDateKey().slice(0, 7));
   const [showLabor, setShowLabor] = useState(false);
 
@@ -78,7 +82,7 @@ export function ReportsPage() {
     <div className="space-y-5">
       <PageHeader
         title="Reports"
-        description="Daily and monthly sales, labor per person, cash, and GCash."
+        description="Paid sales, labor per person, cash, and GCash."
         actions={
           <Button
             variant="outline"
@@ -122,8 +126,8 @@ export function ReportsPage() {
         </div>
       ) : rows.length === 0 ? (
         <EmptyState
-          title={`No sales in ${monthLabel(month)}`}
-          description="Orders recorded in this month appear here automatically."
+          title={`No paid sales in ${monthLabel(month)}`}
+          description="Paid orders appear here automatically on their payment date."
           action={
             <Button size="touch" nativeButton={false} render={<Link to="/orders/new" />}>
               New order
@@ -138,9 +142,9 @@ export function ReportsPage() {
             </h2>
             <div className="grid grid-cols-2 gap-2 lg:grid-cols-3">
               <Stat
-                label="Sales"
+                label="Paid sales"
                 value={formatCentavos(totals.totalCentavos)}
-                hint={`${totals.orderCount} order${totals.orderCount === 1 ? '' : 's'}`}
+                hint={`${totals.orderCount} paid order${totals.orderCount === 1 ? '' : 's'}`}
               />
               <Stat label="Parts" value={formatCentavos(totals.partsCentavos)} />
               <Stat label="Labor" value={formatCentavos(totals.laborCentavos)} />
@@ -158,9 +162,11 @@ export function ReportsPage() {
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
                 <h2 id="daily-report" className="font-display text-xl font-semibold">
-                  Daily sales
+                  Paid sales by day
                 </h2>
-                <p className="text-steel text-xs">Tap a date to open that day’s orders.</p>
+                <p className="text-steel text-xs">
+                  Tap a payment date to open that day’s paid sales.
+                </p>
               </div>
               <Button
                 variant={showLabor ? 'default' : 'outline'}
@@ -176,7 +182,7 @@ export function ReportsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Date</TableHead>
+                    <TableHead>Paid on</TableHead>
                     <TableHead className="text-right">Orders</TableHead>
                     <TableHead className="text-right">Parts</TableHead>
                     <TableHead className="text-right">Labor</TableHead>
@@ -187,13 +193,13 @@ export function ReportsPage() {
                 </TableHeader>
                 <TableBody>
                   {rows.map((row) => (
-                    <TableRow key={row.businessDate}>
+                    <TableRow key={row.paidOn}>
                       <TableCell>
                         <Link
-                          to={`/orders?date=${row.businessDate}`}
+                          to={`/orders?date=${row.paidOn}`}
                           className="text-safety-dark font-medium underline-offset-4 hover:underline"
                         >
-                          {formatManilaDate(`${row.businessDate}T12:00:00+08:00`)}
+                          {formatManilaDate(`${row.paidOn}T12:00:00+08:00`)}
                         </Link>
                       </TableCell>
                       <TableCell className="text-right tabular-nums">{row.orderCount}</TableCell>
@@ -265,7 +271,12 @@ export function ReportsPage() {
                       key={person.userId}
                       className="border-line bg-surface rounded-lg border p-4"
                     >
-                      <p className="font-display text-lg font-semibold">{person.displayName}</p>
+                      <p className="font-display text-lg font-semibold">
+                        {staffLabel(
+                          { id: person.userId, displayName: person.displayName },
+                          currentUserId,
+                        )}
+                      </p>
                       <dl className="mt-2 space-y-1 text-sm">
                         <div className="flex justify-between">
                           <dt className="text-steel">Base labor</dt>

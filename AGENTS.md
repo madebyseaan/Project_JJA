@@ -16,7 +16,8 @@ This file is the engineering contract for anyone — human or AI — working in 
 
 A web app that is a **daily sales log** for **J.J.A Motor Accessories and Motorcycle Repair Shop** (Est. 2023), one motorcycle parts and repair shop in the Philippines.
 
-- Dad and Uncle record each walk-in order: date, optional customer and motorcycle, parts, labor, helper share, extras, and cash/GCash payments.
+- Aldwin and Magma record each walk-in job: date, optional customer and motorcycle, parts, labor, helper share, extras, and cash/GCash payments after the repair.
+- The signed-in person is shown as **You** in staff choices and reports; the shell keeps the real name.
 - The item list and prices come from QuickBooks. The app does **not** track stock; QuickBooks remains the stock and accounting record.
 - Both staff have the **same access**. There is no owner/mechanic split in the sales log.
 - The app shows daily and monthly sales, labor per person, cash, GCash, and shop GCash held in personal accounts.
@@ -50,10 +51,10 @@ If a change alters behavior, update the spec in the same pull request. A change 
 1. **No server.** The app is a static React SPA. It talks directly to Supabase. Do not add Next.js, OpenNext, a custom API, Workers functions, Prisma, Fastify, or an always-on backend.
 2. **No direct writes.** Mutations to the catalog, orders, order items, labor, extras, payments, changes, GCash allocations, GCash transfers, receipts, and audit data go through PostgreSQL functions (`supabase.rpc(...)`). Never use `.insert()`, `.update()`, or `.delete()` on those tables from the client.
 3. **Money is integer centavos.** No floats, no `parseFloat` arithmetic for money, no client-supplied totals. The database computes totals.
-4. **Philippine business dates.** Use `Asia/Manila` for "today," order numbers, reports, and month selection. Store timestamps as `timestamptz`.
+4. **Philippine business dates.** Use `Asia/Manila` for "today," job dates, payment dates, order numbers, reports, and month selection. Store timestamps as `timestamptz`.
 5. **Snapshots.** `sales_order_items` freeze the item name, quantity, and unit price when the order is saved. The catalog base price is never used to rewrite an old order.
 6. **No stock tracking.** QuickBooks owns stock. Do not add quantities on hand, reservations, stock ledgers, or low-stock screens to this app. The old inventory tables are retained only until a cleanup migration.
-7. **Orders are editable until a month is exported.** There is no completed-ticket immutability in the sales log. Changing an order's business date assigns a new order number for that date. After QuickBooks export exists, a locked month is read-only in the app and corrections happen in QuickBooks. Never silently rewrite an exported order.
+7. **Jobs are saved unpaid; payment comes later.** A job is `OPEN` with no payment. A balanced payment makes it `PAID` with a Manila `paid_on` date. A paid order cannot become unpaid. Sales, labor, GCash, and receipts use the payment date. Editing a paid order requires rebalancing before save. After QuickBooks export exists, a locked month is read-only and corrections happen in QuickBooks. Never silently rewrite an exported order.
 8. **Both staff have equal access.** The database enforces staff-only access; it does not use the legacy owner/mechanic split in the sales log. Hiding a button is not security.
 9. **RLS on every table.** Default deny. No table ships without policies and tests.
 10. **No secrets in the browser.** Only `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are public. The service-role key never appears in `src/`, the bundle, logs, or screenshots.
@@ -276,7 +277,7 @@ VITE_SUPABASE_ANON_KEY=
 - Validate every argument: positive quantities, non-negative amounts, valid enums, trimmed/length-limited strings.
 - Lock catalog rows with `SELECT ... FOR UPDATE` when importing so concurrent imports cannot create duplicate names.
 - Write the business change and its `audit_events` row in the same transaction.
-- Use stable error codes: `INVALID_DATE`, `INVALID_LABOR_SPLIT`, `PAYMENT_MISMATCH`, `CHANGE_TOO_LARGE`, `EMPTY_ORDER`, `ITEM_NOT_FOUND`, `INSUFFICIENT_GCASH`, `ORDER_NOT_FOUND`, `ORDER_LOCKED`, `FORBIDDEN`.
+- Use stable error codes: `INVALID_DATE`, `INVALID_LABOR_SPLIT`, `PAYMENT_MISMATCH`, `PAYMENT_REQUIRED`, `CHANGE_TOO_LARGE`, `EMPTY_ORDER`, `ITEM_NOT_FOUND`, `INSUFFICIENT_GCASH`, `ORDER_NOT_FOUND`, `ORDER_LOCKED`, `FORBIDDEN`.
 - Use `timestamptz`. Business date: `(now() at time zone 'Asia/Manila')::date`.
 - Money columns end in `_centavos` and are integers. No `numeric` money, no floats.
 - Use generated columns for line totals, order totals, and GCash share sums where possible.
@@ -291,13 +292,14 @@ VITE_SUPABASE_ANON_KEY=
 
 ## 11. Auth, roles, and security
 
-- Supabase Auth with a hidden internal email derived from the employee ID (`JJA-001` → `jja-001@staff.jja.internal`). Staff log in with the employee ID + password; they never see or type the email. Public sign-ups disabled. Two accounts: Dad and Uncle.
+- Supabase Auth with a hidden internal email derived from the employee ID (`JJA-001` → `jja-001@staff.jja.internal`). Staff log in with the employee ID + password; they never see or type the email. Public sign-ups disabled. Two accounts: Aldwin and Magma.
+- The signed-in person is shown as **You** in staff choices, order rows, reports, and GCash. The stored and exported names stay Aldwin/Magma.
 - `profiles.role` remains `owner` or `mechanic` for legacy tables, but the sales log does not branch on it. Both staff have the same access to orders, items, reports, GCash, and settings.
 - `private.is_staff()` is the security-definer helper used by RLS. Do not add owner-only checks to sales-log functions.
 - The PIN is local, hashed with salted SHA-256 in `localStorage`. It is a screen lock, not identity. Never send it to the server.
 - Lock after 5 minutes idle; five bad attempts force a full sign-out.
 - `anon` may execute `ping()`, `get_sales_receipt(token)`, and the legacy `get_receipt(token)` / `verify_receipt(no, code)`.
-- The new public receipt may show shop details, order number, date, optional customer/bike, item names and quantities, labor total, total, and payment methods. It never shows the internal labor split, costs, notes, or contact details.
+- The new public receipt is issued only for paid orders and may show shop details, order number, job date, payment date, optional customer/bike, item names and quantities, labor total, extras, total charged, payments, change, and net paid. It never shows the internal labor split, costs, notes, or contact details.
 - Public tokens are 128-bit random. If abuse appears, add per-IP throttling.
 - Escape CSV formula injection on export.
 - Do not add analytics, trackers, or third-party scripts without approval.
@@ -313,7 +315,10 @@ These are the highest-risk paths. Change them only with tests.
 
 - Integer centavos everywhere. Parse peso input with a string parser, not `parseFloat`.
 - The database computes line totals, parts totals, order totals, and GCash allocations. The client never sends a total.
-- Payments and change balance exactly: `payments = parts + labor + extras + change`.
+- A job saves with no payment (`OPEN`). Extras require a payment.
+- A paid order requires payments = parts + labor + extras + change and a zero balance.
+- Payment date defaults to today, may be backdated, cannot be future or before the job date.
+- A paid order cannot become unpaid. Editing items/labor/extras requires rebalancing the payment.
 - Change by method cannot exceed payments by that method.
 - GCash change must come from someone who received a GCash payment, and cannot exceed that person's own payment.
 - Helper share cannot exceed total labor; the main share is the remainder and is never negative.
@@ -338,10 +343,10 @@ These are the highest-risk paths. Change them only with tests.
 
 ### Digital receipt
 
-- Optional per order. Public token is 128-bit random.
-- Shows order, date, optional customer/bike, items, labor total, optional extra/tip, total charged, payments received, and change returned.
+- Optional per paid order. Open jobs have no public receipt.
+- Shows order, job date, payment date, optional customer/bike, items, labor total, optional extra/tip, total charged, payments received, and change returned.
 - Never shows the internal labor split, costs, notes, or transfer data.
-- A change to the receipt payload or public function must include a database test that a valid token returns the expected shape and an unknown or malformed token returns null.
+- A change to the receipt payload or public function must include a database test that a valid paid token returns the expected shape and an unknown or unpaid token returns null.
 - The legacy receipt and verification functions remain for old links but are not used by new orders.
 
 ---
@@ -350,15 +355,18 @@ These are the highest-risk paths. Change them only with tests.
 
 - Unit tests: money, dates, monthly report math, order balance math, CSV import mapping, error mapping, PIN, zod schemas.
 - Database tests: every function and RLS policy. At minimum:
+  - unpaid job save and later payment; open jobs never in sales views,
+  - payment date validation and paid-date reports,
+  - paid order rebalancing and refusal to unpay,
   - order create/edit with items, labor split, extras, payments, and change,
   - helper share over total and payment mismatch rejection,
   - custom and catalog line snapshots,
-  - past-dated order numbering and daily report,
+  - past-dated job numbering and paid-date reporting,
   - GCash allocation, held balances, and over-transfer rejection,
-  - public receipt by token, missing token, and no internal split,
+  - public receipt by paid token; open/missing token returns null;
   - staff-only reads; anon denied; direct table writes denied,
   - catalog import counts, idempotency, and full-list deactivation.
-- E2E: login → order → item → helper split → extra → mixed payment → change → save → daily list → edit → monthly report → GCash → digital receipt. Both staff see the same navigation.
+- E2E: login → unpaid job → item → helper split → job total → open jobs → take payment → extras → mixed cash/GCash → change → paid sales → report → GCash → digital receipt. Both staff see the same navigation and “You” labels.
 - Every bug fix gets a regression test.
 - Tests are deterministic. Reset the database between runs. Never test against production.
 - CI runs local Supabase in Docker. Locally, Docker is optional; `test:db` may be skipped only if documented.
@@ -444,7 +452,7 @@ A task is done only when:
 
 ## 18. Scope and non-goals (current phase)
 
-**In scope:** staff auth and PIN lock, sales-log navigation, QuickBooks catalog import, order create/edit, items and per-order prices, custom lines, labor and helper split, extras, cash/GCash payments, change, GCash held and transfers, daily and monthly reports, optional digital receipt, PWA shell, backups, keep-alive, CI. The approved follow-up is QuickBooks export, month lock, and reconciliation.
+**In scope:** staff auth and PIN lock, sales-log navigation, QuickBooks catalog import, unpaid job save, later payment with extras/cash/GCash/change, paid-date reports, GCash held and transfers, optional digital receipt for paid orders, PWA shell, backups, keep-alive, CI. The approved follow-up is QuickBooks export, month lock, and reconciliation.
 
 **Out of scope:** stock tracking, multi-shop, customer accounts, public storefront, online cart, QR ticket pass, camera scanner, part photos, partial returns, exchanges, email/SMS delivery, BIR official receipts, payroll, suppliers, purchase orders, loyalty points, offline sales, historical sales import.
 
@@ -454,7 +462,9 @@ If a request belongs to the out-of-scope list, say so and propose updating the s
 
 ## 19. Glossary
 
-- **Order** — one customer sale, with items, labor, extras, payments, and change.
+- **Order** — one customer sale, with items, labor, optional extras, payments, and change.
+- **Open job** — an order saved before payment; no sales, labor, GCash, or receipt yet.
+- **Paid order** — an order with a balanced payment and a payment date.
 - **Catalog** — the QuickBooks item and price list. No stock.
 - **Custom line** — an item not in QuickBooks, flagged on the order.
 - **Main worker** — the person who gets the labor remainder.

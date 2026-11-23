@@ -1,6 +1,6 @@
 # J.J.A Motor Accessories & Repair Sales Log
 
-A phone-friendly web app for **J.J.A Motor Accessories and Motorcycle Repair Shop** (Est. 2023): a daily sales log for parts and labor, helper splits, extras, cash/GCash payments, GCash held, reports, and optional digital receipts. The item list comes from QuickBooks; the app does not track stock.
+A phone-friendly web app for **J.J.A Motor Accessories and Motorcycle Repair Shop** (Est. 2023): a daily sales log for Aldwin and Magma. Save the job and its total first; take payment later with extras, cash/GCash, and change. GCash held, paid-date reports, and optional digital receipts. The item list comes from QuickBooks; the app does not track stock.
 
 **Status:** The sales-log core is implemented and in review. QuickBooks export, month close, and reconciliation are the next step, blocked on the accountant/QuickBooks answers. See [`docs/roadmap.md`](docs/roadmap.md).
 

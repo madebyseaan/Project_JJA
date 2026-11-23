@@ -74,7 +74,7 @@ JJA_002_PASSWORD=
 npm run setup:supabase
 ```
 
-The script applies the migrations if needed, creates `JJA-001` (Dad) and `JJA-002` (Uncle), and sets the display names. Both accounts have the same sales-log access; the legacy `owner`/`mechanic` role is kept only for compatibility. If it generates passwords, it writes them to `.staff-credentials.local` (gitignored) instead of printing them.
+The script applies the migrations if needed, creates `JJA-001` (Aldwin) and `JJA-002` (Magma), and sets the display names. Both accounts have the same sales-log access; the legacy `owner`/`mechanic` role is kept only for compatibility. If it generates passwords, it writes them to `.staff-credentials.local` (gitignored) instead of printing them.
 
 4. Save the generated passwords, then delete both `.staff-credentials.local` and `.env.setup.local`. Rotate the secret key if you want.
 
@@ -116,21 +116,21 @@ Staff log in with an **employee ID**, not an email. Supabase Auth still needs a 
 
 | Staff | Employee ID | Hidden auth email |
 |---|---|---|
-| Dad | `JJA-001` | `jja-001@staff.jja.internal` |
-| Uncle | `JJA-002` | `jja-002@staff.jja.internal` |
+| Aldwin | `JJA-001` | `jja-001@staff.jja.internal` |
+| Magma | `JJA-002` | `jja-002@staff.jja.internal` |
 
 1. **Authentication → Users → Add user**.
-2. Dad: email `jja-001@staff.jja.internal`, a strong password, **Auto Confirm User** on.
-3. Uncle: email `jja-002@staff.jja.internal`, a different password, **Auto Confirm User** on.
+2. Aldwin: email `jja-001@staff.jja.internal`, a strong password, **Auto Confirm User** on.
+3. Magma: email `jja-002@staff.jja.internal`, a different password, **Auto Confirm User** on.
 4. Set the display names and, for legacy compatibility, a role:
 
 ```sql
 update public.profiles
-set display_name = 'Dad'
+set display_name = 'Aldwin'
 where employee_id = 'JJA-001';
 
 update public.profiles
-set display_name = 'Uncle', role = 'owner'
+set display_name = 'Magma', role = 'owner'
 where employee_id = 'JJA-002';
 ```
 
@@ -182,9 +182,9 @@ Never point these variables at production.
 
 1. Start the app: `npm run dev`.
 2. Open `/login`.
-3. Sign in with **JJA-001** and Dad's password. The app should open **Orders** and show **Dad**, `JJA-001`, and the main navigation (Orders, Items, Reports, Settings).
+3. Sign in with **JJA-001** and Aldwin's password. The app should open **Orders** and show **Aldwin**, `JJA-001`, and the main navigation (Orders, Items, Reports, Settings).
 4. Refresh. The session should survive.
-5. Sign out, then sign in with **JJA-002** and Uncle's password. The app should show **Uncle**, `JJA-002`, and the same navigation and access.
+5. Sign out, then sign in with **JJA-002** and Magma's password. The app should show **Magma**, `JJA-002`, and the same navigation and access.
 6. Try a wrong password. The message should be clear and must not reveal whether the employee ID exists.
 
 ---

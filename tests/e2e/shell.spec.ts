@@ -41,7 +41,7 @@ test('both staff see the same sales log navigation', async ({ page }) => {
     await expect(navLink(page, name)).toBeVisible();
   }
 
-  await expect(page.getByText('No orders on this date')).toBeVisible();
+  await expect(page.getByText('No jobs waiting for payment.')).toBeVisible();
 });
 
 test('the mechanic gets the same access as the owner', async ({ page }) => {

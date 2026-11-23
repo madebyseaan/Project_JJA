@@ -54,7 +54,10 @@ function ReceiptSheet({ receipt }: { receipt: PublicSalesReceipt }) {
             <p className="text-steel text-xs">Order number</p>
             <p className="font-mono text-lg font-semibold">{receipt.orderNo}</p>
             <p className="text-steel mt-1 text-xs">
-              {formatManilaDate(`${receipt.businessDate}T12:00:00+08:00`)}
+              Job date {formatManilaDate(`${receipt.businessDate}T12:00:00+08:00`)}
+            </p>
+            <p className="text-steel text-xs">
+              Paid on {formatManilaDate(`${receipt.paidOn}T12:00:00+08:00`)}
             </p>
           </div>
           {receipt.customerName || receipt.bikeModel ? (

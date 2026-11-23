@@ -31,6 +31,7 @@ describe('toAppError', () => {
     expect(toAppError({ message: 'INVALID_PRICE' }).code).toBe('INVALID_INPUT');
     expect(toAppError({ message: 'INVALID_QUANTITY' }).code).toBe('INVALID_INPUT');
     expect(toAppError({ message: 'INVALID_GCASH_RECIPIENT' }).code).toBe('INVALID_INPUT');
+    expect(toAppError({ message: 'PAYMENT_REQUIRED' }).code).toBe('PAYMENT_REQUIRED');
   });
 
   test('maps sales-log money codes to specific messages', () => {

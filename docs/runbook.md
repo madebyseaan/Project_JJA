@@ -25,11 +25,12 @@ The Supabase Free plan allows two active projects. Do not create a third without
 3. On success, the deploy workflow applies pending migrations with `supabase db push --remote "$SUPABASE_DB_URL"` using the CI secret. If the secret is missing or the migration fails, the deploy stops.
 4. The deploy job then builds and runs `wrangler deploy`.
 5. Open the production URL and run the smoke test on staging or with a real order:
-   - sign in as Dad or Uncle,
-   - open **Orders**, change the date, and confirm today’s totals load,
-   - create an order with one catalog item, labor, a cash payment, and check the daily total,
-   - open the order and share its digital receipt,
-   - open **Reports** and confirm the month total,
+   - sign in as Aldwin or Magma,
+   - open **Orders** and confirm today’s paid totals load,
+   - create an unpaid job with one catalog item and labor; check the job total,
+   - take payment, add a cash/GCash split, and check the paid date,
+   - open the paid order and share its digital receipt,
+   - open **Reports** and confirm the payment-date total,
    - open **GCash** and confirm the shop-held balance,
    - do not leave a fake order in production reports. Use staging for destructive smoke tests.
 
@@ -191,19 +192,20 @@ The secret is stored in `private.app_secrets` and backed up in GitHub Actions. I
 3. The `profiles` trigger creates a `mechanic` profile with the employee ID.
 4. Set `display_name`. The sales log does not use the legacy `owner`/`mechanic` role for access.
 5. Ask the user to sign in with the employee ID, set a PIN, and install the PWA.
-6. Test access: the new user must see **Orders**, **Items**, **Reports**, and **Settings**, and must be able to create an order. Anon users must not read sales tables.
+6. Test access: the new user must see **Orders**, **Items**, **Reports**, and **Settings**, and must be able to create an unpaid job. Anon users must not read sales tables.
 
 ---
 
 ## 10. Daily sales review
 
-1. Open **Orders** and confirm today’s date.
-2. Check parts, labor, cash, GCash, and the order count.
-3. Open each order if a number looks wrong; edit the order while the month is open.
-4. Open **Reports** for the month and compare the daily rows with the paper record.
-5. Open **GCash** and confirm who is holding shop money.
-6. Record any transfer to the shop bank as soon as it happens.
-7. Month close, QuickBooks export, and month lock arrive in the next step; until then, do not promise a locked month.
+1. Open **Orders** and check **Open jobs** for unpaid work.
+2. Take payment when the repair is done. The payment date defaults to today.
+3. Check **Paid sales** for the selected payment date: parts, labor, cash, GCash, and the paid order count.
+4. Open each paid order if a number looks wrong; edit it and rebalance the payment if needed.
+5. Open **Reports** for the month and compare the paid rows with the paper record.
+6. Open **GCash** and confirm who is holding shop money.
+7. Record any transfer to the shop bank as soon as it happens.
+8. Month close, QuickBooks export, and month lock arrive in the next step; until then, do not promise a locked month.
 
 ### Import the QuickBooks item list
 
@@ -227,8 +229,8 @@ node scripts/import-quickbooks-items.mjs --file draft.CSV
 
 ## 11. Digital receipt checks
 
-- The receipt is optional and public at `/s/<token>`.
-- It shows the order number, date, items, labor, optional tip, total charged, payments, change, and net paid.
+- The receipt is optional and public at `/s/<token>` for paid orders only.
+- It shows the order number, job date, payment date, items, labor, optional tip, total charged, payments, change, and net paid.
 - It never shows the internal labor split, costs, or notes.
 - If a customer disputes a receipt, open the order in **Orders** and compare the values. There is no verification code in the current phase.
 - The old `/r/<token>` receipt and `/verify` page remain only for legacy links and old records.

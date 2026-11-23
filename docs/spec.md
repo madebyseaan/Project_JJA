@@ -12,7 +12,7 @@ The approved design note is `docs/superpowers/specs/2026-11-22-sales-log-design.
 
 ## 1. Summary
 
-Dad and Uncle record each customer order in a phone-friendly sales log:
+Aldwin and Magma record each customer order in a phone-friendly sales log:
 
 - date, optional customer name, optional motorcycle;
 - parts from the QuickBooks item list, with quantity and a per-order price;
@@ -61,12 +61,13 @@ Two staff accounts, both with the same access:
 
 | Staff | Employee ID | Display name |
 |---|---|---|
-| Dad | `JJA-001` | Dad |
-| Uncle | `JJA-002` | Uncle |
+| Aldwin | `JJA-001` | Aldwin |
+| Magma | `JJA-002` | Magma |
 
 - Login is Supabase Auth with a hidden internal email derived from the employee ID: `jja-001@staff.jja.internal`. Staff type only the employee ID and password.
 - `profiles.role` remains `owner` or `mechanic` for compatibility with legacy tables, but the sales log **does not use it**. No screen in the sales log is owner-only.
-- Both staff can create, view, edit, and share orders; add extras; record payments and change; import items; record GCash transfers; and view reports and settings.
+- Both staff can create, view, edit, and share paid orders; save unpaid jobs; add extras; record payments and change; import items; record GCash transfers; and view reports and settings.
+- The signed-in person is shown as **You** in staff choices, order rows, reports, and GCash. The shell keeps the real name for identity.
 - The old owner/mechanic navigation split is retired.
 - The local PIN lock remains a screen lock. It is not identity and never goes to the server.
 
@@ -74,7 +75,9 @@ Two staff accounts, both with the same access:
 
 ## 5. Daily flow
 
-1. Open **Orders**. Today’s Manila business date is selected.
+### Step 1 — Job
+
+1. Open **Orders**. Today’s Manila date is selected for paid sales.
 2. Tap **New order**.
 3. Optionally enter the customer and motorcycle.
 4. Add items:
@@ -85,17 +88,24 @@ Two staff accounts, both with the same access:
    - remove a line.
 5. If the item is not in QuickBooks, add a **custom line**: name, quantity, price. It is marked “not in QuickBooks”.
 6. Enter **total labor**. If someone helped, choose the helper and enter the helper’s share. The main worker receives `total labor − helper share`.
-7. Add optional **extras** (tips/keep-the-change). The recipient defaults to the main worker; the helper can be chosen. Extras go to labor, not to shop sales.
-8. Record payment:
-   - one or more payments;
-   - each is Cash or GCash;
-   - each GCash payment records who received it;
-   - change can be cash or GCash and records its own recipient.
-9. Review the order: items, labor split, extras, payments, change, totals, balance.
-10. Save. The order appears in the daily log and reports.
-11. Optionally share the digital receipt link or QR code.
+7. The summary shows **Job total = parts + labor**.
+8. Save. The job appears under **Open jobs** as **Unpaid**. No payment is recorded yet.
 
-Orders stay editable while the month is open. Changing an order’s business date assigns a new order number for that date. Once QuickBooks export and month lock exist, an exported month is read-only and corrections happen in QuickBooks.
+### Step 2 — Payment
+
+9. When the repair is done, open the job and choose **Payment**.
+10. Add optional **extras** (tips/keep-the-change). The recipient defaults to the main worker; the helper can be chosen.
+11. Record payment:
+    - one or more payments;
+    - each is Cash or GCash;
+    - each GCash payment records who received it;
+    - change can be cash or GCash and records its own recipient;
+    - the **payment date** defaults to today; past dates are allowed, future dates are not.
+12. The summary shows **Total to pay = job total + extras**, payments, change, and balance.
+13. Record the payment. The job becomes **Paid** and moves to paid sales on the payment date.
+14. Optionally share the digital receipt link or QR code.
+
+Orders stay editable while the month is open. A paid order can be corrected, but the payment must be rebalanced before saving. Changing the job date assigns a new order number for that date. Once QuickBooks export and month lock exist, an exported month is read-only and corrections happen in QuickBooks.
 
 ---
 
@@ -103,14 +113,15 @@ Orders stay editable while the month is open. Changing an order’s business dat
 
 | Route | Purpose |
 |---|---|
-| `/orders` | Daily list, date picker, daily totals, labor per person, order links |
-| `/orders/new` | Create an order |
-| `/orders/:id` | View/edit an order, share its receipt |
+| `/orders` | Open jobs, paid sales by payment date, daily totals, labor per person |
+| `/orders/new` | Step 1: create an unpaid job |
+| `/orders/:id` | Order and Payment tabs; edit, take payment, share receipt |
+| `/orders/:id?tab=payment` | Open the payment step directly |
 | `/items` | Search the catalog; import the QuickBooks item list |
-| `/reports` | Monthly report with daily rows, totals, and labor breakdown |
+| `/reports` | Monthly report with paid rows, totals, and labor breakdown |
 | `/reports/gcash` | GCash held per person, transfers, recent history |
 | `/settings` | Read-only shop details and QuickBooks-related guidance |
-| `/s/:token` | Public digital receipt |
+| `/s/:token` | Public digital receipt for a paid order |
 
 Navigation has four items for both staff: **Orders**, **Items**, **Reports**, **Settings**.
 
@@ -151,8 +162,9 @@ Imports are idempotent by item name. Inactive and non-inventory rows are skipped
 | Column | Type | Notes |
 |---|---|---|
 | `id` | uuid PK | |
-| `order_no` | text unique | `SL-YYYYMMDD-0001`, using the business date |
-| `business_date` | date | Manila business date |
+| `order_no` | text unique | `SL-YYYYMMDD-0001`, using the job date |
+| `business_date` | date | Manila job date |
+| `paid_on` | date nullable | Manila payment date; required when `PAID`/`EXPORTED` |
 | `customer_name` | text nullable | Up to 120 characters |
 | `bike_model` | text nullable | Up to 120 characters |
 | `main_user_id` | uuid | Worker who gets the labor remainder |
@@ -160,11 +172,18 @@ Imports are idempotent by item name. Inactive and non-inventory rows are skipped
 | `parts_total_centavos` | integer | Sum of line totals; computed by the RPC |
 | `labor_total_centavos` | integer | Total labor entered by staff |
 | `total_centavos` | integer generated | `parts + labor` |
-| `status` | text | `OPEN` or `EXPORTED` (export is a later step) |
+| `status` | text | `OPEN`, `PAID`, or `EXPORTED` |
 | `created_by` | uuid | |
 | `created_at`, `updated_at` | timestamptz | |
 | `reviewed_by`, `reviewed_at` | uuid, timestamptz | Set on save |
 | `public_token` | text unique | 128-bit random hex token for the digital receipt |
+
+Rules:
+
+- `OPEN` requires `paid_on` to be null.
+- `PAID` and `EXPORTED` require a non-null `paid_on`.
+- `paid_on` cannot be before `business_date`.
+- Existing orders with payments were backfilled to `PAID` with `paid_on = business_date`.
 
 ### 7.3 `sales_order_items`
 
@@ -285,8 +304,12 @@ A transfer cannot exceed the shop or labor balance held by that person. `INSUFFI
 - Helper share cannot exceed total labor. The main share is `total − helper share` and is never negative.
 - A helper must be a different staff account from the main worker.
 - An extra must go to the main or helper on that order. The default is the main worker.
-- Payments and changes must balance exactly; a mismatch is rejected by the database.
-- Cash and GCash change cannot exceed the payments for that method.
+- Amounts are integer centavos. Payments and changes must balance exactly; a mismatch is rejected by the database.
+- A job can be saved with no payment (`OPEN`). Extras are not allowed until payment.
+- A paid order (`PAID`) must have at least one payment and a zero balance.
+- A paid order cannot be changed back to unpaid through the normal form.
+- Editing a paid order’s items, labor, or extras requires rebalancing the payment before saving.
+- Change by method cannot exceed payments for that method; GCash change must come from a recipient who received a GCash payment.
 - Daily net by method is `payments − change` for that method.
 - Reported parts and labor are allocated across methods for later export using the net method amounts. The preview will allow an override in the export step; the default allocation must always sum exactly.
 
@@ -313,20 +336,22 @@ A transfer cannot exceed the shop or labor balance held by that person. `INSUFFI
 
 ## 10. Reports
 
+All reports count **paid** orders on their **payment date** (`paid_on`). Open jobs never appear in sales totals.
+
 ### Daily
 
-- Date picker defaults to today; past dates allowed; future dates disabled.
-- Summary: parts, labor, cash net, GCash net, order count.
-- Labor per person for the date.
-- Every order for the date, with order number, customer/bike, workers, status, and total.
+- Date picker is labeled **Sales paid on** and defaults to today; past dates allowed; future dates disabled.
+- Summary: parts, labor, cash net, GCash net, paid order count.
+- Labor per person for the payment date.
+- Every paid order for the date, with order number, customer/bike, workers, status, and total.
 - Empty, loading, and error states.
 
 ### Monthly
 
 - Month picker defaults to the current Manila month; future months disabled.
-- Summary: sales, parts, labor, cash net, GCash net, extras, order count.
-- Daily table: date, orders, parts, labor, cash, GCash, sales, month total.
-- Tapping a date opens that day’s orders.
+- Summary: paid sales, parts, labor, cash net, GCash net, extras, paid order count.
+- Daily table: payment date, orders, parts, labor, cash, GCash, sales, month total.
+- Tapping a payment date opens that day’s paid sales.
 - Full breakdown: labor by person for the month (base labor, extras, payout).
 - Empty, loading, and error states.
 
@@ -357,12 +382,12 @@ A transfer cannot exceed the shop or labor balance held by that person. `INSUFFI
 
 ## 12. Digital receipt
 
-- Optional per order.
+- Optional per **paid** order. Open jobs have no public receipt.
 - Public URL `/s/:token` with a 128-bit random token.
-- Shows shop details, order number, business date, optional customer and motorcycle, item names and quantities, parts total, labor total, optional extra/tip, total charged, payments received, change returned, and net paid.
+- Shows shop details, order number, job date, payment date, optional customer and motorcycle, item names and quantities, parts total, labor total, optional extra/tip, total charged, payments received, change returned, and net paid.
 - Never shows the internal labor split, costs, notes, customer contact details, or transfer data.
 - Includes a QR code and copy-link button; printing/saving as PDF uses the browser.
-- Returns “Receipt not found” for an unknown token and never leaks whether an order exists.
+- Returns “Receipt not found” for an unknown token or an unpaid order, and never leaks whether an order exists.
 - The old `/r/:token` receipt route remains for legacy links.
 
 ---
@@ -396,9 +421,10 @@ Stable error codes:
 - `INVALID_METHOD`, `INVALID_AMOUNT` — bad payment or change.
 - `INVALID_GCASH_RECIPIENT`, `INVALID_CASH_RECIPIENT` — recipient does not match method.
 - `INVALID_GCASH_RECIPIENT` also covers a missing recipient.
-- `CHANGE_TOO_LARGE` — change exceeds the method payment.
-- `PAYMENT_MISMATCH` — payments do not balance.
-- `EMPTY_ORDER` — no items, labor, or extras.
+- `CHANGE_TOO_LARGE` - change exceeds the method payment.
+- `PAYMENT_MISMATCH` - payments do not balance.
+- `PAYMENT_REQUIRED` - a paid order was sent with no payment, or extras were added before payment.
+- `EMPTY_ORDER` - no items, labor, or extras.
 - `ITEM_NOT_FOUND` — catalog item missing or inactive.
 - `INSUFFICIENT_GCASH` — transfer exceeds the held balance.
 - `INVALID_DESTINATION`, `INVALID_COUNTERPARTY`, `INVALID_REFERENCE`, `INVALID_NOTE` — bad transfer.
@@ -452,7 +478,7 @@ There is no custom server. The browser talks to Supabase directly. The app is a 
 ## 17. Database functions
 
 - `private.next_sales_order_no(p_day date) returns text` — daily order number.
-- `public.save_sales_order(...) returns sales_orders` — create or replace an open order and all child rows in one transaction.
+- `public.save_sales_order(... p_paid_on date) returns sales_orders` - create or replace an order and its child rows in one transaction. No payment saves an `OPEN` job; balanced payments save a `PAID` order on the payment date.
 - `public.import_catalog_items(p_items jsonb) returns jsonb` — idempotent catalog upsert.
 - `public.deactivate_missing_catalog_items(p_names text[]) returns jsonb` — full-list sync; deactivates catalog rows missing from the export.
 - `public.get_gcash_balances() returns jsonb` — per-person shop and labor balances.
@@ -483,24 +509,30 @@ Every write and every money-relevant change writes an `audit_events` row in the 
 
 ### Database
 
+- Save an unpaid job with items and labor; it is `OPEN`, `paid_on` null, and absent from sales views.
+- Pay it later; it becomes `PAID` and appears on the payment date, not the job date.
+- Reject a payment date before the job date or in the future.
+- Reject extras without a payment.
+- A paid order cannot become unpaid.
+- Changing a paid order's items requires rebalancing the payment.
 - Create an order with items, labor split, extras, mixed payments, and change.
-- Reject helper share over total.
-- Reject payment mismatch and too much change.
+- Reject helper share over total; reject payment mismatch and too much change.
 - Edit replaces child rows and recalculates totals.
 - Custom and catalog line snapshots.
-- Past-dated order appears in the correct daily report and order number.
-- GCash balances and over-transfer rejection.
-- Public receipt by token; altered or missing token returns null.
+- Past-dated job numbering and paid-date reporting.
+- GCash balances, allocations only on paid orders, and over-transfer rejection.
+- Public receipt by token for paid orders; open or missing token returns null.
 - Staff can read; anon cannot; direct writes are denied.
-- Catalog import inserted/updated counts and idempotency.
+- Catalog import counts, idempotency, and full-list deactivation.
 
 ### E2E
 
-- Login as Dad; create an order with an item, helper split, extra, mixed payment, and change.
-- See it in the daily list and monthly report.
-- Open the edit form and see saved values.
-- Open GCash balances and the public receipt.
-- The mechanic sees the same navigation and access.
+- Login as Aldwin; create an unpaid job with an item, labor, and helper split; see the job total.
+- See it in Open jobs as Unpaid.
+- Take payment later with extras, mixed cash/GCash, and change.
+- See it move to Paid sales on the payment date and open the receipt.
+- The Signed-in user is shown as “You” in staff choices.
+- The mechanic has the same navigation and access.
 - The shell fits 360px without horizontal scrolling.
 
 Tests are deterministic and never run against production. CI runs local Supabase in Docker.
@@ -575,7 +607,10 @@ No export code ships until these are answered.
 
 ## 23. Glossary
 
-- **Order** — one customer sale, with items, labor, extras, payments, and change.
+- **Order** — one customer sale, with items, labor, optional extras, payments, and change.
+- **Open job** — an order saved before payment; no sales, labor, GCash, or receipt yet.
+- **Paid order** — an order with a balanced payment on a payment date.
+- **Payment date** — the Manila date the customer paid; used in reports, GCash, and receipts.
 - **Catalog** — the QuickBooks item and price list. No stock.
 - **Custom line** — an item not in QuickBooks, flagged on the order.
 - **Main worker** — the person who receives the labor remainder.
@@ -596,14 +631,19 @@ No export code ships until these are answered.
 
 ## 24. Acceptance criteria for the current step
 
-- Both staff can create an order with multiple items, labor, a helper split, extras, mixed payments, and change.
-- Parts money, labor money, and extras are reported separately.
-- Daily and monthly reports match the orders.
+- Both staff can save an unpaid job with multiple items, labor, and a helper split.
+- Step 1 shows the job total (parts + labor) before payment.
+- A job can be paid later with extras, mixed payments, and change.
+- Paid orders appear in sales, labor, GCash, and receipts on the payment date.
+- Open jobs appear in Open jobs and never in sales totals.
+- A paid order cannot become unpaid; changing its items requires rebalancing.
+- The signed-in person is shown as “You” in staff choices, order rows, reports, and GCash.
+- The names Aldwin and Magma are used consistently.
 - GCash held per person is visible; transfers reduce it and cannot overdraw.
 - Editing an order replaces its lines without duplicates and recalculates totals.
 - Custom lines are clearly flagged.
 - The catalog import skips inactive and non-inventory rows and never imports stock.
-- The public receipt opens by link and never shows the internal split.
+- The public receipt opens only for paid orders and never shows the internal split.
 - Both staff accounts have identical access.
 - No stock screens or stock tracking are present.
 - `npm run check`, database tests, and E2E pass.
