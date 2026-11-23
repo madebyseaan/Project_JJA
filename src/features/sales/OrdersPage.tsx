@@ -179,14 +179,16 @@ export function OrdersPage() {
   const payments = usePaymentsReport(date, date);
   const deleteOrder = useDeleteOrder();
   const [orderToDelete, setOrderToDelete] = useState<SalesOrder | null>(null);
-  const [paymentRecorded, setPaymentRecorded] = useState<PaymentRecordedState | null>(null);
+  const [paymentRecorded, setPaymentRecorded] = useState<PaymentRecordedState | null>(() => {
+    const state = location.state as { paymentRecorded?: PaymentRecordedState } | null;
+    return state?.paymentRecorded ?? null;
+  });
   const [receiptOrder, setReceiptOrder] = useState<SalesOrder | null>(null);
 
   useEffect(() => {
     const state = location.state as { paymentRecorded?: PaymentRecordedState } | null;
     if (!state?.paymentRecorded) return;
 
-    setPaymentRecorded(state.paymentRecorded);
     navigate(`${location.pathname}${location.search}`, { replace: true, state: null });
   }, [location.pathname, location.search, location.state, navigate]);
 

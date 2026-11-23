@@ -93,7 +93,9 @@ export function PaymentRecordedDialog({ record, onClose, onShare }: PaymentRecor
             variant="outline"
             size="touch"
             nativeButton={false}
-            render={<a href={receiptUrl} target="_blank" rel="noreferrer" />}
+            render={
+              <a href={receiptUrl} target="_blank" rel="noreferrer" aria-label="View receipt" />
+            }
           >
             <ReceiptText aria-hidden="true" />
             View receipt

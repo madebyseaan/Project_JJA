@@ -49,7 +49,7 @@ export function QuickSalePayment({
             No labor on this sale. Collect payment now, or save it as an open job.
           </p>
         </div>
-        <div className="flex gap-2" role="group" aria-label="Payment timing">
+        <div className="flex gap-2">
           <Button
             type="button"
             size="touch"
