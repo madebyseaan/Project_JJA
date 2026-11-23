@@ -101,24 +101,24 @@ describe('sumLaborByPerson', () => {
     const rows: LaborReport[] = [
       {
         paidOn: '2026-11-01',
-        userId: 'dad',
-        displayName: 'Dad',
+        userId: 'Aldwin',
+        displayName: 'Aldwin',
         baseLaborCentavos: 1000,
         extrasCentavos: 100,
         laborPayoutCentavos: 1100,
       },
       {
         paidOn: '2026-11-02',
-        userId: 'dad',
-        displayName: 'Dad',
+        userId: 'Aldwin',
+        displayName: 'Aldwin',
         baseLaborCentavos: 2000,
         extrasCentavos: 0,
         laborPayoutCentavos: 2000,
       },
       {
         paidOn: '2026-11-02',
-        userId: 'uncle',
-        displayName: 'Uncle',
+        userId: 'Magma',
+        displayName: 'Magma',
         baseLaborCentavos: 500,
         extrasCentavos: 50,
         laborPayoutCentavos: 550,
@@ -127,15 +127,15 @@ describe('sumLaborByPerson', () => {
 
     expect(sumLaborByPerson(rows)).toEqual([
       {
-        userId: 'dad',
-        displayName: 'Dad',
+        userId: 'Aldwin',
+        displayName: 'Aldwin',
         baseLaborCentavos: 3000,
         extrasCentavos: 100,
         payoutCentavos: 3100,
       },
       {
-        userId: 'uncle',
-        displayName: 'Uncle',
+        userId: 'Magma',
+        displayName: 'Magma',
         baseLaborCentavos: 500,
         extrasCentavos: 50,
         payoutCentavos: 550,

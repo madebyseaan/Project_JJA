@@ -77,11 +77,12 @@ export function OrderFormPage() {
   const [paymentDate, setPaymentDate] = useState(manilaDateKey());
   const [formError, setFormError] = useState<string | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
-  const loadedRef = useRef(false);
+  const loadedIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!existing.data || loadedRef.current) return;
-    loadedRef.current = true;
+    if (!existing.data) return;
+    if (loadedIdRef.current === existing.data.order.id) return;
+    loadedIdRef.current = existing.data.order.id;
     const detail = existing.data;
     setDate(detail.order.businessDate);
     setCustomer(detail.order.customerName ?? '');
@@ -175,6 +176,7 @@ export function OrderFormPage() {
     parsedPayments.length > 0 || parsedChanges.length > 0 || parsedExtras.length > 0;
   const orderStatus = existing.data?.order.status ?? 'OPEN';
   const orderWasPaid = orderStatus === 'PAID' || orderStatus === 'EXPORTED';
+  const isLocked = orderStatus === 'EXPORTED';
 
   const money = calculateOrderMoney({
     items: parsedItems.map((item) => ({
@@ -272,6 +274,9 @@ export function OrderFormPage() {
 
     for (const payment of parsedPayments) {
       if (payment.amount <= 0) return 'Every payment needs an amount greater than zero.';
+      if (payment.method === 'CASH' && payment.gcashRecipientId) {
+        return 'Cash payments cannot have a GCash recipient.';
+      }
       if (payment.method === 'GCASH' && !payment.gcashRecipientId) {
         return 'Choose who received each GCash payment.';
       }
@@ -279,6 +284,9 @@ export function OrderFormPage() {
 
     for (const change of parsedChanges) {
       if (change.amount <= 0) return 'Every change line needs an amount greater than zero.';
+      if (change.method === 'CASH' && change.gcashRecipientId) {
+        return 'Cash change cannot have a GCash recipient.';
+      }
       if (change.method === 'GCASH' && !change.gcashRecipientId) {
         return 'Choose who returned each GCash change.';
       }
@@ -362,6 +370,11 @@ export function OrderFormPage() {
   const needsPaymentValidation = tab === 'payment' || hasPayment || orderWasPaid;
 
   const submit = async () => {
+    if (isLocked) {
+      setFormError('This month has been exported. The order is read-only.');
+      return;
+    }
+
     const error = needsPaymentValidation ? validatePayment() : validateJob();
     setFormError(error);
 
@@ -376,7 +389,7 @@ export function OrderFormPage() {
         return;
       }
 
-      toast.success(hasPayment ? 'Payment saved.' : 'Order saved.');
+      toast.success(tab === 'payment' ? 'Payment saved.' : 'Order saved.');
     } catch (saveError) {
       setFormError(saveError instanceof Error ? saveError.message : 'Could not save the order.');
     }
@@ -387,8 +400,13 @@ export function OrderFormPage() {
   };
 
   const summaryMode = tab === 'payment' ? 'payment' : 'job';
-  const primaryLabel =
-    tab === 'payment' ? (orderWasPaid ? 'Update payment' : 'Record payment') : 'Save order';
+  const primaryLabel = isLocked
+    ? 'Read-only'
+    : tab === 'payment'
+      ? orderWasPaid
+        ? 'Update payment'
+        : 'Record payment'
+      : 'Save order';
 
   return (
     <div className="space-y-5">
@@ -456,6 +474,12 @@ export function OrderFormPage() {
             <span className="text-xs font-normal">{orderWasPaid ? 'Paid' : 'Unpaid'}</span>
           </Button>
         </div>
+      ) : null}
+
+      {isLocked ? (
+        <p className="border-warn/40 bg-warn/10 text-warn rounded-md border p-3 text-sm">
+          This month has been exported. The order is read-only; corrections happen in QuickBooks.
+        </p>
       ) : null}
 
       {formError ? (
@@ -552,7 +576,7 @@ export function OrderFormPage() {
             <Button
               size="touch"
               className="flex-1"
-              disabled={!online || save.isPending}
+              disabled={!online || save.isPending || isLocked}
               onClick={() => void submit()}
             >
               {save.isPending ? (
@@ -591,7 +615,7 @@ export function OrderFormPage() {
               <Button
                 size="touch"
                 className="w-full"
-                disabled={!online || save.isPending}
+                disabled={!online || save.isPending || isLocked}
                 onClick={() => void submit()}
               >
                 {save.isPending ? (

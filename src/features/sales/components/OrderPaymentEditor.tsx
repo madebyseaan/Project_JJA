@@ -110,7 +110,7 @@ export function OrderPaymentEditor({
           onClick={() =>
             onPaymentsChange([
               ...payments,
-              { key: newKey(), method: 'CASH', amount: '', gcashRecipientId: nextRecipient },
+              { key: newKey(), method: 'CASH', amount: '', gcashRecipientId: '' },
             ])
           }
         >
@@ -135,9 +135,7 @@ export function OrderPaymentEditor({
                         updatePayment(row.key, {
                           method,
                           gcashRecipientId:
-                            method === 'GCASH' && !row.gcashRecipientId
-                              ? nextRecipient
-                              : row.gcashRecipientId,
+                            method === 'GCASH' ? row.gcashRecipientId || nextRecipient : '',
                         })
                       }
                     />
@@ -198,7 +196,7 @@ export function OrderPaymentEditor({
                   key: newKey(),
                   method: 'CASH',
                   amount: '',
-                  gcashRecipientId: gcashPayers[0]?.id ?? nextRecipient,
+                  gcashRecipientId: '',
                 },
               ])
             }
@@ -224,10 +222,11 @@ export function OrderPaymentEditor({
                           updateChange(row.key, {
                             method,
                             gcashRecipientId:
-                              method === 'GCASH' &&
-                              !gcashPayers.some((person) => person.id === row.gcashRecipientId)
-                                ? (gcashPayers[0]?.id ?? '')
-                                : row.gcashRecipientId,
+                              method === 'GCASH'
+                                ? gcashPayers.some((person) => person.id === row.gcashRecipientId)
+                                  ? row.gcashRecipientId
+                                  : (gcashPayers[0]?.id ?? '')
+                                : '',
                           })
                         }
                       />

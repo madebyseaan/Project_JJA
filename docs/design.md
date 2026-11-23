@@ -162,7 +162,7 @@ Rules:
 - Verbs, sentence case: “New order”, “Add item”, “Custom line”, “Add payment”, “Add change”, “Take payment”, “Record payment”, “Record transfer”, “Save order”, “Import item list”.
 - A button and its result use the same verb: “Save order” → “Order saved.”, “Import item list” → “Item list imported.”
 - Errors say what happened and what to do: “Payment is not balanced. Difference: ₱20.00.”, “GCash change must come from someone who received a GCash payment.”
-- Empty states invite action: “No orders on this date. Start a new order.”
+- Empty states invite action: “No jobs waiting for payment.” and “No paid sales on this date.”
 - No “Submit”, “OK”, “An error occurred”, or exclamation marks.
 - Receipt language: “Sales receipt”, not “Official Receipt”, unless the BIR registration exists.
 

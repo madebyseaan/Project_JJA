@@ -33,6 +33,13 @@ function Stat({ label, value }: { label: string; value: number }) {
   );
 }
 
+function isValidDate(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+
+  const date = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+}
+
 function Workers({ order, currentUserId }: { order: SalesOrder; currentUserId: string | null }) {
   const mainName = order.mainUserName ?? 'Staff';
   const main = staffLabel({ id: order.mainUserId, displayName: mainName }, currentUserId);
@@ -137,7 +144,7 @@ export function OrdersPage() {
   const currentUserId = auth.status === 'signed-in' ? auth.profile.id : null;
   const today = manilaDateKey();
   const requested = params.get('date') ?? '';
-  const date = /^\d{4}-\d{2}-\d{2}$/.test(requested) && requested <= today ? requested : today;
+  const date = isValidDate(requested) && requested <= today ? requested : today;
 
   const openOrders = useOpenOrders();
   const paidOrders = usePaidOrders(date);
